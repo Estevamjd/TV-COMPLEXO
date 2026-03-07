@@ -3,6 +3,7 @@ import { SignJWT, jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@tvcomplexo.com.br';
+const ADMIN_USER = process.env.ADMIN_USER || 'admin';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
 const JWT_SECRET = process.env.JWT_SECRET || 'chave-secreta-fallback';
 
@@ -13,10 +14,10 @@ export async function POST(request) {
         const body = await request.json();
         const { email, password } = body;
 
-        // Compara com as credenciais do .env (ajustando a compatibilidade para username ou email)
+        // Compara com as credenciais (username ou email)
         const inputEmail = email || body.username;
 
-        if (inputEmail === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+        if ((inputEmail === ADMIN_EMAIL || inputEmail === ADMIN_USER) && password === ADMIN_PASSWORD) {
             // Gera o token JWT
             const token = await new SignJWT({ email: inputEmail, role: 'admin' })
                 .setProtectedHeader({ alg: 'HS256' })
