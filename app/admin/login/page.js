@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 export default function AdminLoginPage() {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const router = useRouter();
@@ -98,9 +99,19 @@ export default function AdminLoginPage() {
                         />
                     </div>
                     <div className="form-group">
-                        <label className="form-label">Senha</label>
+                        <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            Senha
+                            <button
+                                type="button"
+                                tabIndex="-1"
+                                onClick={() => setShowPassword(!showPassword)}
+                                style={{ background: 'none', border: 'none', color: 'var(--color-gray-light)', cursor: 'pointer', fontSize: '0.8rem' }}
+                            >
+                                {showPassword ? 'Ocultar' : 'Ver Senha'}
+                            </button>
+                        </label>
                         <input
-                            type="password"
+                            type={showPassword ? "text" : "password"}
                             className="form-input"
                             placeholder="••••••••"
                             value={password}
