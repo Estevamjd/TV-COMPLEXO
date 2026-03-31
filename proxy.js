@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'chave-secreta-fallback';
-const secretKey = new TextEncoder().encode(JWT_SECRET);
+const JWT_SECRET = process.env.JWT_SECRET;
+const secretKey = JWT_SECRET ? new TextEncoder().encode(JWT_SECRET) : null;
 
 export default async function proxy(request) {
     const path = request.nextUrl.pathname;
@@ -27,6 +27,13 @@ export default async function proxy(request) {
     }
 
     if (isAdminRoute || isProtectedApiRoute) {
+        if (!secretKey) {
+            if (isAdminRoute) {
+                return NextResponse.redirect(new URL('/admin/login', request.url));
+            }
+            return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+        }
+
         const token = request.cookies.get('admin_token')?.value;
 
         if (!token) {
