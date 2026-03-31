@@ -4,6 +4,18 @@ import { v4 as uuidv4 } from 'uuid';
 import { isAuthenticated } from '@/lib/auth';
 import { rateLimit } from '@/lib/rate-limit';
 
+// Fallback de coordenadas por comunidade (usado quando o frontend não envia)
+const comunidadeCoordenadas = {
+    'Complexo do Alemão': { lat: -22.8575, lng: -43.2650 },
+    'Rocinha': { lat: -22.9880, lng: -43.2480 },
+    'Cidade de Deus': { lat: -22.9480, lng: -43.3620 },
+    'Maré': { lat: -22.8620, lng: -43.2430 },
+    'Vidigal': { lat: -22.9940, lng: -43.2330 },
+    'Jacarezinho': { lat: -22.8880, lng: -43.2620 },
+    'Manguinhos': { lat: -22.8820, lng: -43.2500 },
+    'Penha': { lat: -22.8410, lng: -43.2710 },
+};
+
 export async function GET(request) {
     try {
         const { searchParams } = new URL(request.url);
@@ -59,11 +71,16 @@ export async function POST(request) {
             return NextResponse.json({ error: 'Comunidade, local, tipo e descrição são obrigatórios' }, { status: 400 });
         }
 
+        // Usar coordenadas enviadas ou fallback da comunidade
+        const fallback = comunidadeCoordenadas[comunidade];
+        const finalLat = latitude || fallback?.lat || null;
+        const finalLng = longitude || fallback?.lng || null;
+
         const id = uuidv4();
         await db.query(`
       INSERT INTO denuncias (id, nome, comunidade, local_problema, tipo, descricao, latitude, longitude, midia, status)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'pendente')
-    `, [id, nome || 'Anônimo', comunidade, local_problema, tipo, descricao, latitude || null, longitude || null, midia || '']);
+    `, [id, nome || 'Anônimo', comunidade, local_problema, tipo, descricao, finalLat, finalLng, midia || '']);
 
         return NextResponse.json({ id, message: 'Denúncia enviada com sucesso! Ela será analisada pela nossa equipe.' }, { status: 201 });
     } catch (error) {

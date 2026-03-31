@@ -23,7 +23,6 @@ const tipoLabels = {
     outros: 'Outros',
 };
 
-// Sanitize text to prevent XSS in popup HTML
 function escapeHtml(text) {
     if (!text) return '';
     const div = document.createElement('div');
@@ -35,22 +34,19 @@ export default function MapView({ denuncias = [] }) {
     const mapRef = useRef(null);
     const mapInstanceRef = useRef(null);
     const markersRef = useRef([]);
-    const [isClient, setIsClient] = useState(false);
-
-    useEffect(() => {
-        setIsClient(true);
-    }, []);
+    const leafletRef = useRef(null);
+    const [mapReady, setMapReady] = useState(false);
 
     // Initialize map once
     useEffect(() => {
-        if (!isClient || !mapRef.current || mapInstanceRef.current) return;
+        if (!mapRef.current || mapInstanceRef.current) return;
 
         let cancelled = false;
 
         const initMap = async () => {
             const L = (await import('leaflet')).default;
+            leafletRef.current = L;
 
-            // Load Leaflet CSS via link element (more reliable than dynamic import)
             if (!document.querySelector('link[href*="leaflet"]')) {
                 const link = document.createElement('link');
                 link.rel = 'stylesheet';
@@ -67,6 +63,8 @@ export default function MapView({ denuncias = [] }) {
                 attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
                 maxZoom: 19,
             }).addTo(map);
+
+            setMapReady(true);
         };
 
         initMap();
@@ -78,73 +76,57 @@ export default function MapView({ denuncias = [] }) {
                 mapInstanceRef.current = null;
             }
         };
-    }, [isClient]);
+    }, []);
 
-    // Update markers when denuncias change
+    // Update markers when map is ready OR denuncias change
     useEffect(() => {
         const map = mapInstanceRef.current;
-        if (!map || !isClient) return;
+        const L = leafletRef.current;
+        if (!map || !L || !mapReady) return;
 
-        const updateMarkers = async () => {
-            const L = (await import('leaflet')).default;
+        // Remove existing markers
+        markersRef.current.forEach(m => m.remove());
+        markersRef.current = [];
 
-            // Remove existing markers
-            markersRef.current.forEach(m => m.remove());
-            markersRef.current = [];
+        denuncias.forEach(d => {
+            const lat = parseFloat(d.latitude);
+            const lng = parseFloat(d.longitude);
+            if (!lat || !lng || isNaN(lat) || isNaN(lng)) return;
 
-            denuncias.forEach(d => {
-                const lat = parseFloat(d.latitude);
-                const lng = parseFloat(d.longitude);
-                if (!lat || !lng || isNaN(lat) || isNaN(lng)) return;
-
-                const color = tipoColors[d.tipo] || '#999';
-                const icon = L.divIcon({
-                    className: 'custom-marker',
-                    html: `<div style="
-                        width: 24px; height: 24px;
-                        background: ${color};
-                        border: 3px solid white;
-                        border-radius: 50%;
-                        box-shadow: 0 2px 8px rgba(0,0,0,0.5);
-                    "></div>`,
-                    iconSize: [24, 24],
-                    iconAnchor: [12, 12],
-                });
-
-                const safeNome = escapeHtml(d.nome || 'Anônimo');
-                const safeTipo = escapeHtml(tipoLabels[d.tipo] || d.tipo);
-                const safeComunidade = escapeHtml(d.comunidade);
-                const safeLocal = escapeHtml(d.local_problema);
-                const safeDescricao = escapeHtml((d.descricao || '').substring(0, 100));
-
-                const marker = L.marker([lat, lng], { icon })
-                    .addTo(map)
-                    .bindPopup(`
-                        <div style="font-family: Inter, sans-serif; min-width: 200px;">
-                            <strong style="color: ${color};">${safeTipo}</strong><br/>
-                            <span style="font-size: 0.85em;">📍 ${safeComunidade} — ${safeLocal}</span><br/>
-                            <p style="font-size: 0.85em; margin: 0.5rem 0;">${safeDescricao}...</p>
-                            <span style="font-size: 0.75em; color: #999;">👤 ${safeNome}</span>
-                        </div>
-                    `);
-
-                markersRef.current.push(marker);
+            const color = tipoColors[d.tipo] || '#999';
+            const icon = L.divIcon({
+                className: 'custom-marker',
+                html: `<div style="
+                    width: 24px; height: 24px;
+                    background: ${color};
+                    border: 3px solid white;
+                    border-radius: 50%;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+                "></div>`,
+                iconSize: [24, 24],
+                iconAnchor: [12, 12],
             });
-        };
 
-        updateMarkers();
-    }, [isClient, denuncias]);
+            const safeNome = escapeHtml(d.nome || 'Anônimo');
+            const safeTipo = escapeHtml(tipoLabels[d.tipo] || d.tipo);
+            const safeComunidade = escapeHtml(d.comunidade);
+            const safeLocal = escapeHtml(d.local_problema);
+            const safeDescricao = escapeHtml((d.descricao || '').substring(0, 100));
 
-    if (!isClient) {
-        return (
-            <div className="map-container" style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: 'var(--color-dark)'
-            }}>
-                <div className="spinner"></div>
-            </div>
-        );
-    }
+            const marker = L.marker([lat, lng], { icon })
+                .addTo(map)
+                .bindPopup(`
+                    <div style="font-family: Inter, sans-serif; min-width: 200px;">
+                        <strong style="color: ${color};">${safeTipo}</strong><br/>
+                        <span style="font-size: 0.85em;">📍 ${safeComunidade} — ${safeLocal}</span><br/>
+                        <p style="font-size: 0.85em; margin: 0.5rem 0;">${safeDescricao}...</p>
+                        <span style="font-size: 0.75em; color: #999;">👤 ${safeNome}</span>
+                    </div>
+                `);
+
+            markersRef.current.push(marker);
+        });
+    }, [mapReady, denuncias]);
 
     return <div ref={mapRef} className="map-container" />;
 }
