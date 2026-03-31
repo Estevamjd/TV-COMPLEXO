@@ -7,6 +7,7 @@ const platformLabels = {
     facebook: 'Facebook',
     tiktok: 'TikTok',
     youtube: 'YouTube',
+    vimeo: 'Vimeo',
     manual: 'TV Complexo',
 };
 
@@ -15,6 +16,7 @@ const platformIcons = {
     facebook: <FaFacebook />,
     tiktok: <FaTiktok />,
     youtube: <FaYoutube />,
+    vimeo: <FaPlay />,
     manual: <FaPlay />,
 };
 
@@ -23,7 +25,18 @@ const platformClass = {
     facebook: 'platform-facebook',
     tiktok: 'platform-tiktok',
     youtube: 'platform-youtube',
+    vimeo: 'platform-manual',
     manual: 'platform-manual',
+};
+
+// Gradientes por plataforma quando não há thumbnail
+const platformGradients = {
+    instagram: 'linear-gradient(135deg, #833ab4 0%, #fd1d1d 50%, #fcb045 100%)',
+    facebook: 'linear-gradient(135deg, #1877f2 0%, #0a5dc2 100%)',
+    tiktok: 'linear-gradient(135deg, #010101 0%, #69c9d0 50%, #ee1d52 100%)',
+    youtube: 'linear-gradient(135deg, #ff0000 0%, #900 100%)',
+    vimeo: 'linear-gradient(135deg, #1ab7ea 0%, #0d6eac 100%)',
+    manual: 'linear-gradient(135deg, var(--color-dark) 0%, #1a0a0a 100%)',
 };
 
 export default function VideoCard({ video, onClick }) {
@@ -35,17 +48,18 @@ export default function VideoCard({ video, onClick }) {
     });
 
     const isSocialLink = video.plataforma !== 'manual';
+    const hasThumbnail = video.thumbnail && video.thumbnail.startsWith('http') && !video.thumbnail.includes('instagram.com/');
 
     const handleCardClick = () => {
         if (onClick) {
-            onClick(); // Se for passado via prop (ex: modal na página /videos)
+            onClick();
         } else {
-            router.push(`/videos/${video.id}`); // Navegação padrão
+            router.push(`/videos/${video.id}`);
         }
     };
 
     const handleSocialClick = (e) => {
-        e.stopPropagation(); // Impede que o clique no botão ative o clique no card
+        e.stopPropagation();
         window.open(video.url_video, '_blank', 'noopener,noreferrer');
     };
 
@@ -59,25 +73,52 @@ export default function VideoCard({ video, onClick }) {
                 <div style={{
                     width: '100%',
                     height: '100%',
-                    background: video.thumbnail ? `url(${video.thumbnail}) center/cover no-repeat` : 'linear-gradient(135deg, var(--color-dark) 0%, #1a0a0a 100%)',
+                    background: hasThumbnail
+                        ? `url(${video.thumbnail}) center/cover no-repeat`
+                        : platformGradients[video.plataforma] || platformGradients.manual,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     position: 'relative'
                 }}>
-                    {video.thumbnail && (
+                    {hasThumbnail && (
                         <div style={{
                             position: 'absolute',
                             inset: 0,
-                            background: 'rgba(0,0,0,0.5)'
+                            background: 'rgba(0,0,0,0.4)'
                         }}></div>
                     )}
+
+                    {/* Ícone central */}
                     <div style={{
-                        fontSize: '3rem',
-                        opacity: video.thumbnail ? 0.9 : 0.3,
-                        zIndex: 1
+                        fontSize: hasThumbnail ? '3rem' : '2.5rem',
+                        opacity: hasThumbnail ? 0.9 : 0.85,
+                        zIndex: 1,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: '0.5rem',
                     }}>
-                        <FaPlay style={{ color: 'white' }} />
+                        {hasThumbnail ? (
+                            <FaPlay style={{ color: 'white' }} />
+                        ) : (
+                            <>
+                                <span style={{ color: 'white', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }}>
+                                    {platformIcons[video.plataforma] || <FaPlay />}
+                                </span>
+                                {!hasThumbnail && (
+                                    <span style={{
+                                        fontSize: '0.7rem',
+                                        color: 'rgba(255,255,255,0.8)',
+                                        fontWeight: 600,
+                                        textTransform: 'uppercase',
+                                        letterSpacing: '0.05em',
+                                    }}>
+                                        {platformLabels[video.plataforma] || 'Vídeo'}
+                                    </span>
+                                )}
+                            </>
+                        )}
                     </div>
 
                     {video.destaque ? (
@@ -131,11 +172,10 @@ export default function VideoCard({ video, onClick }) {
                     <span style={{ fontSize: '0.8rem', color: 'var(--color-gray-medium)' }}>📅 {date}</span>
                 </div>
 
-                {/* Botão da Rede Social Original */}
                 {isSocialLink && (
                     <button
                         onClick={handleSocialClick}
-                        className={`btn btn-sm`}
+                        className="btn btn-sm"
                         style={{
                             marginTop: '0.75rem',
                             width: '100%',
