@@ -15,7 +15,7 @@ export default function TikTokVideo({ video, index }) {
                 if (entry.isIntersecting) {
                     // O elemento está majoritariamente invisível? Pause.
                     if (videoRef.current) {
-                        videoRef.current.play().then(() => setIsPlaying(true)).catch(err => console.log('Autoplay prevenido:', err));
+                        videoRef.current.play().then(() => setIsPlaying(true)).catch(() => {});
                     }
                 } else {
                     if (videoRef.current) {

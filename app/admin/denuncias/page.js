@@ -1,8 +1,10 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useToast } from '@/components/Toast';
 
 export default function AdminDenunciasPage() {
+    const toast = useToast();
     const [denuncias, setDenuncias] = useState([]);
     const [filtroStatus, setFiltroStatus] = useState('todos');
     const [loading, setLoading] = useState(true);
@@ -22,17 +24,22 @@ export default function AdminDenunciasPage() {
     };
 
     const handleStatusChange = async (id, newStatus) => {
-        await fetch('/api/denuncias', {
+        const res = await fetch('/api/denuncias', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ id, status: newStatus }),
         });
+        toast(
+            res.ok ? `Denúncia ${newStatus === 'aprovada' ? 'aprovada' : 'rejeitada'}` : 'Erro ao atualizar',
+            res.ok ? 'success' : 'error'
+        );
         fetchDenuncias();
     };
 
     const handleDelete = async (id) => {
         if (!confirm('Tem certeza que deseja deletar esta denúncia?')) return;
-        await fetch(`/api/denuncias?id=${id}`, { method: 'DELETE' });
+        const res = await fetch(`/api/denuncias?id=${id}`, { method: 'DELETE' });
+        toast(res.ok ? 'Denúncia deletada' : 'Erro ao deletar', res.ok ? 'success' : 'error');
         fetchDenuncias();
     };
 

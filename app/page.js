@@ -5,6 +5,7 @@ import NewsCard from '@/components/NewsCard';
 import ReportCard from '@/components/ReportCard';
 import ScrollReveal from '@/components/ScrollReveal';
 import SocialFeed from '@/components/SocialFeed';
+import { toEmbedUrl } from '@/lib/video-utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -55,14 +56,25 @@ export default async function HomePage() {
                 <section className="section">
                     <div className="container">
                         <h2 className="section-title">🎬 Em Destaque</h2>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', alignItems: 'center' }}>
+                        <div className="featured-grid">
                             <div className="video-player">
-                                <iframe
-                                    src={destaqueVideo.url_video}
-                                    title={destaqueVideo.titulo}
-                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                    allowFullScreen
-                                />
+                                {toEmbedUrl(destaqueVideo.url_video) ? (
+                                    <iframe
+                                        src={toEmbedUrl(destaqueVideo.url_video)}
+                                        title={destaqueVideo.titulo}
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                        allowFullScreen
+                                    />
+                                ) : (
+                                    <a href={destaqueVideo.url_video} target="_blank" rel="noopener noreferrer"
+                                        style={{
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            width: '100%', height: '100%', minHeight: '200px',
+                                            background: 'var(--color-dark)', color: 'white', textDecoration: 'none',
+                                        }}>
+                                        <span style={{ fontSize: '1.2rem' }}>▶ Assistir no {destaqueVideo.plataforma} ↗</span>
+                                    </a>
+                                )}
                             </div>
                             <ScrollReveal delay={0.2}>
                                 <span className="badge badge-yellow">⭐ Destaque</span>

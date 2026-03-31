@@ -1336,6 +1336,14 @@ h6 {
     color: var(--color-gray-light);
 }
 
+/* ===== FEATURED GRID ===== */
+.featured-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    align-items: center;
+}
+
 /* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
     .section {
@@ -1353,6 +1361,10 @@ h6 {
 
     .map-container {
         height: 350px;
+    }
+
+    .featured-grid {
+        grid-template-columns: 1fr;
     }
 
     .admin-table {

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import db from '@/lib/db';
 import { v4 as uuidv4 } from 'uuid';
+import { isAuthenticated } from '@/lib/auth';
 
 export async function GET(request) {
     try {
@@ -48,6 +49,9 @@ export async function GET(request) {
 
 export async function POST(request) {
     try {
+        if (!(await isAuthenticated())) {
+            return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+        }
         const body = await request.json();
         const { titulo, descricao, url_video, thumbnail, plataforma, categoria, destaque } = body;
 
@@ -69,6 +73,9 @@ export async function POST(request) {
 
 export async function PUT(request) {
     try {
+        if (!(await isAuthenticated())) {
+            return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+        }
         const body = await request.json();
         const { id, titulo, descricao, url_video, thumbnail, plataforma, categoria, destaque } = body;
 
@@ -89,6 +96,9 @@ export async function PUT(request) {
 
 export async function DELETE(request) {
     try {
+        if (!(await isAuthenticated())) {
+            return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+        }
         const { searchParams } = new URL(request.url);
         const id = searchParams.get('id');
 

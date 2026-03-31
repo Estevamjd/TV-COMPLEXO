@@ -1,6 +1,7 @@
 import db from '@/lib/db';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import { toEmbedUrl } from '@/lib/video-utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,6 +26,7 @@ export default async function VideoPage({ params }) {
         day: '2-digit', month: 'long', year: 'numeric'
     });
 
+    const embedUrl = toEmbedUrl(video.url_video);
     const isSocialLink = video.plataforma !== 'manual';
 
     return (
@@ -42,7 +44,24 @@ export default async function VideoPage({ params }) {
                         border: '1px solid rgba(255,255,255,0.05)'
                     }}
                 >
-                    {isSocialLink && !video.url_video.includes('youtube.com/embed') ? (
+                    {embedUrl ? (
+                        <div className="video-player" style={{ position: 'relative', width: '100%', aspectRatio: '16/9' }}>
+                            <iframe
+                                src={embedUrl}
+                                title={video.titulo}
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                allowFullScreen
+                                style={{
+                                    position: 'absolute',
+                                    top: 0,
+                                    left: 0,
+                                    width: '100%',
+                                    height: '100%',
+                                    border: 'none'
+                                }}
+                            />
+                        </div>
+                    ) : (
                         <div style={{
                             width: '100%',
                             aspectRatio: '16/9',
@@ -60,9 +79,11 @@ export default async function VideoPage({ params }) {
                                 <span style={{ fontSize: '3rem', marginBottom: '1rem', display: 'block' }}>
                                     {video.plataforma === 'instagram' ? '📷' : video.plataforma === 'tiktok' ? '🎵' : '📘'}
                                 </span>
-                                <h3 style={{ marginBottom: '1rem', fontSize: '1.5rem' }}>Vídeo Original {video.plataforma.charAt(0).toUpperCase() + video.plataforma.slice(1)}</h3>
+                                <h3 style={{ marginBottom: '1rem', fontSize: '1.5rem' }}>
+                                    Vídeo Original {video.plataforma.charAt(0).toUpperCase() + video.plataforma.slice(1)}
+                                </h3>
                                 <p style={{ color: 'var(--color-gray-light)', marginBottom: '1.5rem', maxWidth: '400px', margin: '0 auto 1.5rem', lineHeight: '1.5' }}>
-                                    Este conteúdo foi importado oficialmente da nossa rede social. Para assistir com a melhor experiência, abra diretamente na plataforma.
+                                    Este conteúdo foi importado da nossa rede social. Abra diretamente na plataforma para a melhor experiência.
                                 </p>
                                 <a
                                     href={video.url_video}
@@ -73,23 +94,6 @@ export default async function VideoPage({ params }) {
                                     Assistir no {video.plataforma.charAt(0).toUpperCase() + video.plataforma.slice(1)} ↗
                                 </a>
                             </div>
-                        </div>
-                    ) : (
-                        <div className="video-player" style={{ position: 'relative', width: '100%', aspectRatio: '16/9' }}>
-                            <iframe
-                                src={video.url_video}
-                                title={video.titulo}
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                allowFullScreen
-                                style={{
-                                    position: 'absolute',
-                                    top: 0,
-                                    left: 0,
-                                    width: '100%',
-                                    height: '100%',
-                                    border: 'none'
-                                }}
-                            />
                         </div>
                     )}
                 </div>

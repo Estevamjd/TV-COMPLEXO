@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import VideoCard from '@/components/VideoCard';
 import FilterBar from '@/components/FilterBar';
 import ShareButtons from '@/components/ShareButtons';
+import { toEmbedUrl } from '@/lib/video-utils';
 
 const filters = [
     { value: 'todos', label: '📺 Todos' },
@@ -119,14 +120,50 @@ export default function VideosPage() {
                             }}
                             onClick={(e) => e.stopPropagation()}
                         >
-                            <div className="video-player">
-                                <iframe
-                                    src={selectedVideo.url_video}
-                                    title={selectedVideo.titulo}
-                                    allowFullScreen
-                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                ></iframe>
-                            </div>
+                            {(() => {
+                                const embedUrl = toEmbedUrl(selectedVideo.url_video);
+                                if (embedUrl) {
+                                    return (
+                                        <div className="video-player">
+                                            <iframe
+                                                src={embedUrl}
+                                                title={selectedVideo.titulo}
+                                                allowFullScreen
+                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                            ></iframe>
+                                        </div>
+                                    );
+                                }
+                                // URL externa (Instagram, TikTok, etc.) - mostrar link
+                                return (
+                                    <div style={{
+                                        width: '100%',
+                                        aspectRatio: '16/9',
+                                        background: selectedVideo.thumbnail
+                                            ? `url(${selectedVideo.thumbnail}) center/cover no-repeat`
+                                            : 'linear-gradient(135deg, var(--color-dark) 0%, #1a0a0a 100%)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        position: 'relative',
+                                    }}>
+                                        <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.7)' }} />
+                                        <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', padding: '2rem' }}>
+                                            <span style={{ fontSize: '3rem', display: 'block', marginBottom: '1rem' }}>
+                                                {selectedVideo.plataforma === 'instagram' ? '📷' : selectedVideo.plataforma === 'tiktok' ? '🎵' : '▶️'}
+                                            </span>
+                                            <a
+                                                href={selectedVideo.url_video}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="btn btn-primary btn-lg"
+                                            >
+                                                Assistir no {selectedVideo.plataforma?.charAt(0).toUpperCase() + selectedVideo.plataforma?.slice(1)} ↗
+                                            </a>
+                                        </div>
+                                    </div>
+                                );
+                            })()}
                             <div style={{ padding: '1.5rem' }}>
                                 <h3 style={{
                                     fontFamily: 'var(--font-display)',

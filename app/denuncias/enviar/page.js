@@ -13,6 +13,18 @@ const comunidades = [
     'Outra',
 ];
 
+// Coordenadas centrais aproximadas de cada comunidade
+const comunidadeCoordenadas = {
+    'Complexo do Alemão': { lat: -22.8575, lng: -43.2650 },
+    'Rocinha': { lat: -22.9880, lng: -43.2480 },
+    'Cidade de Deus': { lat: -22.9480, lng: -43.3620 },
+    'Maré': { lat: -22.8620, lng: -43.2430 },
+    'Vidigal': { lat: -22.9940, lng: -43.2330 },
+    'Jacarezinho': { lat: -22.8880, lng: -43.2620 },
+    'Manguinhos': { lat: -22.8820, lng: -43.2500 },
+    'Penha': { lat: -22.8410, lng: -43.2710 },
+};
+
 const tiposProblema = [
     { value: 'falta_de_luz', label: '💡 Falta de Luz' },
     { value: 'lixo_acumulado', label: '🗑️ Lixo Acumulado' },
@@ -32,6 +44,8 @@ export default function EnviarDenunciaPage() {
         tipo: '',
         descricao: '',
     });
+    const [coords, setCoords] = useState({ latitude: null, longitude: null });
+    const [geoStatus, setGeoStatus] = useState(''); // '', 'loading', 'success', 'error'
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
     const [error, setError] = useState('');
@@ -41,7 +55,35 @@ export default function EnviarDenunciaPage() {
     const fileInputRef = useRef(null);
 
     const handleChange = (e) => {
-        setForm({ ...form, [e.target.name]: e.target.value });
+        const { name, value } = e.target;
+        setForm({ ...form, [name]: value });
+
+        // Auto-definir coordenadas quando selecionar comunidade
+        if (name === 'comunidade' && comunidadeCoordenadas[value]) {
+            const c = comunidadeCoordenadas[value];
+            setCoords({ latitude: c.lat, longitude: c.lng });
+        }
+    };
+
+    const handleGetLocation = () => {
+        if (!navigator.geolocation) {
+            setGeoStatus('error');
+            return;
+        }
+        setGeoStatus('loading');
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                setCoords({
+                    latitude: position.coords.latitude,
+                    longitude: position.coords.longitude,
+                });
+                setGeoStatus('success');
+            },
+            () => {
+                setGeoStatus('error');
+            },
+            { enableHighAccuracy: true, timeout: 10000 }
+        );
     };
 
     const handleFileChange = (e) => {
@@ -111,16 +153,23 @@ export default function EnviarDenunciaPage() {
                 setUploading(false);
             }
 
-            // Submit denúncia
+            // Submit denúncia com coordenadas
             const res = await fetch('/api/denuncias', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ...form, midia: midiaUrl }),
+                body: JSON.stringify({
+                    ...form,
+                    midia: midiaUrl,
+                    latitude: coords.latitude,
+                    longitude: coords.longitude,
+                }),
             });
 
             if (res.ok) {
                 setSuccess(true);
                 setForm({ nome: '', comunidade: '', local_problema: '', tipo: '', descricao: '' });
+                setCoords({ latitude: null, longitude: null });
+                setGeoStatus('');
                 setSelectedFile(null);
                 setFilePreview(null);
             } else {
@@ -236,6 +285,44 @@ export default function EnviarDenunciaPage() {
                                 onChange={handleChange}
                                 required
                             />
+                        </div>
+
+                        {/* Geolocalização */}
+                        <div className="form-group">
+                            <label className="form-label">Localização no mapa</label>
+                            <div style={{
+                                display: 'flex',
+                                gap: '0.75rem',
+                                alignItems: 'center',
+                                flexWrap: 'wrap',
+                            }}>
+                                <button
+                                    type="button"
+                                    className="btn btn-sm"
+                                    style={{
+                                        background: 'var(--color-dark-gray)',
+                                        color: 'white',
+                                        border: '1px solid rgba(255,255,255,0.1)',
+                                    }}
+                                    onClick={handleGetLocation}
+                                    disabled={geoStatus === 'loading'}
+                                >
+                                    {geoStatus === 'loading' ? '⏳ Obtendo...' : '📍 Usar minha localização'}
+                                </button>
+                                {coords.latitude && (
+                                    <span style={{ fontSize: '0.8rem', color: 'var(--color-green)' }}>
+                                        ✅ Localização definida
+                                    </span>
+                                )}
+                                {geoStatus === 'error' && (
+                                    <span style={{ fontSize: '0.8rem', color: 'var(--color-gray-light)' }}>
+                                        Usando localização da comunidade selecionada
+                                    </span>
+                                )}
+                            </div>
+                            <p style={{ fontSize: '0.75rem', color: 'var(--color-gray-medium)', marginTop: '0.5rem' }}>
+                                A localização ajuda a posicionar sua denúncia no mapa. Se não permitir, usaremos a localização da comunidade.
+                            </p>
                         </div>
 
                         <div className="form-group">

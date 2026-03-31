@@ -1,8 +1,11 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { toEmbedUrl, detectPlatform } from '@/lib/video-utils';
+import { useToast } from '@/components/Toast';
 
 export default function AdminVideosPage() {
+    const toast = useToast();
     const [videos, setVideos] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
@@ -22,24 +25,45 @@ export default function AdminVideosPage() {
     };
 
     const handleChange = (e) => {
-        const val = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
-        setForm({ ...form, [e.target.name]: val });
+        const { name, type, value, checked } = e.target;
+        const val = type === 'checkbox' ? checked : value;
+        const updated = { ...form, [name]: val };
+
+        // Auto-detectar plataforma e converter URL ao colar/digitar URL
+        if (name === 'url_video' && value) {
+            const platform = detectPlatform(value);
+            if (platform !== 'manual') {
+                updated.plataforma = platform;
+            }
+        }
+
+        setForm(updated);
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        // Converter URL para embed se possível (YouTube, Vimeo, etc.)
+        const submitData = { ...form };
+        const embedUrl = toEmbedUrl(submitData.url_video);
+        if (embedUrl) {
+            submitData.url_video = embedUrl;
+        }
+
         if (editVideo) {
-            await fetch('/api/videos', {
+            const res = await fetch('/api/videos', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ...form, id: editVideo.id }),
+                body: JSON.stringify({ ...submitData, id: editVideo.id }),
             });
+            toast(res.ok ? 'Vídeo atualizado com sucesso' : 'Erro ao atualizar vídeo', res.ok ? 'success' : 'error');
         } else {
-            await fetch('/api/videos', {
+            const res = await fetch('/api/videos', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(form),
+                body: JSON.stringify(submitData),
             });
+            toast(res.ok ? 'Vídeo adicionado com sucesso' : 'Erro ao adicionar vídeo', res.ok ? 'success' : 'error');
         }
         setShowForm(false);
         setEditVideo(null);
@@ -63,7 +87,8 @@ export default function AdminVideosPage() {
 
     const handleDelete = async (id) => {
         if (!confirm('Tem certeza que deseja deletar este vídeo?')) return;
-        await fetch(`/api/videos?id=${id}`, { method: 'DELETE' });
+        const res = await fetch(`/api/videos?id=${id}`, { method: 'DELETE' });
+        toast(res.ok ? 'Vídeo deletado' : 'Erro ao deletar', res.ok ? 'success' : 'error');
         fetchVideos();
     };
 
@@ -113,7 +138,7 @@ export default function AdminVideosPage() {
                                 </div>
                                 <div className="form-group">
                                     <label className="form-label">URL do Vídeo *</label>
-                                    <input type="text" name="url_video" className="form-input" placeholder="https://www.youtube.com/embed/..." value={form.url_video} onChange={handleChange} required />
+                                    <input type="text" name="url_video" className="form-input" placeholder="Cole qualquer link do YouTube, Instagram, TikTok..." value={form.url_video} onChange={handleChange} required />
                                 </div>
                                 <div className="form-group">
                                     <label className="form-label">Thumbnail (URL opcional)</label>
@@ -124,7 +149,9 @@ export default function AdminVideosPage() {
                                     <select name="plataforma" className="form-select" value={form.plataforma} onChange={handleChange}>
                                         <option value="youtube">YouTube</option>
                                         <option value="instagram">Instagram</option>
+                                        <option value="tiktok">TikTok</option>
                                         <option value="facebook">Facebook</option>
+                                        <option value="vimeo">Vimeo</option>
                                         <option value="manual">Manual</option>
                                     </select>
                                 </div>

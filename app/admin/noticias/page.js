@@ -1,8 +1,10 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useToast } from '@/components/Toast';
 
 export default function AdminNoticiasPage() {
+    const toast = useToast();
     const [noticias, setNoticias] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
@@ -28,17 +30,19 @@ export default function AdminNoticiasPage() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (editNoticia) {
-            await fetch('/api/noticias', {
+            const res = await fetch('/api/noticias', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ ...form, id: editNoticia.id, publicada: true }),
             });
+            toast(res.ok ? 'Notícia atualizada' : 'Erro ao atualizar', res.ok ? 'success' : 'error');
         } else {
-            await fetch('/api/noticias', {
+            const res = await fetch('/api/noticias', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(form),
             });
+            toast(res.ok ? 'Notícia publicada com sucesso' : 'Erro ao publicar', res.ok ? 'success' : 'error');
         }
         setShowForm(false);
         setEditNoticia(null);
@@ -60,7 +64,8 @@ export default function AdminNoticiasPage() {
 
     const handleDelete = async (id) => {
         if (!confirm('Tem certeza que deseja deletar esta notícia?')) return;
-        await fetch(`/api/noticias?id=${id}`, { method: 'DELETE' });
+        const res = await fetch(`/api/noticias?id=${id}`, { method: 'DELETE' });
+        toast(res.ok ? 'Notícia deletada' : 'Erro ao deletar', res.ok ? 'success' : 'error');
         fetchNoticias();
     };
 

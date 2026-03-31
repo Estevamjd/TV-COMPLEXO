@@ -43,3 +43,12 @@ next-env.d.ts
 # legacy sqlite data
 /data/
 *.db
+
+# consolidated backup (redundant)
+/source-consolidated/
+
+# uploaded files (ephemeral on Vercel)
+/public/uploads/
+
+# build logs
+build.log

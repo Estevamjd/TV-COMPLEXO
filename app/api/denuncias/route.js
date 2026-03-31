@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import db from '@/lib/db';
 import { v4 as uuidv4 } from 'uuid';
+import { isAuthenticated } from '@/lib/auth';
+import { rateLimit } from '@/lib/rate-limit';
 
 export async function GET(request) {
     try {
@@ -45,6 +47,11 @@ export async function GET(request) {
 
 export async function POST(request) {
     try {
+        const { allowed } = rateLimit(request);
+        if (!allowed) {
+            return NextResponse.json({ error: 'Muitas tentativas. Aguarde um momento antes de enviar novamente.' }, { status: 429 });
+        }
+
         const body = await request.json();
         const { nome, comunidade, local_problema, tipo, descricao, latitude, longitude, midia } = body;
 
@@ -66,6 +73,9 @@ export async function POST(request) {
 
 export async function PUT(request) {
     try {
+        if (!(await isAuthenticated())) {
+            return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+        }
         const body = await request.json();
         const { id, status: newStatus, nome, comunidade, local_problema, tipo, descricao } = body;
 
@@ -92,6 +102,9 @@ export async function PUT(request) {
 
 export async function DELETE(request) {
     try {
+        if (!(await isAuthenticated())) {
+            return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+        }
         const { searchParams } = new URL(request.url);
         const id = searchParams.get('id');
 
