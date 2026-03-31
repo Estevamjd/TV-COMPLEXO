@@ -5,6 +5,7 @@ import NewsCard from '@/components/NewsCard';
 import ReportCard from '@/components/ReportCard';
 import ScrollReveal from '@/components/ScrollReveal';
 import SocialFeed from '@/components/SocialFeed';
+import CommunityChips from '@/components/CommunityChips';
 import { toEmbedUrl } from '@/lib/video-utils';
 
 export const dynamic = 'force-dynamic';
@@ -55,7 +56,8 @@ export default async function HomePage() {
                 </div>
             </section>
 
-            {/* RESTANTE DO CONTEÚDO (Idêntico ao anterior) */}
+            {/* COMMUNITY CHIPS */}
+            <CommunityChips />
 
             {/* VÍDEO EM DESTAQUE */}
             {destaqueVideo && (
@@ -114,7 +116,7 @@ export default async function HomePage() {
                         <h2 className="section-title">📺 Vídeos Recentes</h2>
                         <Link href="/videos" className="btn btn-secondary btn-sm">Ver Todos →</Link>
                     </div>
-                    <div className="grid-3">
+                    <div className="video-scroll-container">
                         {videosRecentes.map((video, idx) => (
                             <ScrollReveal key={video.id} delay={idx * 0.1}>
                                 <VideoCard video={video} />

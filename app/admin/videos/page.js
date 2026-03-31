@@ -13,6 +13,7 @@ export default function AdminVideosPage() {
     const [form, setForm] = useState({
         titulo: '', descricao: '', url_video: '', thumbnail: '', plataforma: 'youtube', categoria: 'geral', destaque: false
     });
+    const [uploading, setUploading] = useState(false);
 
     useEffect(() => { fetchVideos(); }, []);
 
@@ -38,6 +39,38 @@ export default function AdminVideosPage() {
         }
 
         setForm(updated);
+    };
+
+    const handleImageUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        if (!file.type.startsWith('image/')) {
+            toast('Selecione apenas imagens (JPG, PNG, GIF, WEBP)', 'error');
+            return;
+        }
+
+        if (file.size > 10 * 1024 * 1024) {
+            toast('Imagem muito grande. Máximo: 10MB', 'error');
+            return;
+        }
+
+        setUploading(true);
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            const res = await fetch('/api/upload', { method: 'POST', body: formData });
+            const data = await res.json();
+            if (res.ok) {
+                setForm(prev => ({ ...prev, thumbnail: data.url }));
+                toast('Imagem enviada com sucesso!', 'success');
+            } else {
+                toast(data.error || 'Erro ao enviar imagem', 'error');
+            }
+        } catch {
+            toast('Erro ao enviar imagem', 'error');
+        }
+        setUploading(false);
     };
 
     const handleSubmit = async (e) => {
@@ -141,8 +174,38 @@ export default function AdminVideosPage() {
                                     <input type="text" name="url_video" className="form-input" placeholder="Cole qualquer link do YouTube, Instagram, TikTok..." value={form.url_video} onChange={handleChange} required />
                                 </div>
                                 <div className="form-group">
-                                    <label className="form-label">Thumbnail (URL opcional)</label>
-                                    <input type="text" name="thumbnail" className="form-input" placeholder="https://exemplo.com/imagem.jpg" value={form.thumbnail} onChange={handleChange} />
+                                    <label className="form-label">Thumbnail (imagem de capa)</label>
+                                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                        <input type="text" name="thumbnail" className="form-input" placeholder="URL da imagem ou faça upload →" value={form.thumbnail} onChange={handleChange} style={{ flex: 1 }} />
+                                        <label
+                                            className="btn btn-secondary btn-sm"
+                                            style={{ cursor: 'pointer', whiteSpace: 'nowrap', opacity: uploading ? 0.6 : 1 }}
+                                        >
+                                            {uploading ? '⏳ Enviando...' : '📷 Upload'}
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={handleImageUpload}
+                                                disabled={uploading}
+                                                style={{ display: 'none' }}
+                                            />
+                                        </label>
+                                    </div>
+                                    {form.thumbnail && (
+                                        <div style={{ marginTop: '0.5rem' }}>
+                                            <img
+                                                src={form.thumbnail}
+                                                alt="Preview"
+                                                style={{
+                                                    width: '120px',
+                                                    height: '68px',
+                                                    objectFit: 'cover',
+                                                    borderRadius: 'var(--radius-sm)',
+                                                    border: '1px solid var(--color-dark-gray)',
+                                                }}
+                                            />
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="form-group">
                                     <label className="form-label">Plataforma</label>
