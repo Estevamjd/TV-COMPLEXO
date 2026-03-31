@@ -10,12 +10,18 @@ import { toEmbedUrl } from '@/lib/video-utils';
 export const dynamic = 'force-dynamic';
 
 export default async function HomePage() {
-    const { rows: destRows } = await db.query("SELECT * FROM videos WHERE destaque = 1 ORDER BY created_at DESC LIMIT 1");
-    const destaqueVideo = destRows[0] || null;
+    // Executar todas as queries em paralelo para melhor performance
+    const [destResult, videosResult, denunciasResult, noticiasResult] = await Promise.all([
+        db.query("SELECT * FROM videos WHERE destaque = 1 ORDER BY created_at DESC LIMIT 1"),
+        db.query("SELECT * FROM videos ORDER BY created_at DESC LIMIT 6"),
+        db.query("SELECT * FROM denuncias WHERE status = 'aprovada' ORDER BY created_at DESC LIMIT 4"),
+        db.query("SELECT * FROM noticias WHERE publicada = 1 ORDER BY created_at DESC LIMIT 3"),
+    ]);
 
-    const { rows: videosRecentes } = await db.query("SELECT * FROM videos ORDER BY created_at DESC LIMIT 6");
-    const { rows: denunciasRecentes } = await db.query("SELECT * FROM denuncias WHERE status = 'aprovada' ORDER BY created_at DESC LIMIT 4");
-    const { rows: noticiasRecentes } = await db.query("SELECT * FROM noticias WHERE publicada = 1 ORDER BY created_at DESC LIMIT 3");
+    const destaqueVideo = destResult.rows[0] || null;
+    const videosRecentes = videosResult.rows;
+    const denunciasRecentes = denunciasResult.rows;
+    const noticiasRecentes = noticiasResult.rows;
 
     return (
         <div>

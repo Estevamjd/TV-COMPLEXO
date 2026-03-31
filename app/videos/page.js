@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import VideoCard from '@/components/VideoCard';
 import FilterBar from '@/components/FilterBar';
 import ShareButtons from '@/components/ShareButtons';
@@ -25,6 +25,17 @@ export default function VideosPage() {
     useEffect(() => {
         fetchVideos();
     }, [filtro]);
+
+    // Fechar modal com ESC
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape' && selectedVideo) {
+                setSelectedVideo(null);
+            }
+        };
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, [selectedVideo]);
 
     const fetchVideos = async () => {
         if (videos.length === 0) setLoading(true); // Apenas load inicial
@@ -97,6 +108,9 @@ export default function VideosPage() {
                 {/* Modal de Vídeo */}
                 {selectedVideo && (
                     <div
+                        role="dialog"
+                        aria-label={`Assistir: ${selectedVideo.titulo}`}
+                        aria-modal="true"
                         style={{
                             position: 'fixed',
                             inset: 0,
@@ -105,7 +119,7 @@ export default function VideosPage() {
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            padding: '2rem',
+                            padding: '1rem',
                         }}
                         onClick={() => setSelectedVideo(null)}
                     >

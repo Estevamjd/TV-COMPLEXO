@@ -24,11 +24,17 @@ export async function GET(request) {
         const comunidade = searchParams.get('comunidade');
         const limit = searchParams.get('limit') || 50;
 
+        // Verificar se é admin para ver denúncias pendentes
+        const admin = await isAuthenticated();
+
         let query = 'SELECT * FROM denuncias';
         const conditions = [];
         const params = [];
 
-        if (status && status !== 'todos') {
+        // Público só vê denúncias aprovadas; admin vê todas
+        if (!admin) {
+            conditions.push("status = 'aprovada'");
+        } else if (status && status !== 'todos') {
             params.push(status);
             conditions.push(`status = $${params.length}`);
         }

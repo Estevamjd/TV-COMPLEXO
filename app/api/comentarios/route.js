@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import db from '@/lib/db';
 import { v4 as uuidv4 } from 'uuid';
+import { rateLimit } from '@/lib/rate-limit';
 
 export async function GET(request) {
     try {
@@ -24,6 +25,11 @@ export async function GET(request) {
 
 export async function POST(request) {
     try {
+        const { allowed } = rateLimit(request);
+        if (!allowed) {
+            return NextResponse.json({ error: 'Muitas tentativas. Aguarde um momento.' }, { status: 429 });
+        }
+
         const body = await request.json();
         const { noticia_id, autor, texto } = body;
 

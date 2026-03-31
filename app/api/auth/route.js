@@ -2,15 +2,25 @@ import { NextResponse } from 'next/server';
 import { SignJWT, jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
 
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@tvcomplexo.com.br';
-const ADMIN_USER = process.env.ADMIN_USER || 'admin';
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
-const JWT_SECRET = process.env.JWT_SECRET || 'chave-secreta-fallback';
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
+const ADMIN_USER = process.env.ADMIN_USER;
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+const JWT_SECRET = process.env.JWT_SECRET;
+
+// Segurança: sem variáveis configuradas, login é bloqueado
+const AUTH_CONFIGURED = !!(ADMIN_PASSWORD && JWT_SECRET && (ADMIN_EMAIL || ADMIN_USER));
 
 const secretKey = new TextEncoder().encode(JWT_SECRET);
 
 export async function POST(request) {
     try {
+        if (!AUTH_CONFIGURED) {
+            return NextResponse.json(
+                { error: 'Autenticação não configurada. Defina ADMIN_EMAIL, ADMIN_PASSWORD e JWT_SECRET nas variáveis de ambiente.' },
+                { status: 503 }
+            );
+        }
+
         const body = await request.json();
         const { email, password } = body;
 
