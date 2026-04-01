@@ -1,3 +1,5 @@
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://tvcomplexo.com.br';
+
 export default function robots() {
     return {
         rules: [
@@ -7,6 +9,6 @@ export default function robots() {
                 disallow: ['/admin/', '/api/'],
             },
         ],
-        sitemap: 'https://tvcomplexo.com.br/sitemap.xml',
+        sitemap: `${BASE_URL}/sitemap.xml`,
     };
 }

@@ -45,10 +45,10 @@ export default async function HomePage() {
                         </p>
 
                         <div className="hero-buttons flex-center animate-fade-in-up" style={{ animationDelay: '0.9s' }}>
-                            <Link href="/videos" className="btn btn-primary btn-lg">
+                            <Link href="/videos" className="btn btn-primary btn-lg" aria-label="Assistir Vídeos">
                                 ▶ Assistir Vídeos
                             </Link>
-                            <Link href="/denuncias/enviar" className="btn btn-secondary btn-lg">
+                            <Link href="/denuncias/enviar" className="btn btn-secondary btn-lg" aria-label="Enviar Denúncia">
                                 📢 Enviar Denúncia
                             </Link>
                         </div>
@@ -147,7 +147,7 @@ export default async function HomePage() {
                             ))}
                         </div>
                         <div style={{ textAlign: 'center', marginTop: '2rem' }}>
-                            <Link href="/denuncias/enviar" className="btn btn-primary">
+                            <Link href="/denuncias/enviar" className="btn btn-primary" aria-label="Faça sua Denúncia">
                                 📢 Faça sua Denúncia
                             </Link>
                         </div>
@@ -189,10 +189,10 @@ export default async function HomePage() {
                         Denuncie problemas, compartilhe histórias e ajude a transformar a realidade.
                     </p>
                     <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-                        <Link href="/denuncias/enviar" className="btn btn-primary btn-lg">
+                        <Link href="/denuncias/enviar" className="btn btn-primary btn-lg" aria-label="Enviar Denúncia">
                             📢 Enviar Denúncia
                         </Link>
-                        <Link href="/sobre" className="btn btn-secondary btn-lg">
+                        <Link href="/sobre" className="btn btn-secondary btn-lg" aria-label="Sobre o Projeto">
                             ℹ️ Sobre o Projeto
                         </Link>
                     </div>

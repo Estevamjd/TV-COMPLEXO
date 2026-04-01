@@ -1,6 +1,7 @@
 import db from '@/lib/db';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import sanitizeHtml from 'sanitize-html';
 import CommentSection from './CommentSection';
 import ShareButtons from '@/components/ShareButtons';
 import ScrollReveal from '@/components/ScrollReveal';
@@ -43,12 +44,17 @@ export default async function NoticiaPage({ params }) {
         year: 'numeric',
     });
 
-    // Sanitizar conteúdo HTML (remove scripts, event handlers, etc.)
-    const conteudoSeguro = noticia.conteudo
-        .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-        .replace(/on\w+="[^"]*"/gi, '')
-        .replace(/on\w+='[^']*'/gi, '')
-        .replace(/javascript:/gi, '');
+    // Sanitizar conteúdo HTML
+    const conteudoSeguro = sanitizeHtml(noticia.conteudo, {
+        allowedTags: sanitizeHtml.defaults.allowedTags.concat(['img', 'h1', 'h2', 'h3', 'iframe']),
+        allowedAttributes: {
+            ...sanitizeHtml.defaults.allowedAttributes,
+            img: ['src', 'alt', 'width', 'height', 'style'],
+            iframe: ['src', 'width', 'height', 'frameborder', 'allowfullscreen'],
+            '*': ['class', 'style'],
+        },
+        allowedIframeHostnames: ['www.youtube.com', 'youtube.com', 'player.vimeo.com'],
+    });
 
     return (
         <div style={{ paddingTop: '20px' }}>

@@ -1,7 +1,5 @@
 import { NextResponse } from 'next/server';
-import { writeFile, mkdir } from 'fs/promises';
-import path from 'path';
-import { v4 as uuidv4 } from 'uuid';
+import { put } from '@vercel/blob';
 
 export async function POST(request) {
     try {
@@ -12,39 +10,41 @@ export async function POST(request) {
             return NextResponse.json({ error: 'Nenhum arquivo enviado' }, { status: 400 });
         }
 
-        // Validate file type
-        const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'video/mp4', 'video/webm', 'video/quicktime'];
+        // Validar tipo
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
         if (!allowedTypes.includes(file.type)) {
-            return NextResponse.json({ error: 'Tipo de arquivo não permitido. Use: JPG, PNG, GIF, WEBP, MP4, WEBM' }, { status: 400 });
+            return NextResponse.json(
+                { error: 'Tipo não permitido. Use: JPG, PNG, GIF, WEBP' },
+                { status: 400 }
+            );
         }
 
-        // Validate file size (max 50MB)
-        const maxSize = 50 * 1024 * 1024;
+        // Validar tamanho (max 10MB)
+        const maxSize = 10 * 1024 * 1024;
         if (file.size > maxSize) {
-            return NextResponse.json({ error: 'Arquivo muito grande. Máximo: 50MB' }, { status: 400 });
+            return NextResponse.json(
+                { error: 'Arquivo muito grande. Máximo: 10MB' },
+                { status: 400 }
+            );
         }
 
-        // Create uploads directory
-        const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
-        await mkdir(uploadsDir, { recursive: true });
-
-        // Generate unique filename
-        const ext = path.extname(file.name) || (file.type.startsWith('image/') ? '.jpg' : '.mp4');
-        const fileName = `${uuidv4()}${ext}`;
-        const filePath = path.join(uploadsDir, fileName);
-
-        // Write file
-        const bytes = await file.arrayBuffer();
-        const buffer = Buffer.from(bytes);
-        await writeFile(filePath, buffer);
+        // Upload para Vercel Blob
+        const blob = await put(`thumbnails/${Date.now()}-${file.name}`, file, {
+            access: 'public',
+            addRandomSuffix: true,
+        });
 
         return NextResponse.json({
-            url: `/uploads/${fileName}`,
+            url: blob.url,
             name: file.name,
             type: file.type,
             size: file.size,
         });
     } catch (error) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        console.error('Upload error:', error);
+        return NextResponse.json(
+            { error: 'Erro interno ao fazer upload' },
+            { status: 500 }
+        );
     }
 }

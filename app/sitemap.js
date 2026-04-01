@@ -1,6 +1,6 @@
 import db from '@/lib/db';
 
-const BASE_URL = 'https://tvcomplexo.com.br';
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://tvcomplexo.com.br';
 
 export default async function sitemap() {
     const staticPages = [

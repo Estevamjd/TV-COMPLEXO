@@ -11,8 +11,8 @@ export async function GET(request) {
         const busca = searchParams.get('busca');
 
         // Paginação
-        const limitParam = searchParams.get('limit') || 10;
-        const offsetParam = searchParams.get('offset') || 0;
+        const limit = Math.max(1, Math.min(100, parseInt(searchParams.get('limit')) || 10));
+        const offset = Math.max(0, parseInt(searchParams.get('offset')) || 0);
 
         let query = 'SELECT * FROM videos';
         const conditions = [];
@@ -38,7 +38,7 @@ export async function GET(request) {
 
         // Add ORDER, LIMIT and OFFSET
         query += ` ORDER BY created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
-        params.push(Number(limitParam), Number(offsetParam));
+        params.push(limit, offset);
 
         const { rows: videos } = await db.query(query, params);
         return NextResponse.json(videos);

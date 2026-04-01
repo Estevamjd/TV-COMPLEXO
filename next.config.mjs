@@ -7,6 +7,7 @@ const nextConfig = {
       { hostname: 'i.ytimg.com' },
       { hostname: '*.youtube.com' },
       { hostname: 'images.unsplash.com' },
+      { protocol: 'https', hostname: '*.public.blob.vercel-storage.com' },
     ],
     formats: ['image/webp'],
   },
