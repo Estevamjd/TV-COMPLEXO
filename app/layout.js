@@ -5,11 +5,11 @@ import BottomNav from '@/components/BottomNav';
 
 export const metadata = {
   metadataBase: new URL('https://tvcomplexo.com.br'),
-  title: 'TV Complexo — Mídia Comunitária Independente',
-  description: 'Plataforma digital comunitária focada em vídeos, denúncias e notícias do Complexo do Alemão.',
+  title: 'TV Complexo — A Real da Favela',
+  description: 'A real da favela. Vídeos, denúncias e notícias direto das comunidades do Rio de Janeiro.',
   openGraph: {
-    title: 'TV Complexo — Mídia Comunitária Independente',
-    description: 'Plataforma digital comunitária focada em vídeos, denúncias e notícias do Complexo do Alemão.',
+    title: 'TV Complexo — A Real da Favela',
+    description: 'A real da favela. Vídeos, denúncias e notícias direto das comunidades do Rio de Janeiro.',
     url: 'https://tvcomplexo.com.br',
     siteName: 'TV Complexo',
     images: [

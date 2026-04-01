@@ -37,11 +37,11 @@ export default async function HomePage() {
                         </div>
 
                         <div className="hero-badge animate-fade-in-up" style={{ animationDelay: '0.5s' }}>
-                            🔵 AO VIVO — Mídia Comunitária Independente
+                            🔵 AO VIVO — A Real da Favela
                         </div>
 
                         <p className="animate-fade-in-up" style={{ animationDelay: '0.7s', maxWidth: '600px', margin: '0 auto 2rem', fontSize: '1.2rem', color: 'var(--color-white)' }}>
-                            A voz que ecoa da favela. Vídeos, denúncias e notícias direto das comunidades do Rio de Janeiro.
+                            A real da favela. Vídeos, denúncias e notícias direto das comunidades do Rio de Janeiro.
                         </p>
 
                         <div className="hero-buttons flex-center animate-fade-in-up" style={{ animationDelay: '0.9s' }}>
@@ -182,7 +182,7 @@ export default async function HomePage() {
             }}>
                 <div className="container">
                     <h2 className="display-md" style={{ marginBottom: '1rem' }}>
-                        🎙️ Sua voz <span className="text-red">importa</span>
+                        🎙️ A favela <span className="text-red">tem voz</span>
                     </h2>
                     <p style={{ color: 'var(--color-gray-light)', maxWidth: '600px', margin: '0 auto 2rem', lineHeight: 1.7 }}>
                         A TV Complexo é feita pela comunidade, para a comunidade.

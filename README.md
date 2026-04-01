@@ -1,6 +1,6 @@
 # TV Complexo
 
-**Plataforma de Mídia Comunitária Independente**
+**A Real da Favela — Plataforma de Mídia Comunitária**
 
 A voz que ecoa da favela. Vídeos, denúncias e notícias direto das comunidades do Rio de Janeiro.
 

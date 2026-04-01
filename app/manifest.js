@@ -2,7 +2,7 @@ export default function manifest() {
     return {
         name: 'TV Complexo',
         short_name: 'TV Complexo',
-        description: 'Mídia Comunitária Independente — Vídeos, denúncias e notícias das comunidades do Rio de Janeiro',
+        description: 'A Real da Favela — Vídeos, denúncias e notícias das comunidades do Rio de Janeiro',
         start_url: '/',
         display: 'standalone',
         background_color: '#0a0a0a',

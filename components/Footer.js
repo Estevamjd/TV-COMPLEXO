@@ -9,7 +9,7 @@ export default function Footer() {
                     <div className="footer-col">
                         <h3>TV Complexo</h3>
                         <p style={{ color: 'var(--color-gray-light)', fontSize: '0.9rem', lineHeight: '1.6' }}>
-                            A voz da comunidade. Mídia independente que mostra a realidade das favelas do Rio de Janeiro.
+                            A real da favela. Mídia independente direto das comunidades do Rio de Janeiro.
                         </p>
                     </div>
                     <div className="footer-col">
@@ -42,7 +42,7 @@ export default function Footer() {
                     </div>
                 </div>
                 <div className="footer-bottom">
-                    <p>© {new Date().getFullYear()} TV Complexo — Mídia Comunitária Independente. Todos os direitos reservados.</p>
+                    <p>© {new Date().getFullYear()} TV Complexo — A Real da Favela. Todos os direitos reservados.</p>
                     <p style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: 'var(--color-gray-dark)' }}>
                         Site desenvolvido por <strong>Estevam Juliano</strong>
                     </p>
