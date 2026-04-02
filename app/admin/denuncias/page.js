@@ -30,7 +30,7 @@ export default function AdminDenunciasPage() {
             body: JSON.stringify({ id, status: newStatus }),
         });
         toast(
-            res.ok ? `Denúncia ${newStatus === 'aprovada' ? 'aprovada' : 'rejeitada'}` : 'Erro ao atualizar',
+            res.ok ? `Denúncia marcada como ${newStatus === 'resolvida' ? 'resolvida' : 'pendente'}` : 'Erro ao atualizar',
             res.ok ? 'success' : 'error'
         );
         fetchDenuncias();
@@ -55,9 +55,8 @@ export default function AdminDenunciasPage() {
     };
 
     const statusBadge = {
-        pendente: 'badge-yellow',
-        aprovada: 'badge-green',
-        rejeitada: 'badge-red',
+        pendente: 'badge-red',
+        resolvida: 'badge-green',
     };
 
     return (
@@ -76,9 +75,8 @@ export default function AdminDenunciasPage() {
                 <div className="filter-bar">
                     {[
                         { value: 'todos', label: '📋 Todas' },
-                        { value: 'pendente', label: '⏳ Pendentes' },
-                        { value: 'aprovada', label: '✅ Aprovadas' },
-                        { value: 'rejeitada', label: '❌ Rejeitadas' },
+                        { value: 'pendente', label: '🔴 Problemas Ativos' },
+                        { value: 'resolvida', label: '✅ Resolvidas' },
                     ].map(f => (
                         <button
                             key={f.value}
@@ -127,20 +125,20 @@ export default function AdminDenunciasPage() {
                                         </td>
                                         <td>
                                             <div className="admin-actions">
-                                                {d.status !== 'aprovada' && (
+                                                {d.status === 'pendente' && (
                                                     <button
                                                         className="admin-btn admin-btn-approve"
-                                                        onClick={() => handleStatusChange(d.id, 'aprovada')}
+                                                        onClick={() => handleStatusChange(d.id, 'resolvida')}
                                                     >
-                                                        ✅ Aprovar
+                                                        ✅ Resolvido
                                                     </button>
                                                 )}
-                                                {d.status !== 'rejeitada' && (
+                                                {d.status === 'resolvida' && (
                                                     <button
                                                         className="admin-btn admin-btn-edit"
-                                                        onClick={() => handleStatusChange(d.id, 'rejeitada')}
+                                                        onClick={() => handleStatusChange(d.id, 'pendente')}
                                                     >
-                                                        ❌ Rejeitar
+                                                        🔄 Reabrir
                                                     </button>
                                                 )}
                                                 <button

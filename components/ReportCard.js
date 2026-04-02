@@ -10,9 +10,8 @@ const tipoLabels = {
 };
 
 const statusLabels = {
-    pendente: '⏳ Pendente',
-    aprovada: '✅ Aprovada',
-    rejeitada: '❌ Rejeitada',
+    pendente: '🔴 Problema Ativo',
+    resolvida: '✅ Resolvido',
 };
 
 export default function ReportCard({ denuncia }) {
@@ -31,6 +30,10 @@ export default function ReportCard({ denuncia }) {
                     </span>
                     <span className="badge badge-yellow">
                         📍 {denuncia.comunidade}
+                    </span>
+                    <span className={`badge ${denuncia.status === 'resolvida' ? 'badge-green' : 'badge-red'}`}
+                        style={{ fontSize: '0.7rem' }}>
+                        {statusLabels[denuncia.status] || denuncia.status}
                     </span>
                 </div>
                 <h3 style={{

@@ -31,9 +31,9 @@ export async function GET(request) {
         const conditions = [];
         const params = [];
 
-        // Público só vê denúncias aprovadas; admin vê todas
+        // Público vê denúncias pendentes e resolvidas; admin vê todas
         if (!admin) {
-            conditions.push("status = 'aprovada'");
+            conditions.push("status IN ('pendente', 'resolvida')");
         } else if (status && status !== 'todos') {
             params.push(status);
             conditions.push(`status = $${params.length}`);
@@ -88,7 +88,7 @@ export async function POST(request) {
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'pendente')
     `, [id, nome || 'Anônimo', comunidade, local_problema, tipo, descricao, finalLat, finalLng, midia || '']);
 
-        return NextResponse.json({ id, message: 'Denúncia enviada com sucesso! Ela será analisada pela nossa equipe.' }, { status: 201 });
+        return NextResponse.json({ id, message: 'Denúncia enviada com sucesso! Ela já está visível no mapa.' }, { status: 201 });
     } catch (error) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }

@@ -6,7 +6,7 @@ import Link from 'next/link';
 export const dynamic = 'force-dynamic';
 
 export default async function DenunciasPage() {
-    const { rows: denuncias } = await db.query("SELECT * FROM denuncias WHERE status = 'aprovada' ORDER BY created_at DESC");
+    const { rows: denuncias } = await db.query("SELECT * FROM denuncias WHERE status IN ('pendente', 'resolvida') ORDER BY created_at DESC");
 
     return (
         <div>
@@ -51,12 +51,12 @@ export default async function DenunciasPage() {
                 {/* Lista de Denúncias */}
                 <div>
                     <div className="flex-between" style={{ marginBottom: '1.5rem' }}>
-                        <h2 className="section-title" style={{ marginBottom: 0 }}>📋 Denúncias Aprovadas</h2>
+                        <h2 className="section-title" style={{ marginBottom: 0 }}>📋 Denúncias da Comunidade</h2>
                         <Link href="/denuncias/enviar" className="btn btn-primary btn-sm">📢 Enviar Denúncia</Link>
                     </div>
                     {denuncias.length === 0 ? (
                         <div className="empty-state">
-                            <h3>Nenhuma denúncia aprovada</h3>
+                            <h3>Nenhuma denúncia registrada</h3>
                             <p>Seja o primeiro a denunciar um problema na sua comunidade.</p>
                         </div>
                     ) : (

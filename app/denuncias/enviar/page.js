@@ -198,11 +198,11 @@ export default function EnviarDenunciaPage() {
                     }}>
                         <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>✅</div>
                         <h1 style={{ fontSize: '2rem', color: 'var(--color-green)', marginBottom: '1rem' }}>
-                            Denúncia Enviada!
+                            Denúncia Publicada!
                         </h1>
                         <p style={{ color: 'var(--color-gray-light)', fontSize: '1.1rem', lineHeight: 1.7 }}>
-                            Sua denúncia foi recebida com sucesso. Nossa equipe irá analisar e,
-                            após aprovação, ela será publicada no site.
+                            Sua denúncia foi publicada com sucesso e já está visível no mapa!
+                            A comunidade pode acompanhar o problema em tempo real.
                         </p>
                         <button
                             className="btn btn-primary"
@@ -439,7 +439,7 @@ export default function EnviarDenunciaPage() {
                             fontSize: '0.85rem',
                             color: 'var(--color-yellow)',
                         }}>
-                            ℹ️ Sua denúncia passará por moderação antes de ser publicada.
+                            ℹ️ Sua denúncia será publicada imediatamente no mapa.
                             Se preferir permanecer anônimo, não preencha o campo de nome.
                         </div>
 
