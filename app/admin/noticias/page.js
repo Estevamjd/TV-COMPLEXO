@@ -13,8 +13,6 @@ export default function AdminNoticiasPage() {
         titulo: '', resumo: '', conteudo: '', categoria: 'geral', autor: 'TV Complexo'
     });
 
-    useEffect(() => { fetchNoticias(); }, []);
-
     const fetchNoticias = async () => {
         setLoading(true);
         const res = await fetch('/api/noticias');
@@ -22,6 +20,8 @@ export default function AdminNoticiasPage() {
         setNoticias(data);
         setLoading(false);
     };
+
+    useEffect(() => { fetchNoticias(); }, []);
 
     const handleChange = (e) => {
         setForm({ ...form, [e.target.name]: e.target.value });

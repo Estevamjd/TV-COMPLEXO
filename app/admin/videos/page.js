@@ -15,8 +15,6 @@ export default function AdminVideosPage() {
     });
     const [uploading, setUploading] = useState(false);
 
-    useEffect(() => { fetchVideos(); }, []);
-
     const fetchVideos = async () => {
         setLoading(true);
         const res = await fetch('/api/videos');
@@ -24,6 +22,8 @@ export default function AdminVideosPage() {
         setVideos(data);
         setLoading(false);
     };
+
+    useEffect(() => { fetchVideos(); }, []);
 
     const handleChange = (e) => {
         const { name, type, value, checked } = e.target;

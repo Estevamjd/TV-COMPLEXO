@@ -1,37 +1,35 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useForm } from 'react-hook-form';
 
 export default function AdminLoginPage() {
-    const [username, setUsername] = useState('');
-    const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
-    const [error, setError] = useState('');
-    const [loading, setLoading] = useState(false);
+    const [serverError, setServerError] = useState('');
     const router = useRouter();
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        setError('');
+    const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm({
+        defaultValues: { username: '', password: '' },
+    });
+
+    const onSubmit = async (data) => {
+        setServerError('');
 
         try {
             const res = await fetch('/api/auth', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password }),
+                body: JSON.stringify(data),
             });
 
             if (res.ok) {
                 router.push('/admin');
             } else {
-                setError('Usuário ou senha incorretos.');
+                setServerError('Usuário ou senha incorretos.');
             }
         } catch {
-            setError('Erro de conexão.');
+            setServerError('Erro de conexão.');
         }
-
-        setLoading(false);
     };
 
     return (
@@ -71,7 +69,7 @@ export default function AdminLoginPage() {
                     </p>
                 </div>
 
-                {error && (
+                {serverError && (
                     <div style={{
                         background: 'rgba(239,68,68,0.15)',
                         border: '1px solid var(--color-red)',
@@ -82,28 +80,29 @@ export default function AdminLoginPage() {
                         fontSize: '0.85rem',
                         textAlign: 'center',
                     }}>
-                        ❌ {error}
+                        {serverError}
                     </div>
                 )}
 
-                <form onSubmit={handleSubmit}>
+                <form onSubmit={handleSubmit(onSubmit)}>
                     <div className="form-group">
                         <label className="form-label">Usuário</label>
                         <input
                             type="text"
                             className="form-input"
                             placeholder="admin"
-                            value={username}
-                            onChange={(e) => setUsername(e.target.value)}
-                            required
+                            {...register('username', { required: 'Usuário é obrigatório' })}
                         />
+                        {errors.username && (
+                            <span style={{ color: '#ef4444', fontSize: '0.8rem' }}>{errors.username.message}</span>
+                        )}
                     </div>
                     <div className="form-group">
                         <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between' }}>
                             Senha
                             <button
                                 type="button"
-                                tabIndex="-1"
+                                tabIndex={-1}
                                 onClick={() => setShowPassword(!showPassword)}
                                 style={{ background: 'none', border: 'none', color: 'var(--color-gray-light)', cursor: 'pointer', fontSize: '0.8rem' }}
                             >
@@ -114,18 +113,19 @@ export default function AdminLoginPage() {
                             type={showPassword ? "text" : "password"}
                             className="form-input"
                             placeholder="••••••••"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
+                            {...register('password', { required: 'Senha é obrigatória' })}
                         />
+                        {errors.password && (
+                            <span style={{ color: '#ef4444', fontSize: '0.8rem' }}>{errors.password.message}</span>
+                        )}
                     </div>
                     <button
                         type="submit"
                         className="btn btn-primary"
                         style={{ width: '100%', marginTop: '0.5rem' }}
-                        disabled={loading}
+                        disabled={isSubmitting}
                     >
-                        {loading ? '⏳ Entrando...' : '🔐 Entrar'}
+                        {isSubmitting ? 'Entrando...' : 'Entrar'}
                     </button>
                 </form>
             </div>

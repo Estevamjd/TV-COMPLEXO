@@ -14,8 +14,12 @@ export default async function proxy(request) {
     const isProtectedApiRoute = path.startsWith('/api/')
         && !path.startsWith('/api/auth')
         && !path.startsWith('/api/webhook')
-        && !path.startsWith('/api/comentarios') // Comentários públicos e denúncias (post) são permitidos?
+        && !path.startsWith('/api/cron')
+        && !path.startsWith('/api/comentarios')
         && request.method !== 'GET';
+
+    // Upload é sempre protegido (mesmo GET, se existisse)
+    const isUploadRoute = path === '/api/upload';
 
     // Liberar POST para denúncias (público envia)
     if (path.startsWith('/api/denuncias') && request.method === 'POST') {
@@ -26,7 +30,7 @@ export default async function proxy(request) {
         return NextResponse.next();
     }
 
-    if (isAdminRoute || isProtectedApiRoute) {
+    if (isAdminRoute || isProtectedApiRoute || isUploadRoute) {
         if (!secretKey) {
             if (isAdminRoute) {
                 return NextResponse.redirect(new URL('/admin/login', request.url));
@@ -46,7 +50,7 @@ export default async function proxy(request) {
         try {
             await jwtVerify(token, secretKey);
             return NextResponse.next();
-        } catch (error) {
+        } catch {
             if (isAdminRoute) {
                 return NextResponse.redirect(new URL('/admin/login', request.url));
             }
@@ -57,11 +61,11 @@ export default async function proxy(request) {
     // Se o usuário já está logado e tenta acessar o login, manda para o /admin
     if (path === '/admin/login') {
         const token = request.cookies.get('admin_token')?.value;
-        if (token) {
+        if (token && secretKey) {
             try {
                 await jwtVerify(token, secretKey);
                 return NextResponse.redirect(new URL('/admin', request.url));
-            } catch (error) {
+            } catch {
                 // Token inválido, segue pro login
             }
         }

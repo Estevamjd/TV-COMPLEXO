@@ -80,9 +80,9 @@ function decodeHtmlEntities(text) {
 
 export async function GET(request) {
     try {
-        // 1. Proteger o endpoint com CRON_SECRET
+        // 1. Proteger o endpoint com CRON_SECRET (obrigatório)
         const authHeader = request.headers.get('authorization');
-        if (CRON_SECRET && authHeader !== `Bearer ${CRON_SECRET}`) {
+        if (!CRON_SECRET || authHeader !== `Bearer ${CRON_SECRET}`) {
             return NextResponse.json(
                 { error: 'Unauthorized' },
                 { status: 401 }
@@ -168,7 +168,7 @@ export async function GET(request) {
     } catch (error) {
         console.error('[YouTube Cron] Erro:', error);
         return NextResponse.json(
-            { error: 'Erro interno ao processar cron do YouTube.', details: error.message },
+            { error: 'Erro interno ao processar cron do YouTube' },
             { status: 500 }
         );
     }

@@ -9,10 +9,6 @@ export default function AdminDenunciasPage() {
     const [filtroStatus, setFiltroStatus] = useState('todos');
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        fetchDenuncias();
-    }, [filtroStatus]);
-
     const fetchDenuncias = async () => {
         setLoading(true);
         const params = new URLSearchParams();
@@ -22,6 +18,10 @@ export default function AdminDenunciasPage() {
         setDenuncias(data);
         setLoading(false);
     };
+
+    useEffect(() => {
+        fetchDenuncias();
+    }, [filtroStatus]);
 
     const handleStatusChange = async (id, newStatus) => {
         const res = await fetch('/api/denuncias', {

@@ -56,10 +56,11 @@ async function autoFetchThumbnail(platform, videoUrl) {
 
 export async function POST(request) {
     try {
-        // 1. Validar Webhook Secret
+        // 1. Validar Webhook Secret (obrigatório)
+        const webhookSecret = process.env.WEBHOOK_SECRET;
         const secret = request.headers.get('x-webhook-secret');
-        if (!process.env.WEBHOOK_SECRET || secret !== process.env.WEBHOOK_SECRET) {
-            return NextResponse.json({ error: 'Unauthorized: Invalid or missing Webhook Secret' }, { status: 401 });
+        if (!webhookSecret || !secret || secret !== webhookSecret) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
         const body = await request.json();
@@ -125,7 +126,7 @@ export async function POST(request) {
         }, { status: 201 });
 
     } catch (error) {
-        console.error('Webhook Error:', error);
-        return NextResponse.json({ error: 'Erro interno ao processar webhook.' }, { status: 500 });
+        console.error('[webhook social]', error);
+        return NextResponse.json({ error: 'Erro interno ao processar webhook' }, { status: 500 });
     }
 }

@@ -1,15 +1,13 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
 
 export default function CommentSection({ noticiaId }) {
     const [comentarios, setComentarios] = useState([]);
-    const [autor, setAutor] = useState('');
-    const [texto, setTexto] = useState('');
-    const [loading, setLoading] = useState(false);
 
-    useEffect(() => {
-        fetchComentarios();
-    }, []);
+    const { register, handleSubmit, reset, formState: { isSubmitting } } = useForm({
+        defaultValues: { autor: '', texto: '' },
+    });
 
     const fetchComentarios = async () => {
         const res = await fetch(`/api/comentarios?noticia_id=${noticiaId}`);
@@ -17,25 +15,23 @@ export default function CommentSection({ noticiaId }) {
         setComentarios(data);
     };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        if (!texto.trim()) return;
+    useEffect(() => {
+        fetchComentarios();
+    }, []);
 
-        setLoading(true);
+    const onSubmit = async (data) => {
         await fetch('/api/comentarios', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 noticia_id: noticiaId,
-                autor: autor || 'Anônimo',
-                texto,
+                autor: data.autor || 'Anônimo',
+                texto: data.texto,
             }),
         });
 
-        setTexto('');
-        setAutor('');
+        reset();
         await fetchComentarios();
-        setLoading(false);
     };
 
     return (
@@ -46,31 +42,31 @@ export default function CommentSection({ noticiaId }) {
                 textTransform: 'uppercase',
                 marginBottom: '1.5rem'
             }}>
-                💬 Comentários ({comentarios.length})
+                Comentários ({comentarios.length})
             </h3>
 
-            <form onSubmit={handleSubmit} style={{ marginBottom: '2rem' }}>
+            <form onSubmit={handleSubmit(onSubmit)} style={{ marginBottom: '2rem' }}>
                 <div className="form-group">
                     <input
                         type="text"
                         className="form-input"
                         placeholder="Seu nome (opcional)"
-                        value={autor}
-                        onChange={(e) => setAutor(e.target.value)}
+                        {...register('autor', { maxLength: { value: 100, message: 'Máximo 100 caracteres' } })}
                     />
                 </div>
                 <div className="form-group">
                     <textarea
                         className="form-textarea"
                         placeholder="Escreva seu comentário..."
-                        value={texto}
-                        onChange={(e) => setTexto(e.target.value)}
-                        required
                         style={{ minHeight: '80px' }}
+                        {...register('texto', {
+                            required: 'Comentário é obrigatório',
+                            maxLength: { value: 2000, message: 'Máximo 2000 caracteres' },
+                        })}
                     />
                 </div>
-                <button type="submit" className="btn btn-primary" disabled={loading}>
-                    {loading ? 'Enviando...' : '📨 Enviar Comentário'}
+                <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
+                    {isSubmitting ? 'Enviando...' : 'Enviar Comentário'}
                 </button>
             </form>
 

@@ -1,5 +1,6 @@
 'use client';
 import { useState, useRef } from 'react';
+import { useForm } from 'react-hook-form';
 
 const comunidades = [
     'Complexo do Alemão',
@@ -13,7 +14,6 @@ const comunidades = [
     'Outra',
 ];
 
-// Coordenadas centrais aproximadas de cada comunidade
 const comunidadeCoordenadas = {
     'Complexo do Alemão': { lat: -22.8575, lng: -43.2650 },
     'Rocinha': { lat: -22.9880, lng: -43.2480 },
@@ -26,40 +26,42 @@ const comunidadeCoordenadas = {
 };
 
 const tiposProblema = [
-    { value: 'falta_de_luz', label: '💡 Falta de Luz' },
-    { value: 'lixo_acumulado', label: '🗑️ Lixo Acumulado' },
-    { value: 'risco_deslizamento', label: '⛰️ Risco de Deslizamento' },
-    { value: 'saneamento', label: '🚰 Saneamento' },
-    { value: 'fios_energizados', label: '⚡ Fios Energizados' },
-    { value: 'poste_caido', label: '🔌 Poste Caído' },
-    { value: 'violencia', label: '🚨 Violência' },
-    { value: 'outros', label: '📋 Outros' },
+    { value: 'falta_de_luz', label: 'Falta de Luz' },
+    { value: 'lixo_acumulado', label: 'Lixo Acumulado' },
+    { value: 'risco_deslizamento', label: 'Risco de Deslizamento' },
+    { value: 'saneamento', label: 'Saneamento' },
+    { value: 'fios_energizados', label: 'Fios Energizados' },
+    { value: 'poste_caido', label: 'Poste Caido' },
+    { value: 'violencia', label: 'Violencia' },
+    { value: 'outros', label: 'Outros' },
 ];
 
 export default function EnviarDenunciaPage() {
-    const [form, setForm] = useState({
-        nome: '',
-        comunidade: '',
-        local_problema: '',
-        tipo: '',
-        descricao: '',
+    const { register, handleSubmit, reset, watch, setValue, formState: { errors, isSubmitting } } = useForm({
+        defaultValues: {
+            nome: '',
+            comunidade: '',
+            local_problema: '',
+            tipo: '',
+            descricao: '',
+        },
     });
+
     const [coords, setCoords] = useState({ latitude: null, longitude: null });
-    const [geoStatus, setGeoStatus] = useState(''); // '', 'loading', 'success', 'error'
-    const [loading, setLoading] = useState(false);
+    const [geoStatus, setGeoStatus] = useState('');
     const [success, setSuccess] = useState(false);
-    const [error, setError] = useState('');
+    const [serverError, setServerError] = useState('');
     const [selectedFile, setSelectedFile] = useState(null);
     const [filePreview, setFilePreview] = useState(null);
     const [uploading, setUploading] = useState(false);
     const fileInputRef = useRef(null);
 
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        setForm({ ...form, [name]: value });
+    const watchComunidade = watch('comunidade');
 
-        // Auto-definir coordenadas quando selecionar comunidade
-        if (name === 'comunidade' && comunidadeCoordenadas[value]) {
+    const handleComunidadeChange = (e) => {
+        const value = e.target.value;
+        setValue('comunidade', value);
+        if (comunidadeCoordenadas[value]) {
             const c = comunidadeCoordenadas[value];
             setCoords({ latitude: c.lat, longitude: c.lng });
         }
@@ -79,9 +81,7 @@ export default function EnviarDenunciaPage() {
                 });
                 setGeoStatus('success');
             },
-            () => {
-                setGeoStatus('error');
-            },
+            () => setGeoStatus('error'),
             { enableHighAccuracy: true, timeout: 10000 }
         );
     };
@@ -90,22 +90,20 @@ export default function EnviarDenunciaPage() {
         const file = e.target.files[0];
         if (!file) return;
 
-        // Validate
         const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'video/mp4', 'video/webm', 'video/quicktime'];
         if (!allowedTypes.includes(file.type)) {
-            setError('Tipo de arquivo não permitido. Use: JPG, PNG, GIF, WEBP, MP4, WEBM');
+            setServerError('Tipo de arquivo não permitido. Use: JPG, PNG, GIF, WEBP, MP4, WEBM');
             return;
         }
 
         if (file.size > 50 * 1024 * 1024) {
-            setError('Arquivo muito grande. Máximo: 50MB');
+            setServerError('Arquivo muito grande. Máximo: 50MB');
             return;
         }
 
         setSelectedFile(file);
-        setError('');
+        setServerError('');
 
-        // Preview
         if (file.type.startsWith('image/')) {
             const reader = new FileReader();
             reader.onload = (e) => setFilePreview({ type: 'image', url: e.target.result });
@@ -121,15 +119,12 @@ export default function EnviarDenunciaPage() {
         if (fileInputRef.current) fileInputRef.current.value = '';
     };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        setError('');
+    const onSubmit = async (data) => {
+        setServerError('');
 
         try {
             let midiaUrl = '';
 
-            // Upload file first if selected
             if (selectedFile) {
                 setUploading(true);
                 const formData = new FormData();
@@ -142,8 +137,7 @@ export default function EnviarDenunciaPage() {
 
                 if (!uploadRes.ok) {
                     const uploadData = await uploadRes.json();
-                    setError(uploadData.error || 'Erro ao enviar arquivo');
-                    setLoading(false);
+                    setServerError(uploadData.error || 'Erro ao enviar arquivo');
                     setUploading(false);
                     return;
                 }
@@ -153,12 +147,11 @@ export default function EnviarDenunciaPage() {
                 setUploading(false);
             }
 
-            // Submit denúncia com coordenadas
             const res = await fetch('/api/denuncias', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    ...form,
+                    ...data,
                     midia: midiaUrl,
                     latitude: coords.latitude,
                     longitude: coords.longitude,
@@ -167,20 +160,18 @@ export default function EnviarDenunciaPage() {
 
             if (res.ok) {
                 setSuccess(true);
-                setForm({ nome: '', comunidade: '', local_problema: '', tipo: '', descricao: '' });
+                reset();
                 setCoords({ latitude: null, longitude: null });
                 setGeoStatus('');
                 setSelectedFile(null);
                 setFilePreview(null);
             } else {
-                const data = await res.json();
-                setError(data.error || 'Erro ao enviar denúncia');
+                const resData = await res.json();
+                setServerError(resData.error || 'Erro ao enviar denúncia');
             }
-        } catch (err) {
-            setError('Erro de conexão. Tente novamente.');
+        } catch {
+            setServerError('Erro de conexão. Tente novamente.');
         }
-
-        setLoading(false);
     };
 
     if (success) {
@@ -196,7 +187,6 @@ export default function EnviarDenunciaPage() {
                         margin: '0 auto',
                         textAlign: 'center',
                     }}>
-                        <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>✅</div>
                         <h1 style={{ fontSize: '2rem', color: 'var(--color-green)', marginBottom: '1rem' }}>
                             Denúncia Publicada!
                         </h1>
@@ -209,7 +199,7 @@ export default function EnviarDenunciaPage() {
                             style={{ marginTop: '1.5rem' }}
                             onClick={() => setSuccess(false)}
                         >
-                            📢 Enviar Outra Denúncia
+                            Enviar Outra Denúncia
                         </button>
                     </div>
                 </div>
@@ -220,7 +210,7 @@ export default function EnviarDenunciaPage() {
     return (
         <div>
             <div className="page-header">
-                <h1>📢 <span className="text-red">Enviar Denúncia</span></h1>
+                <h1><span className="text-red">Enviar Denúncia</span></h1>
                 <p>Relate problemas da sua comunidade. Sua identidade pode ser preservada.</p>
             </div>
 
@@ -231,7 +221,7 @@ export default function EnviarDenunciaPage() {
                     padding: '2rem',
                     border: '1px solid var(--color-dark-gray)',
                 }}>
-                    {error && (
+                    {serverError && (
                         <div style={{
                             background: 'rgba(239,68,68,0.15)',
                             border: '1px solid #ef4444',
@@ -241,61 +231,55 @@ export default function EnviarDenunciaPage() {
                             marginBottom: '1.5rem',
                             fontSize: '0.9rem'
                         }}>
-                            ❌ {error}
+                            {serverError}
                         </div>
                     )}
 
-                    <form onSubmit={handleSubmit}>
+                    <form onSubmit={handleSubmit(onSubmit)}>
                         <div className="form-group">
                             <label className="form-label">Nome (opcional)</label>
                             <input
                                 type="text"
-                                name="nome"
                                 className="form-input"
                                 placeholder="Seu nome ou deixe em branco para denúncia anônima"
-                                value={form.nome}
-                                onChange={handleChange}
+                                {...register('nome', { maxLength: { value: 200, message: 'Máximo 200 caracteres' } })}
                             />
+                            {errors.nome && <span style={{ color: '#ef4444', fontSize: '0.8rem' }}>{errors.nome.message}</span>}
                         </div>
 
                         <div className="form-group">
                             <label className="form-label">Comunidade *</label>
                             <select
-                                name="comunidade"
                                 className="form-select"
-                                value={form.comunidade}
-                                onChange={handleChange}
-                                required
+                                {...register('comunidade', { required: 'Selecione a comunidade' })}
+                                onChange={handleComunidadeChange}
                             >
                                 <option value="">Selecione a comunidade</option>
                                 {comunidades.map(c => (
                                     <option key={c} value={c}>{c}</option>
                                 ))}
                             </select>
+                            {errors.comunidade && <span style={{ color: '#ef4444', fontSize: '0.8rem' }}>{errors.comunidade.message}</span>}
                         </div>
 
                         <div className="form-group">
                             <label className="form-label">Local do problema *</label>
                             <input
                                 type="text"
-                                name="local_problema"
                                 className="form-input"
                                 placeholder="Ex: Rua Principal, próximo ao mercado"
-                                value={form.local_problema}
-                                onChange={handleChange}
-                                required
+                                {...register('local_problema', {
+                                    required: 'Local é obrigatório',
+                                    maxLength: { value: 500, message: 'Máximo 500 caracteres' },
+                                })}
                             />
+                            {errors.local_problema && <span style={{ color: '#ef4444', fontSize: '0.8rem' }}>{errors.local_problema.message}</span>}
                         </div>
 
                         {/* Geolocalização */}
                         <div className="form-group">
                             <label className="form-label">Localização no mapa</label>
-                            <div style={{
-                                display: 'flex',
-                                gap: '0.75rem',
-                                alignItems: 'center',
-                                flexWrap: 'wrap',
-                            }}>
+                            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
                                 <button
                                     type="button"
                                     className="btn btn-sm"
@@ -307,11 +291,11 @@ export default function EnviarDenunciaPage() {
                                     onClick={handleGetLocation}
                                     disabled={geoStatus === 'loading'}
                                 >
-                                    {geoStatus === 'loading' ? '⏳ Obtendo...' : '📍 Usar minha localização'}
+                                    {geoStatus === 'loading' ? 'Obtendo...' : 'Usar minha localização'}
                                 </button>
                                 {coords.latitude && (
                                     <span style={{ fontSize: '0.8rem', color: 'var(--color-green)' }}>
-                                        ✅ Localização definida
+                                        Localização definida
                                     </span>
                                 )}
                                 {geoStatus === 'error' && (
@@ -328,35 +312,34 @@ export default function EnviarDenunciaPage() {
                         <div className="form-group">
                             <label className="form-label">Tipo de problema *</label>
                             <select
-                                name="tipo"
                                 className="form-select"
-                                value={form.tipo}
-                                onChange={handleChange}
-                                required
+                                {...register('tipo', { required: 'Selecione o tipo de problema' })}
                             >
                                 <option value="">Selecione o tipo</option>
                                 {tiposProblema.map(t => (
                                     <option key={t.value} value={t.value}>{t.label}</option>
                                 ))}
                             </select>
+                            {errors.tipo && <span style={{ color: '#ef4444', fontSize: '0.8rem' }}>{errors.tipo.message}</span>}
                         </div>
 
                         <div className="form-group">
                             <label className="form-label">Descrição detalhada *</label>
                             <textarea
-                                name="descricao"
                                 className="form-textarea"
                                 placeholder="Descreva o problema em detalhes. Quando começou, como afeta os moradores, etc."
-                                value={form.descricao}
-                                onChange={handleChange}
-                                required
                                 style={{ minHeight: '150px' }}
+                                {...register('descricao', {
+                                    required: 'Descrição é obrigatória',
+                                    maxLength: { value: 5000, message: 'Máximo 5000 caracteres' },
+                                })}
                             />
+                            {errors.descricao && <span style={{ color: '#ef4444', fontSize: '0.8rem' }}>{errors.descricao.message}</span>}
                         </div>
 
                         {/* Upload de Mídia */}
                         <div className="form-group">
-                            <label className="form-label">📎 Anexar Foto ou Vídeo (opcional)</label>
+                            <label className="form-label">Anexar Foto ou Vídeo (opcional)</label>
                             <div style={{
                                 border: '2px dashed var(--color-dark-gray)',
                                 borderRadius: 'var(--radius-md)',
@@ -379,12 +362,11 @@ export default function EnviarDenunciaPage() {
 
                                 {!selectedFile ? (
                                     <>
-                                        <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem', opacity: 0.5 }}>📷 🎥</div>
                                         <p style={{ color: 'var(--color-gray-light)', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
                                             Clique para selecionar uma foto ou vídeo
                                         </p>
                                         <p style={{ color: 'var(--color-gray-medium)', fontSize: '0.75rem' }}>
-                                            Formatos: JPG, PNG, GIF, WEBP, MP4, WEBM · Máx: 50MB
+                                            Formatos: JPG, PNG, GIF, WEBP, MP4, WEBM - Máx: 50MB
                                         </p>
                                     </>
                                 ) : (
@@ -402,10 +384,7 @@ export default function EnviarDenunciaPage() {
                                                 }}
                                             />
                                         ) : (
-                                            <div style={{
-                                                fontSize: '3rem',
-                                                marginBottom: '0.5rem',
-                                            }}>🎥</div>
+                                            <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>🎥</div>
                                         )}
                                         <p style={{ color: 'var(--color-white)', fontSize: '0.9rem', marginBottom: '0.25rem', fontWeight: 600 }}>
                                             {selectedFile.name}
@@ -423,7 +402,7 @@ export default function EnviarDenunciaPage() {
                                             }}
                                             onClick={(e) => { e.stopPropagation(); removeFile(); }}
                                         >
-                                            🗑 Remover Arquivo
+                                            Remover Arquivo
                                         </button>
                                     </div>
                                 )}
@@ -439,7 +418,7 @@ export default function EnviarDenunciaPage() {
                             fontSize: '0.85rem',
                             color: 'var(--color-yellow)',
                         }}>
-                            ℹ️ Sua denúncia será publicada imediatamente no mapa.
+                            Sua denúncia será publicada imediatamente no mapa.
                             Se preferir permanecer anônimo, não preencha o campo de nome.
                         </div>
 
@@ -447,9 +426,9 @@ export default function EnviarDenunciaPage() {
                             type="submit"
                             className="btn btn-primary btn-lg"
                             style={{ width: '100%' }}
-                            disabled={loading}
+                            disabled={isSubmitting}
                         >
-                            {uploading ? '📤 Enviando arquivo...' : loading ? '⏳ Enviando...' : '📢 Enviar Denúncia'}
+                            {uploading ? 'Enviando arquivo...' : isSubmitting ? 'Enviando...' : 'Enviar Denúncia'}
                         </button>
                     </form>
                 </div>

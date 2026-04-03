@@ -68,6 +68,28 @@ async function initDB() {
         nome TEXT NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
+
+      -- Audit log para ações administrativas
+      CREATE TABLE IF NOT EXISTS audit_log (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        action TEXT NOT NULL,
+        resource TEXT NOT NULL,
+        resource_id TEXT,
+        admin_email TEXT,
+        details JSONB,
+        ip_address TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+
+      -- Índices para performance de consultas
+      CREATE INDEX IF NOT EXISTS idx_audit_log_created_at ON audit_log(created_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_audit_log_resource ON audit_log(resource, action);
+      CREATE INDEX IF NOT EXISTS idx_denuncias_status ON denuncias(status);
+      CREATE INDEX IF NOT EXISTS idx_denuncias_comunidade ON denuncias(comunidade);
+      CREATE INDEX IF NOT EXISTS idx_videos_categoria ON videos(categoria);
+      CREATE INDEX IF NOT EXISTS idx_videos_external_id ON videos(external_id);
+      CREATE INDEX IF NOT EXISTS idx_noticias_publicada ON noticias(publicada);
+      CREATE INDEX IF NOT EXISTS idx_comentarios_noticia ON comentarios(noticia_id);
     `);
 
     console.log('Tabelas criadas com sucesso!');

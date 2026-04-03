@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { FaFacebook, FaInstagram, FaTiktok, FaYoutube } from 'react-icons/fa';
 
@@ -20,7 +21,7 @@ export default function Header() {
         <header className="header">
             <div className="header-inner">
                 <Link href="/" className="logo" onClick={() => setIsOpen(false)} style={{ display: 'flex', alignItems: 'center' }}>
-                    <img src="/logo-header-cropped.png" alt="TV Complexo" style={{ height: '50px', objectFit: 'contain', filter: 'drop-shadow(0 0 10px rgba(255,255,255,0.1))' }} />
+                    <Image src="/logo-header-cropped.png" alt="TV Complexo" width={150} height={50} style={{ objectFit: 'contain', filter: 'drop-shadow(0 0 10px rgba(255,255,255,0.1))' }} priority />
                 </Link>
 
                 <nav>
