@@ -42,7 +42,7 @@ export default function SocialFeed() {
                             <h3 style={{ color: '#E1306C', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                 <FaInstagram /> Instagram
                             </h3>
-                            <div ref={instaRef}>
+                            <div>
                                 <blockquote
                                     className="instagram-media"
                                     data-instgrm-permalink="https://www.instagram.com/tvcomplexo/"
