@@ -1,8 +1,21 @@
 import { NextResponse } from 'next/server';
 import db from '@/lib/db';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'node:crypto';
 import { isAuthenticated } from '@/lib/auth';
-import { auditLog } from '@/lib/audit';
+import { auditLogWithRequest } from '@/lib/audit';
+import { rateLimitResponse } from '@/lib/rate-limit';
+
+const ADMIN_WRITE_LIMIT = { namespace: 'admin-write', maxRequests: 100, windowMs: 60 * 1000 };
+
+function isValidUrl(str) {
+    if (typeof str !== 'string' || str.length > 2000) return false;
+    try {
+        const u = new URL(str);
+        return u.protocol === 'http:' || u.protocol === 'https:';
+    } catch {
+        return false;
+    }
+}
 
 export async function GET(request) {
     try {
@@ -11,7 +24,6 @@ export async function GET(request) {
         const destaque = searchParams.get('destaque');
         const busca = searchParams.get('busca');
 
-        // Paginação
         const limit = Math.max(1, Math.min(100, parseInt(searchParams.get('limit')) || 10));
         const offset = Math.max(0, parseInt(searchParams.get('offset')) || 0);
 
@@ -37,7 +49,6 @@ export async function GET(request) {
             query += ' WHERE ' + conditions.join(' AND ');
         }
 
-        // Add ORDER, LIMIT and OFFSET
         query += ` ORDER BY created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
         params.push(limit, offset);
 
@@ -54,6 +65,9 @@ export async function POST(request) {
         if (!(await isAuthenticated())) {
             return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
         }
+        const blocked = await rateLimitResponse(request, ADMIN_WRITE_LIMIT);
+        if (blocked) return blocked;
+
         const body = await request.json();
         const { titulo, descricao, url_video, thumbnail, plataforma, categoria, destaque } = body;
 
@@ -65,13 +79,21 @@ export async function POST(request) {
             return NextResponse.json({ error: 'Campos excedem o tamanho máximo permitido' }, { status: 400 });
         }
 
-        const id = uuidv4();
+        if (!isValidUrl(url_video)) {
+            return NextResponse.json({ error: 'URL do vídeo inválida (precisa ser http/https)' }, { status: 400 });
+        }
+
+        if (thumbnail && !isValidUrl(thumbnail)) {
+            return NextResponse.json({ error: 'URL da thumbnail inválida' }, { status: 400 });
+        }
+
+        const id = randomUUID();
         await db.query(`
       INSERT INTO videos (id, titulo, descricao, url_video, thumbnail, plataforma, categoria, destaque)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
     `, [id, titulo, descricao || '', url_video, thumbnail || '', plataforma || 'manual', categoria || 'geral', destaque ? 1 : 0]);
 
-        auditLog('create', 'video', id, null, { titulo, plataforma });
+        await auditLogWithRequest(request, 'create', 'video', id, null, { titulo, plataforma });
         return NextResponse.json({ id, message: 'Vídeo criado com sucesso' }, { status: 201 });
     } catch (error) {
         console.error('[videos POST]', error);
@@ -84,11 +106,26 @@ export async function PUT(request) {
         if (!(await isAuthenticated())) {
             return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
         }
+        const blocked = await rateLimitResponse(request, ADMIN_WRITE_LIMIT);
+        if (blocked) return blocked;
+
         const body = await request.json();
         const { id, titulo, descricao, url_video, thumbnail, plataforma, categoria, destaque } = body;
 
         if (!id) {
             return NextResponse.json({ error: 'ID é obrigatório' }, { status: 400 });
+        }
+        if (!titulo || typeof titulo !== 'string' || titulo.length > 500) {
+            return NextResponse.json({ error: 'Título inválido' }, { status: 400 });
+        }
+        if (descricao && (typeof descricao !== 'string' || descricao.length > 5000)) {
+            return NextResponse.json({ error: 'Descrição inválida' }, { status: 400 });
+        }
+        if (!isValidUrl(url_video)) {
+            return NextResponse.json({ error: 'URL do vídeo inválida' }, { status: 400 });
+        }
+        if (thumbnail && !isValidUrl(thumbnail)) {
+            return NextResponse.json({ error: 'URL da thumbnail inválida' }, { status: 400 });
         }
 
         await db.query(`
@@ -96,7 +133,7 @@ export async function PUT(request) {
       WHERE id = $8
     `, [titulo, descricao, url_video, thumbnail, plataforma, categoria, destaque ? 1 : 0, id]);
 
-        auditLog('update', 'video', id, null, { titulo });
+        await auditLogWithRequest(request, 'update', 'video', id, null, { titulo });
         return NextResponse.json({ message: 'Vídeo atualizado com sucesso' });
     } catch (error) {
         console.error('[videos PUT]', error);
@@ -109,6 +146,9 @@ export async function DELETE(request) {
         if (!(await isAuthenticated())) {
             return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
         }
+        const blocked = await rateLimitResponse(request, ADMIN_WRITE_LIMIT);
+        if (blocked) return blocked;
+
         const { searchParams } = new URL(request.url);
         const id = searchParams.get('id');
 
@@ -117,7 +157,7 @@ export async function DELETE(request) {
         }
 
         await db.query('DELETE FROM videos WHERE id = $1', [id]);
-        auditLog('delete', 'video', id);
+        await auditLogWithRequest(request, 'delete', 'video', id);
         return NextResponse.json({ message: 'Vídeo deletado com sucesso' });
     } catch (error) {
         console.error('[videos DELETE]', error);

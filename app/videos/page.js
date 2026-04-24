@@ -38,20 +38,26 @@ export default function VideosPage() {
     }, [selectedVideo]);
 
     const fetchVideos = async () => {
-        if (videos.length === 0) setLoading(true); // Apenas load inicial
+        if (videos.length === 0) setLoading(true);
         setIsFetching(true);
 
-        const params = new URLSearchParams();
-        if (filtro !== 'todos') params.append('categoria', filtro);
-        if (busca) params.append('busca', busca);
-        params.append('limit', '50');
+        try {
+            const params = new URLSearchParams();
+            if (filtro !== 'todos') params.append('categoria', filtro);
+            if (busca) params.append('busca', busca);
+            params.append('limit', '50');
 
-        const res = await fetch(`/api/videos?${params}`);
-        const data = await res.json();
-
-        setVideos(data);
-        setLoading(false);
-        setIsFetching(false);
+            const res = await fetch(`/api/videos?${params}`);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const data = await res.json();
+            setVideos(Array.isArray(data) ? data : []);
+        } catch (err) {
+            console.error('[VideosPage] Falha ao carregar vídeos:', err?.message || err);
+            setVideos([]);
+        } finally {
+            setLoading(false);
+            setIsFetching(false);
+        }
     };
 
     const handleSearch = (e) => {

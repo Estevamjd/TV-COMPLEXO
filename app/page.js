@@ -9,23 +9,40 @@ import CommunityChips from '@/components/CommunityChips';
 import HeroMap from '@/components/HeroMap';
 import { toEmbedUrl } from '@/lib/video-utils';
 
-export const dynamic = 'force-dynamic';
+// ISR: revalida a cada 60s. Homepage continua viva mesmo se o DB cair temporariamente,
+// servindo o último snapshot enquanto o banco volta (Neon cold start / rede instável).
+export const revalidate = 60;
+
+async function loadHomepageData() {
+    try {
+        const [destResult, videosResult, denunciasResult, noticiasResult, denunciasMapResult] = await Promise.all([
+            db.query("SELECT * FROM videos WHERE destaque = 1 ORDER BY created_at DESC LIMIT 1"),
+            db.query("SELECT * FROM videos ORDER BY created_at DESC LIMIT 6"),
+            db.query("SELECT * FROM denuncias WHERE status IN ('pendente', 'resolvida') ORDER BY created_at DESC LIMIT 6"),
+            db.query("SELECT * FROM noticias WHERE publicada = 1 ORDER BY created_at DESC LIMIT 3"),
+            db.query("SELECT * FROM denuncias WHERE status IN ('pendente', 'resolvida') AND latitude IS NOT NULL AND longitude IS NOT NULL"),
+        ]);
+        return {
+            destaqueVideo: destResult.rows[0] || null,
+            videosRecentes: videosResult.rows,
+            denunciasRecentes: denunciasResult.rows,
+            noticiasRecentes: noticiasResult.rows,
+            denunciasComCoords: denunciasMapResult.rows,
+        };
+    } catch (err) {
+        console.error('[HomePage] DB indisponível, renderizando com dados vazios:', err?.message || err);
+        return {
+            destaqueVideo: null,
+            videosRecentes: [],
+            denunciasRecentes: [],
+            noticiasRecentes: [],
+            denunciasComCoords: [],
+        };
+    }
+}
 
 export default async function HomePage() {
-    // Executar todas as queries em paralelo para melhor performance
-    const [destResult, videosResult, denunciasResult, noticiasResult, denunciasMapResult] = await Promise.all([
-        db.query("SELECT * FROM videos WHERE destaque = 1 ORDER BY created_at DESC LIMIT 1"),
-        db.query("SELECT * FROM videos ORDER BY created_at DESC LIMIT 6"),
-        db.query("SELECT * FROM denuncias WHERE status IN ('pendente', 'resolvida') ORDER BY created_at DESC LIMIT 6"),
-        db.query("SELECT * FROM noticias WHERE publicada = 1 ORDER BY created_at DESC LIMIT 3"),
-        db.query("SELECT * FROM denuncias WHERE status IN ('pendente', 'resolvida') AND latitude IS NOT NULL AND longitude IS NOT NULL"),
-    ]);
-
-    const destaqueVideo = destResult.rows[0] || null;
-    const videosRecentes = videosResult.rows;
-    const denunciasRecentes = denunciasResult.rows;
-    const noticiasRecentes = noticiasResult.rows;
-    const denunciasComCoords = denunciasMapResult.rows;
+    const { destaqueVideo, videosRecentes, denunciasRecentes, noticiasRecentes, denunciasComCoords } = await loadHomepageData();
 
     return (
         <div>

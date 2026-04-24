@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 import db from '@/lib/db';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'node:crypto';
 import { isAuthenticated } from '@/lib/auth';
 import { rateLimitResponse } from '@/lib/rate-limit';
-import sanitizeHtml from 'sanitize-html';
-import { auditLog } from '@/lib/audit';
+import { auditLogWithRequest } from '@/lib/audit';
+import { sanitizeText } from '@/lib/sanitize';
 
-const sanitizeText = (text) => sanitizeHtml(text, { allowedTags: [], allowedAttributes: {} }).trim();
+const ADMIN_WRITE_LIMIT = { namespace: 'admin-write', maxRequests: 100, windowMs: 60 * 1000 };
 
 // Fallback de coordenadas por comunidade (usado quando o frontend não envia)
 const comunidadeCoordenadas = {
@@ -22,6 +22,14 @@ const comunidadeCoordenadas = {
 
 const VALID_STATUSES = ['pendente', 'resolvida', 'rejeitada'];
 
+// Validação de coordenadas — sanity check global e bounds aproximados do Rio
+function normalizeCoord(value, min, max) {
+    if (value === null || value === undefined || value === '') return null;
+    const num = typeof value === 'number' ? value : parseFloat(value);
+    if (!Number.isFinite(num) || num < min || num > max) return null;
+    return num;
+}
+
 export async function GET(request) {
     try {
         const { searchParams } = new URL(request.url);
@@ -30,14 +38,12 @@ export async function GET(request) {
         const comunidade = searchParams.get('comunidade');
         const limit = Math.max(1, Math.min(200, parseInt(searchParams.get('limit')) || 50));
 
-        // Verificar se é admin para ver denúncias pendentes
         const admin = await isAuthenticated();
 
         let query = 'SELECT * FROM denuncias';
         const conditions = [];
         const params = [];
 
-        // Público vê denúncias pendentes e resolvidas; admin vê todas
         if (!admin) {
             conditions.push("status IN ('pendente', 'resolvida')");
         } else if (status && status !== 'todos') {
@@ -72,7 +78,7 @@ export async function GET(request) {
 
 export async function POST(request) {
     try {
-        const blocked = rateLimitResponse(request, { namespace: 'denuncias', maxRequests: 3, windowMs: 120000 });
+        const blocked = await rateLimitResponse(request, { namespace: 'denuncias', maxRequests: 3, windowMs: 120000 });
         if (blocked) return blocked;
 
         const body = await request.json();
@@ -86,21 +92,24 @@ export async function POST(request) {
             return NextResponse.json({ error: 'Campos excedem o tamanho máximo permitido' }, { status: 400 });
         }
 
-        // Sanitizar inputs de texto
         const nomeSanitizado = nome ? sanitizeText(nome) : 'Anônimo';
         const descricaoSanitizada = sanitizeText(descricao);
         const localSanitizado = sanitizeText(local_problema);
+        const comunidadeSanitizada = sanitizeText(comunidade);
+        const tipoSanitizado = sanitizeText(tipo);
 
-        // Usar coordenadas enviadas ou fallback da comunidade
-        const fallback = comunidadeCoordenadas[comunidade];
-        const finalLat = latitude || fallback?.lat || null;
-        const finalLng = longitude || fallback?.lng || null;
+        // Valida coordenadas fornecidas; aceita bounds globais e usa fallback da comunidade se ausentes/inválidas
+        const fallback = comunidadeCoordenadas[comunidadeSanitizada];
+        const latValidada = normalizeCoord(latitude, -90, 90);
+        const lngValidada = normalizeCoord(longitude, -180, 180);
+        const finalLat = latValidada ?? fallback?.lat ?? null;
+        const finalLng = lngValidada ?? fallback?.lng ?? null;
 
-        const id = uuidv4();
+        const id = randomUUID();
         await db.query(`
       INSERT INTO denuncias (id, nome, comunidade, local_problema, tipo, descricao, latitude, longitude, midia, status)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'pendente')
-    `, [id, nomeSanitizado, comunidade, localSanitizado, tipo, descricaoSanitizada, finalLat, finalLng, midia || '']);
+    `, [id, nomeSanitizado, comunidadeSanitizada, localSanitizado, tipoSanitizado, descricaoSanitizada, finalLat, finalLng, midia || '']);
 
         return NextResponse.json({ id, message: 'Denúncia enviada com sucesso! Ela já está visível no mapa.' }, { status: 201 });
     } catch (error) {
@@ -114,6 +123,9 @@ export async function PUT(request) {
         if (!(await isAuthenticated())) {
             return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
         }
+        const blocked = await rateLimitResponse(request, ADMIN_WRITE_LIMIT);
+        if (blocked) return blocked;
+
         const body = await request.json();
         const { id, status: newStatus, nome, comunidade, local_problema, tipo, descricao } = body;
 
@@ -121,12 +133,10 @@ export async function PUT(request) {
             return NextResponse.json({ error: 'ID é obrigatório' }, { status: 400 });
         }
 
-        // Validar status se fornecido
         if (newStatus && !VALID_STATUSES.includes(newStatus)) {
             return NextResponse.json({ error: 'Status inválido' }, { status: 400 });
         }
 
-        // UPDATE único com todos os campos (em vez de 2 updates separados)
         const fields = [];
         const params = [];
 
@@ -135,23 +145,23 @@ export async function PUT(request) {
             fields.push(`status = $${params.length}`);
         }
         if (nome !== undefined) {
-            params.push(nome);
+            params.push(sanitizeText(nome));
             fields.push(`nome = $${params.length}`);
         }
         if (comunidade !== undefined) {
-            params.push(comunidade);
+            params.push(sanitizeText(comunidade));
             fields.push(`comunidade = $${params.length}`);
         }
         if (local_problema !== undefined) {
-            params.push(local_problema);
+            params.push(sanitizeText(local_problema));
             fields.push(`local_problema = $${params.length}`);
         }
         if (tipo !== undefined) {
-            params.push(tipo);
+            params.push(sanitizeText(tipo));
             fields.push(`tipo = $${params.length}`);
         }
         if (descricao !== undefined) {
-            params.push(descricao);
+            params.push(sanitizeText(descricao));
             fields.push(`descricao = $${params.length}`);
         }
 
@@ -162,7 +172,7 @@ export async function PUT(request) {
         params.push(id);
         await db.query(`UPDATE denuncias SET ${fields.join(', ')} WHERE id = $${params.length}`, params);
 
-        auditLog('update', 'denuncia', id, null, { newStatus, tipo });
+        await auditLogWithRequest(request, 'update', 'denuncia', id, null, { newStatus, tipo });
         return NextResponse.json({ message: 'Denúncia atualizada com sucesso' });
     } catch (error) {
         console.error('[denuncias PUT]', error);
@@ -175,6 +185,9 @@ export async function DELETE(request) {
         if (!(await isAuthenticated())) {
             return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
         }
+        const blocked = await rateLimitResponse(request, ADMIN_WRITE_LIMIT);
+        if (blocked) return blocked;
+
         const { searchParams } = new URL(request.url);
         const id = searchParams.get('id');
 
@@ -183,7 +196,7 @@ export async function DELETE(request) {
         }
 
         await db.query('DELETE FROM denuncias WHERE id = $1', [id]);
-        auditLog('delete', 'denuncia', id);
+        await auditLogWithRequest(request, 'delete', 'denuncia', id);
         return NextResponse.json({ message: 'Denúncia deletada com sucesso' });
     } catch (error) {
         console.error('[denuncias DELETE]', error);

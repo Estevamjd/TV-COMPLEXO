@@ -3,10 +3,20 @@ import ReportCard from '@/components/ReportCard';
 import MapWrapper from './MapWrapper';
 import Link from 'next/link';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 60;
+
+async function loadDenuncias() {
+    try {
+        const { rows } = await db.query("SELECT * FROM denuncias WHERE status IN ('pendente', 'resolvida') ORDER BY created_at DESC");
+        return rows;
+    } catch (err) {
+        console.error('[DenunciasPage] DB indisponível:', err?.message || err);
+        return [];
+    }
+}
 
 export default async function DenunciasPage() {
-    const { rows: denuncias } = await db.query("SELECT * FROM denuncias WHERE status IN ('pendente', 'resolvida') ORDER BY created_at DESC");
+    const denuncias = await loadDenuncias();
 
     return (
         <div>
