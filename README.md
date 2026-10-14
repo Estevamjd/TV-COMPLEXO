@@ -4,15 +4,29 @@
 
 A voz que ecoa da favela. Vídeos, denúncias e notícias direto das comunidades do Rio de Janeiro.
 
-[![Deploy](https://img.shields.io/badge/deploy-Vercel-black?logo=vercel)](https://tvcomplexo.com.br)
+🔗 **Demo ao vivo:** https://tv-complexo.vercel.app
+
+[![Deploy](https://img.shields.io/badge/deploy-Vercel-black?logo=vercel)](https://tv-complexo.vercel.app)
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon-blue?logo=postgresql)](https://neon.tech)
+
+![Home do TV Complexo](docs/screenshots/home.png)
+
+## O problema
+
+Moradores das comunidades têm pouco espaço para mostrar o que acontece no território e cobrar soluções para problemas do dia a dia (falta de luz, lixo, saneamento, risco de deslizamento). O TV Complexo junta, num só lugar, os vídeos do canal, notícias locais e um mapa de denúncias geolocalizadas, com um painel para a equipe moderar o conteúdo.
+
+## Telas
+
+| Vídeos | Notícias | Mobile |
+|---|---|---|
+| ![Vídeos](docs/screenshots/videos.png) | ![Notícias](docs/screenshots/noticias.png) | ![Mobile](docs/screenshots/mobile-home.png) |
 
 ---
 
 ## Funcionalidades
 
-- **Vídeos** — Feed estilo TikTok com importação automática do YouTube (Cron a cada 15 min)
+- **Vídeos** — Feed estilo TikTok com importação automática do YouTube (Vercel Cron diário)
 - **Denúncias** — Envio com geolocalização + mapa interativo (Leaflet) com marcadores por tipo
 - **Notícias** — Artigos com sistema de comentários
 - **Admin** — Dashboard protegido com JWT para moderação de conteúdo
@@ -27,7 +41,7 @@ A voz que ecoa da favela. Vídeos, denúncias e notícias direto das comunidades
 | Frontend | React 19, CSS custom properties |
 | Banco de Dados | PostgreSQL (Neon) |
 | Autenticação | JWT (jose) |
-| Mapa | Leaflet + React-Leaflet |
+| Mapa | Leaflet + OpenStreetMap (sem chave de API) |
 | Deploy | Vercel |
 | Automação | Vercel Cron Jobs (YouTube RSS) |
 
@@ -90,7 +104,11 @@ scripts/                     # Scripts de inicialização e manutenção do banc
 
 O projeto está configurado para deploy automático na Vercel. Cada push no branch `master` dispara um novo deploy.
 
-O arquivo `vercel.json` configura um Cron Job que importa vídeos do YouTube automaticamente a cada 15 minutos.
+O arquivo `vercel.json` configura um Cron Job que importa vídeos do YouTube automaticamente uma vez por dia (08:00 UTC).
+
+## Autor
+
+Feito por **Estevam Juliano** — [LinkedIn](https://www.linkedin.com/in/estevam-juliano-8799b026b/) · [GitHub](https://github.com/Estevamjd)
 
 ## Redes Sociais
 
