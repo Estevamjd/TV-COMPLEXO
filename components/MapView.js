@@ -54,14 +54,25 @@ export default function MapView({ denuncias = [] }) {
                 document.head.appendChild(link);
             }
 
+            if (!document.getElementById('tvc-dark-tiles-style')) {
+                const style = document.createElement('style');
+                style.id = 'tvc-dark-tiles-style';
+                style.textContent = '.tvc-dark-tiles{filter:invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);}';
+                document.head.appendChild(style);
+            }
+
             if (cancelled || !mapRef.current) return;
 
             const map = L.map(mapRef.current).setView([-22.86, -43.265], 13);
             mapInstanceRef.current = map;
 
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-                attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+            // Tiles do OpenStreetMap (gratuitos, sem chave de API). Os tiles da CARTO
+            // passaram a exigir chave e exibiam "API KEY REQUIRED".
+            // O visual escuro vem do filtro CSS em .tvc-dark-tiles (abaixo).
+            L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
                 maxZoom: 19,
+                className: 'tvc-dark-tiles',
             }).addTo(map);
 
             setMapReady(true);
