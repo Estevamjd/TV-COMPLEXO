@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server';
 import db from '@/lib/db';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'node:crypto';
 import { isAuthenticated } from '@/lib/auth';
-import { auditLog } from '@/lib/audit';
+import { auditLogWithRequest } from '@/lib/audit';
+import { rateLimitResponse } from '@/lib/rate-limit';
+import { sanitizeArticleHtml, sanitizeText } from '@/lib/sanitize';
+
+const ADMIN_WRITE_LIMIT = { namespace: 'admin-write', maxRequests: 100, windowMs: 60 * 1000 };
 
 export async function GET(request) {
     try {
@@ -34,6 +38,9 @@ export async function POST(request) {
         if (!(await isAuthenticated())) {
             return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
         }
+        const blocked = await rateLimitResponse(request, ADMIN_WRITE_LIMIT);
+        if (blocked) return blocked;
+
         const body = await request.json();
         const { titulo, resumo, conteudo, imagem, categoria, autor } = body;
 
@@ -45,13 +52,19 @@ export async function POST(request) {
             return NextResponse.json({ error: 'Campos excedem o tamanho máximo permitido' }, { status: 400 });
         }
 
-        const id = uuidv4();
+        // Sanitização defensiva na entrada (defense in depth)
+        const tituloLimpo = sanitizeText(titulo);
+        const resumoLimpo = resumo ? sanitizeText(resumo) : '';
+        const conteudoLimpo = sanitizeArticleHtml(conteudo);
+        const autorLimpo = autor ? sanitizeText(autor) : 'TV Complexo';
+
+        const id = randomUUID();
         await db.query(`
       INSERT INTO noticias (id, titulo, resumo, conteudo, imagem, categoria, autor)
       VALUES ($1, $2, $3, $4, $5, $6, $7)
-    `, [id, titulo, resumo || '', conteudo, imagem || '', categoria || 'geral', autor || 'TV Complexo']);
+    `, [id, tituloLimpo, resumoLimpo, conteudoLimpo, imagem || '', categoria || 'geral', autorLimpo]);
 
-        auditLog('create', 'noticia', id, null, { titulo, categoria });
+        await auditLogWithRequest(request, 'create', 'noticia', id, null, { titulo: tituloLimpo, categoria });
         return NextResponse.json({ id, message: 'Notícia criada com sucesso' }, { status: 201 });
     } catch (error) {
         console.error('[noticias POST]', error);
@@ -64,19 +77,33 @@ export async function PUT(request) {
         if (!(await isAuthenticated())) {
             return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
         }
+        const blocked = await rateLimitResponse(request, ADMIN_WRITE_LIMIT);
+        if (blocked) return blocked;
+
         const body = await request.json();
         const { id, titulo, resumo, conteudo, imagem, categoria, autor, publicada } = body;
 
         if (!id) {
             return NextResponse.json({ error: 'ID é obrigatório' }, { status: 400 });
         }
+        if (!titulo || titulo.length > 500) {
+            return NextResponse.json({ error: 'Título inválido' }, { status: 400 });
+        }
+        if (!conteudo || conteudo.length > 50000) {
+            return NextResponse.json({ error: 'Conteúdo inválido' }, { status: 400 });
+        }
+
+        const tituloLimpo = sanitizeText(titulo);
+        const resumoLimpo = resumo ? sanitizeText(resumo) : '';
+        const conteudoLimpo = sanitizeArticleHtml(conteudo);
+        const autorLimpo = autor ? sanitizeText(autor) : 'TV Complexo';
 
         await db.query(`
       UPDATE noticias SET titulo = $1, resumo = $2, conteudo = $3, imagem = $4, categoria = $5, autor = $6, publicada = $7
       WHERE id = $8
-    `, [titulo, resumo, conteudo, imagem, categoria, autor, publicada ? 1 : 0, id]);
+    `, [tituloLimpo, resumoLimpo, conteudoLimpo, imagem, categoria, autorLimpo, publicada ? 1 : 0, id]);
 
-        auditLog('update', 'noticia', id, null, { titulo });
+        await auditLogWithRequest(request, 'update', 'noticia', id, null, { titulo: tituloLimpo });
         return NextResponse.json({ message: 'Notícia atualizada com sucesso' });
     } catch (error) {
         console.error('[noticias PUT]', error);
@@ -89,6 +116,9 @@ export async function DELETE(request) {
         if (!(await isAuthenticated())) {
             return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
         }
+        const blocked = await rateLimitResponse(request, ADMIN_WRITE_LIMIT);
+        if (blocked) return blocked;
+
         const { searchParams } = new URL(request.url);
         const id = searchParams.get('id');
 
@@ -97,7 +127,7 @@ export async function DELETE(request) {
         }
 
         await db.query('DELETE FROM noticias WHERE id = $1', [id]);
-        auditLog('delete', 'noticia', id);
+        await auditLogWithRequest(request, 'delete', 'noticia', id);
         return NextResponse.json({ message: 'Notícia deletada com sucesso' });
     } catch (error) {
         console.error('[noticias DELETE]', error);

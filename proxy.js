@@ -4,13 +4,31 @@ import { jwtVerify } from 'jose';
 const JWT_SECRET = process.env.JWT_SECRET;
 const secretKey = JWT_SECRET ? new TextEncoder().encode(JWT_SECRET) : null;
 
+// Redirect 301 do domínio antigo para o novo.
+// Defina LEGACY_DOMAIN (hostname apenas, sem protocolo) e NEXT_PUBLIC_SITE_URL para ativar.
+const LEGACY_DOMAIN = process.env.LEGACY_DOMAIN?.toLowerCase().trim() || '';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || '';
+
 export default async function proxy(request) {
     const path = request.nextUrl.pathname;
+    const host = request.headers.get('host')?.toLowerCase() || '';
 
-    // Proteger as rotas do painel /admin (exceto o login)
+    // 1. Redirect 301 do domínio antigo (preserva path + query)
+    if (LEGACY_DOMAIN && SITE_URL && host === LEGACY_DOMAIN) {
+        try {
+            const target = new URL(SITE_URL);
+            target.pathname = path;
+            target.search = request.nextUrl.search;
+            return NextResponse.redirect(target.toString(), 301);
+        } catch {
+            // SITE_URL inválido — segue a request normalmente para não quebrar
+        }
+    }
+
+    // 2. Proteger as rotas do painel /admin (exceto o login)
     const isAdminRoute = path.startsWith('/admin') && path !== '/admin/login';
 
-    // Proteger rotas de API que modificam dados (POST, PUT, DELETE), exceto login e webhooks
+    // Proteger rotas de API que modificam dados (POST, PUT, DELETE), exceto login, webhooks, cron, comentarios
     const isProtectedApiRoute = path.startsWith('/api/')
         && !path.startsWith('/api/auth')
         && !path.startsWith('/api/webhook')
@@ -18,7 +36,6 @@ export default async function proxy(request) {
         && !path.startsWith('/api/comentarios')
         && request.method !== 'GET';
 
-    // Upload é sempre protegido (mesmo GET, se existisse)
     const isUploadRoute = path === '/api/upload';
 
     // Liberar POST para denúncias (público envia)
@@ -74,6 +91,8 @@ export default async function proxy(request) {
     return NextResponse.next();
 }
 
+// Matcher amplo para capturar o redirect do domínio antigo em qualquer rota pública.
+// O Next continua pulando automaticamente assets estáticos (_next, favicon, etc).
 export const config = {
-    matcher: ['/admin/:path*', '/api/:path*'],
+    matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
 };

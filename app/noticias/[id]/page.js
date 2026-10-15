@@ -1,7 +1,7 @@
 import db from '@/lib/db';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import sanitizeHtml from 'sanitize-html';
+import { sanitizeArticleHtml } from '@/lib/sanitize';
 import CommentSection from './CommentSection';
 import ShareButtons from '@/components/ShareButtons';
 import ScrollReveal from '@/components/ScrollReveal';
@@ -44,17 +44,8 @@ export default async function NoticiaPage({ params }) {
         year: 'numeric',
     });
 
-    // Sanitizar conteúdo HTML
-    const conteudoSeguro = sanitizeHtml(noticia.conteudo, {
-        allowedTags: sanitizeHtml.defaults.allowedTags.concat(['img', 'h1', 'h2', 'h3', 'iframe']),
-        allowedAttributes: {
-            ...sanitizeHtml.defaults.allowedAttributes,
-            img: ['src', 'alt', 'width', 'height', 'style'],
-            iframe: ['src', 'width', 'height', 'frameborder', 'allowfullscreen'],
-            '*': ['class', 'style'],
-        },
-        allowedIframeHostnames: ['www.youtube.com', 'youtube.com', 'player.vimeo.com'],
-    });
+    // Defense in depth: sanitiza também no display (entrada já sanitiza, mas se DB for alterado por outro caminho, seguimos protegidos)
+    const conteudoSeguro = sanitizeArticleHtml(noticia.conteudo);
 
     return (
         <div style={{ paddingTop: '20px' }}>

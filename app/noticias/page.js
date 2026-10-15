@@ -1,10 +1,20 @@
 import NewsCard from '@/components/NewsCard';
 import db from '@/lib/db';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 60;
+
+async function loadNoticias() {
+    try {
+        const { rows } = await db.query('SELECT * FROM noticias WHERE publicada = 1 ORDER BY created_at DESC');
+        return rows;
+    } catch (err) {
+        console.error('[NoticiasPage] DB indisponível:', err?.message || err);
+        return [];
+    }
+}
 
 export default async function NoticiasPage() {
-    const { rows: noticias } = await db.query('SELECT * FROM noticias WHERE publicada = 1 ORDER BY created_at DESC');
+    const noticias = await loadNoticias();
 
     return (
         <div>

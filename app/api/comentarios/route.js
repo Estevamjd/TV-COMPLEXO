@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import db from '@/lib/db';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'node:crypto';
 import { rateLimitResponse } from '@/lib/rate-limit';
 import sanitizeHtml from 'sanitize-html';
 
@@ -34,7 +34,7 @@ export async function GET(request) {
 
 export async function POST(request) {
     try {
-        const blocked = rateLimitResponse(request, { namespace: 'comentarios', maxRequests: 5 });
+        const blocked = await rateLimitResponse(request, { namespace: 'comentarios', maxRequests: 5 });
         if (blocked) return blocked;
 
         const body = await request.json();
@@ -58,7 +58,7 @@ export async function POST(request) {
             return NextResponse.json({ error: 'Texto do comentário é obrigatório' }, { status: 400 });
         }
 
-        const id = uuidv4();
+        const id = randomUUID();
         await db.query(`
       INSERT INTO comentarios (id, noticia_id, autor, texto)
       VALUES ($1, $2, $3, $4)
