@@ -52,6 +52,37 @@ describe('mascararTextoPublico (R3)', () => {
         expect(mascararTextoPublico('Estamos sem luz. Carlos avisou a Light.')).toBe('Estamos sem luz. Carlos avisou a Light.');
     });
 
+    it('mascara nome completo em minúsculas e em CAIXA ALTA', () => {
+        expect(mascararTextoPublico('o lixo é do joão da silva')).toBe('o lixo é do [nome]');
+        expect(mascararTextoPublico('Falar com JOÃO DA SILVA amanhã')).toBe('Falar com [nome] amanhã');
+        expect(mascararTextoPublico('JOÃO DA SILVA JOGOU LIXO NA RUA')).toBe('[nome] JOGOU LIXO NA RUA');
+        expect(mascararTextoPublico('vizinho QUINTANILHA DA SILVA')).toBe('vizinho [nome]');
+        expect(mascararTextoPublico('Maria Quintanilha reclamou')).toBe('[nome] reclamou');
+        expect(mascararTextoPublico('maria e josé foram')).toBe('[nome] foram');
+    });
+
+    it('texto gritado: mascara o nome sem engolir a frase', () => {
+        expect(mascararTextoPublico('FALTA DE LUZ HÁ TRÊS DIAS NA RUA')).toBe('FALTA DE LUZ HÁ TRÊS DIAS NA RUA');
+        expect(mascararTextoPublico('JOSÉ QUINTANILHA ESTÁ SEM LUZ HÁ DIAS')).toBe('[nome] ESTÁ SEM LUZ HÁ DIAS');
+    });
+
+    it('tratamento + primeiro nome em minúsculas', () => {
+        expect(mascararTextoPublico('a dona maria reclamou')).toBe('a dona [nome] reclamou');
+    });
+
+    it('não mascara palavra comum nem nome isolado em minúsculas', () => {
+        for (const t of ['o lixo da silva', 'há dias sem água', 'joão foi ao posto', 'o filho da maria', 'Lixo na PM']) {
+            expect(mascararTextoPublico(t)).toBe(t);
+        }
+    });
+
+    it('logradouro/instituição com nome de pessoa é mantido (decisão documentada)', () => {
+        for (const t of ['Rua João Silva sem luz', 'na rua joão da silva tem buraco', 'RUA JOÃO SILVA SEM LUZ HÁ DIAS',
+            'Escola Municipal Maria da Silva', 'rua dona maria santos', 'Santa Marta e São João de Meriti']) {
+            expect(mascararTextoPublico(t)).toBe(t);
+        }
+    });
+
     it('combina tudo', () => {
         const out = mascararTextoPublico('Fulano de Tal (21) 98888-7777 com tumor na Maré');
         expect(out).toBe('[nome] [telefone] com [condição de saúde] na Maré');
