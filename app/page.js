@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import db from '@/lib/db';
+import { COLUNAS_NOTICIAS, COLUNAS_VIDEOS } from '@/lib/colunas-publicas';
 import VideoCard from '@/components/VideoCard';
 import NewsCard from '@/components/NewsCard';
 import ReportCard from '@/components/ReportCard';
@@ -19,10 +20,10 @@ export const metadata = {
 export default async function HomePage() {
     // Executar todas as queries em paralelo para melhor performance
     const [destResult, videosResult, denunciasResult, noticiasResult, denunciasMapResult] = await Promise.all([
-        db.query("SELECT * FROM videos WHERE destaque = 1 ORDER BY created_at DESC LIMIT 1"),
-        db.query("SELECT * FROM videos ORDER BY created_at DESC LIMIT 6"),
+        db.query(`SELECT ${COLUNAS_VIDEOS} FROM videos WHERE destaque = 1 ORDER BY created_at DESC LIMIT 1`),
+        db.query(`SELECT ${COLUNAS_VIDEOS} FROM videos ORDER BY created_at DESC LIMIT 6`),
         listarDenunciasPublicas({ limit: 6 }),
-        db.query("SELECT * FROM noticias WHERE publicada = 1 ORDER BY created_at DESC LIMIT 3"),
+        db.query(`SELECT ${COLUNAS_NOTICIAS} FROM noticias WHERE publicada = 1 ORDER BY created_at DESC LIMIT 3`),
         listarDenunciasPublicas({ comCoordenadas: true }),
     ]);
 

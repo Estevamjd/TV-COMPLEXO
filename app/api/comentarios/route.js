@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import db from '@/lib/db';
+import { COLUNAS_COMENTARIOS } from '@/lib/colunas-publicas';
 import { v4 as uuidv4 } from 'uuid';
 import { rateLimitResponse } from '@/lib/rate-limit';
 import sanitizeHtml from 'sanitize-html';
@@ -21,7 +22,7 @@ export async function GET(request) {
         }
 
         const { rows: comentarios } = await db.query(
-            'SELECT * FROM comentarios WHERE noticia_id = $1 ORDER BY created_at ASC LIMIT $2 OFFSET $3',
+            `SELECT ${COLUNAS_COMENTARIOS} FROM comentarios WHERE noticia_id = $1 ORDER BY created_at ASC LIMIT $2 OFFSET $3`,
             [noticia_id, limit, offset]
         );
 

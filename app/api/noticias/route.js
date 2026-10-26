@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import db from '@/lib/db';
+import { COLUNAS_NOTICIAS } from '@/lib/colunas-publicas';
 import { v4 as uuidv4 } from 'uuid';
 import { isAuthenticated } from '@/lib/auth';
 import { auditLog } from '@/lib/audit';
@@ -10,7 +11,7 @@ export async function GET(request) {
         const categoria = searchParams.get('categoria');
         const limit = Math.max(1, Math.min(100, parseInt(searchParams.get('limit')) || 50));
 
-        let query = 'SELECT * FROM noticias WHERE publicada = 1';
+        let query = `SELECT ${COLUNAS_NOTICIAS} FROM noticias WHERE publicada = 1`;
         const params = [];
 
         if (categoria && categoria !== 'todos') {

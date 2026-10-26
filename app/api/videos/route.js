@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import db from '@/lib/db';
+import { COLUNAS_VIDEOS } from '@/lib/colunas-publicas';
 import { v4 as uuidv4 } from 'uuid';
 import { isAuthenticated } from '@/lib/auth';
 import { auditLog } from '@/lib/audit';
@@ -15,7 +16,7 @@ export async function GET(request) {
         const limit = Math.max(1, Math.min(100, parseInt(searchParams.get('limit')) || 10));
         const offset = Math.max(0, parseInt(searchParams.get('offset')) || 0);
 
-        let query = 'SELECT * FROM videos';
+        let query = `SELECT ${COLUNAS_VIDEOS} FROM videos`;
         const conditions = [];
         const params = [];
 

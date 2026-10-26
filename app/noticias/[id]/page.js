@@ -1,4 +1,5 @@
 import db from '@/lib/db';
+import { COLUNAS_NOTICIAS } from '@/lib/colunas-publicas';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import sanitizeHtml from 'sanitize-html';
@@ -10,7 +11,7 @@ export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({ params }) {
     const { id } = await params;
-    const { rows } = await db.query('SELECT * FROM noticias WHERE id = $1 AND publicada = 1', [id]);
+    const { rows } = await db.query(`SELECT ${COLUNAS_NOTICIAS} FROM noticias WHERE id = $1 AND publicada = 1`, [id]);
     const noticia = rows[0];
 
     if (!noticia) {
@@ -35,7 +36,7 @@ export async function generateMetadata({ params }) {
 
 export default async function NoticiaPage({ params }) {
     const { id } = await params;
-    const { rows } = await db.query('SELECT * FROM noticias WHERE id = $1 AND publicada = 1', [id]);
+    const { rows } = await db.query(`SELECT ${COLUNAS_NOTICIAS} FROM noticias WHERE id = $1 AND publicada = 1`, [id]);
     const noticia = rows[0];
 
     if (!noticia) notFound();
