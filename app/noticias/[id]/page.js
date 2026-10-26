@@ -22,7 +22,9 @@ export async function generateMetadata({ params }) {
     return {
         title: `${noticia.titulo} | TV Complexo`,
         description: descricao,
+        alternates: { canonical: `/noticias/${id}` },
         openGraph: {
+            url: `/noticias/${id}`,
             title: noticia.titulo,
             description: descricao,
             type: 'article',

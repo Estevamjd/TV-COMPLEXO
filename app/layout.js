@@ -2,15 +2,16 @@ import './globals.css';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import BottomNav from '@/components/BottomNav';
+import { SITE_URL } from '@/lib/site-url';
 
 export const metadata = {
-  metadataBase: new URL('https://tvcomplexo.com.br'),
+  metadataBase: new URL(SITE_URL),
   title: 'TV Complexo — A Real da Favela',
   description: 'A real da favela. Vídeos, denúncias e notícias direto das comunidades do Rio de Janeiro.',
   openGraph: {
     title: 'TV Complexo — A Real da Favela',
     description: 'A real da favela. Vídeos, denúncias e notícias direto das comunidades do Rio de Janeiro.',
-    url: 'https://tvcomplexo.com.br',
+    url: '/',
     siteName: 'TV Complexo',
     images: [
       {
