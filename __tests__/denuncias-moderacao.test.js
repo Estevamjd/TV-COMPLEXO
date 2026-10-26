@@ -182,12 +182,30 @@ describe.each([
             expect(Object.fromEntries(rows.map((x) => [x.id, x.publicar_nome]))).toEqual({ [comNome]: true, [semNome]: false });
         });
 
+        it('depois da migração, antiga devolvida para pendente sai do ar (cláusula legada desligada)', async () => {
+            expect((await getPublico()).map((d) => d.id)).toContain(legadoPendente);
+            expect((await moderar({ id: legadoPendente, status: 'pendente' })).status).toBe(200);
+            expect((await getPublico()).map((d) => d.id)).not.toContain(legadoPendente);
+            // Mesmo inserida direto como 'pendente' antes do corte.
+            const antiga = await inserirFicticia(pg, { status: 'pendente', createdAt: '2026-09-01 10:00:00' });
+            expect((await getPublico()).map((d) => d.id)).not.toContain(antiga);
+            expect((await getAdmin()).find((d) => d.id === antiga).legado_no_ar).toBe(false);
+        });
+
         it('migração: pendente antiga vira aprovada; contagens batem', async () => {
             const { rows } = await pg.query('SELECT status FROM denuncias WHERE id = $1', [legadoPendente]);
             expect(rows[0].status).toBe('aprovada');
             expect(await contagemPorStatus(pg)).toEqual({ aprovada: 1, rejeitada: 1, resolvida: 1 });
         });
     } else {
+        it('antes da migração, pendente anterior ao corte segue no ar e o admin vê o aviso', async () => {
+            expect((await getPublico()).map((d) => d.id)).toContain(legadoPendente);
+            const admin = await getAdmin();
+            expect(admin.find((d) => d.id === legadoPendente).legado_no_ar).toBe(true);
+            const nova = (await enviar()).json.id;
+            expect((await getAdmin()).find((d) => d.id === nova).legado_no_ar).toBe(false);
+        });
+
         it('sem a coluna publicar_nome, o POST funciona e o autor sai sempre "Anônimo"', async () => {
             const { res } = await enviar({ publicar_nome: true });
             expect(res.status).toBe(201);
@@ -258,6 +276,54 @@ describe('POST', () => {
     it('recusa campos obrigatórios vazios', async () => {
         const { res } = await enviar({ descricao: '   ' });
         expect(res.status).toBe(400);
+    });
+});
+
+describe('Saída pública: comunidade, local e tipo', () => {
+    let pg;
+    beforeEach(async () => {
+        pg = await criarBanco();
+        estado.db = adaptador(pg);
+        _resetDeteccaoColuna();
+        await pg.exec(MIGRACAO);
+    });
+
+    it('comunidade fora da lista ("Outra") passa pela máscara; da lista sai igual', async () => {
+        const livre = await inserirFicticia(pg, { status: 'aprovada', comunidade: 'Joana Quintanilha' });
+        const caixaAlta = await inserirFicticia(pg, { status: 'aprovada', comunidade: 'perto da casa do JOÃO DA SILVA' });
+        const conhecida = await inserirFicticia(pg, { status: 'aprovada', comunidade: 'Complexo do Alemão' });
+        const publico = await getPublico();
+        expect(publico.find((d) => d.id === livre).comunidade).toBe('[nome]');
+        expect(publico.find((d) => d.id === caixaAlta).comunidade).toBe('perto da casa do [nome]');
+        expect(publico.find((d) => d.id === conhecida).comunidade).toBe('Complexo do Alemão');
+        expect(JSON.stringify(publico)).not.toMatch(/Quintanilha|SILVA/);
+    });
+
+    it('local_problema é mascarado', async () => {
+        const id = await inserirFicticia(pg, { status: 'aprovada', localProblema: 'Em frente à casa da maria santos, tel 21 98888-7777' });
+        const d = (await getPublico()).find((x) => x.id === id);
+        expect(d.local_problema).toBe('Em frente à casa da [nome], tel [telefone]');
+    });
+
+    it('tipo fora da lista vira "outros" na saída', async () => {
+        const id = await inserirFicticia(pg, { status: 'aprovada', tipo: 'Fulano Ciclano 21 98888-7777' });
+        expect((await getPublico()).find((x) => x.id === id).tipo).toBe('outros');
+    });
+
+    it('filtros públicos só aceitam valores conhecidos (não sonda texto livre)', async () => {
+        await inserirFicticia(pg, { status: 'aprovada', comunidade: 'Joana Quintanilha', tipo: 'tipo_livre' });
+        await inserirFicticia(pg, { status: 'aprovada' });
+        expect(await getPublico('?comunidade=Joana%20Quintanilha')).toEqual([]);
+        expect(await getPublico('?tipo=tipo_livre')).toEqual([]);
+        expect((await getPublico('?tipo=poste_caido')).length).toBeGreaterThan(0);
+    });
+
+    it('POST e PUT recusam tipo fora da lista', async () => {
+        const { res } = await enviar({ tipo: '<b>qualquer</b>' });
+        expect(res.status).toBe(400);
+        const id = (await enviar()).json.id;
+        expect((await moderar({ id, tipo: 'inventado' })).status).toBe(400);
+        expect((await moderar({ id, tipo: 'saneamento' })).status).toBe(200);
     });
 });
 

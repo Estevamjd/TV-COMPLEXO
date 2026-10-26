@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useToast } from '@/components/Toast';
 import { mascararTextoPublico, autorPublico } from '@/lib/mascara';
-import { anteriorAoCorte } from '@/lib/corte-legado';
 
 const tipoLabels = {
     falta_de_luz: '💡 Falta de Luz',
@@ -158,7 +157,7 @@ export default function AdminDenunciasPage() {
                             const emEdicao = editando?.id === d.id;
                             const info = statusInfo[d.status] || { label: d.status, badge: 'badge-gray' };
                             const textoPrevia = emEdicao ? editando.descricao : d.descricao;
-                            const legadoNoAr = d.status === 'pendente' && anteriorAoCorte(d.created_at);
+                            const legadoNoAr = d.legado_no_ar === true;
                             return (
                                 <li key={d.id} className={`moderation-item ${d.status === 'pendente' ? 'is-pendente' : ''}`}>
                                     <div className="moderation-meta">

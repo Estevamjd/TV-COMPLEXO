@@ -2,18 +2,10 @@
 import { useState, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import PrivacyLink from '@/components/PrivacyLink';
+import { TIPOS_DENUNCIA } from '@/lib/tipos';
 import { COMUNIDADES, COMUNIDADE_OUTRA, COMUNIDADE_MAX_LENGTH, coordenadasDaComunidade } from '@/lib/comunidades';
 
-const tiposProblema = [
-    { value: 'falta_de_luz', label: 'Falta de Luz' },
-    { value: 'lixo_acumulado', label: 'Lixo Acumulado' },
-    { value: 'risco_deslizamento', label: 'Risco de Deslizamento' },
-    { value: 'saneamento', label: 'Saneamento' },
-    { value: 'fios_energizados', label: 'Fios Energizados' },
-    { value: 'poste_caido', label: 'Poste Caido' },
-    { value: 'violencia', label: 'Violencia' },
-    { value: 'outros', label: 'Outros' },
-];
+const tiposProblema = TIPOS_DENUNCIA;
 
 export default function EnviarDenunciaPage() {
     const { register, handleSubmit, reset, watch, setValue, formState: { errors, isSubmitting } } = useForm({

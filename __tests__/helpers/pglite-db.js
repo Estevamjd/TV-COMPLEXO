@@ -55,10 +55,10 @@ export function adaptador(pg) {
 }
 
 let seq = 0;
-export async function inserirFicticia(pg, { status = 'pendente', createdAt = '2026-10-01 12:00:00', nome = 'Fulana de Tal', descricao = 'Poste caído na rua, perigo.', publicarNome } = {}) {
+export async function inserirFicticia(pg, { status = 'pendente', createdAt = '2026-10-01 12:00:00', nome = 'Fulana de Tal', descricao = 'Poste caído na rua, perigo.', publicarNome, comunidade = 'Maré', localProblema, tipo = 'poste_caido' } = {}) {
     seq += 1;
     const cols = ['nome', 'comunidade', 'local_problema', 'tipo', 'descricao', 'latitude', 'longitude', 'midia', 'status', 'created_at'];
-    const vals = [nome, 'Maré', `Rua Fictícia ${seq}`, 'poste_caido', descricao, -22.86, -43.24, '', status, createdAt];
+    const vals = [nome, comunidade, localProblema ?? `Rua Fictícia ${seq}`, tipo, descricao, -22.86, -43.24, '', status, createdAt];
     if (publicarNome !== undefined) {
         cols.push('publicar_nome');
         vals.push(publicarNome);

@@ -6,6 +6,7 @@ import { rateLimitResponse } from '@/lib/rate-limit';
 import sanitizeHtml from 'sanitize-html';
 import { auditLog } from '@/lib/audit';
 import { COMUNIDADE_MAX_LENGTH, coordenadasDaComunidade } from '@/lib/comunidades';
+import { tipoValido } from '@/lib/tipos';
 import { STATUS, inserirDenuncia, listarDenunciasAdmin, listarDenunciasPublicas } from '@/lib/denuncias';
 
 const sanitizeText = (text) => sanitizeHtml(text, { allowedTags: [], allowedAttributes: {} }).trim();
@@ -47,8 +48,12 @@ export async function POST(request) {
             return NextResponse.json({ error: 'Comunidade, local, tipo e descrição são obrigatórios' }, { status: 400 });
         }
 
+        if (!tipoValido(tipo)) {
+            return NextResponse.json({ error: 'Tipo de problema inválido' }, { status: 400 });
+        }
+
         if (descricao.length > 5000 || (nome && String(nome).length > 200) || local_problema.length > 500
-            || comunidade.length > COMUNIDADE_MAX_LENGTH || tipo.length > 50) {
+            || comunidade.length > COMUNIDADE_MAX_LENGTH) {
             return NextResponse.json({ error: 'Campos excedem o tamanho máximo permitido' }, { status: 400 });
         }
 
@@ -57,7 +62,6 @@ export async function POST(request) {
         const comunidadeSanitizada = sanitizeText(comunidade);
         const descricaoSanitizada = sanitizeText(descricao);
         const localSanitizado = sanitizeText(local_problema);
-        const tipoSanitizado = sanitizeText(tipo);
 
         // Anônimo por padrão: só publica o primeiro nome com consentimento
         // explícito (publicar_nome === true) e se houver nome.
@@ -76,7 +80,7 @@ export async function POST(request) {
             nome: nomeSanitizado,
             comunidade: comunidadeSanitizada,
             localProblema: localSanitizado,
-            tipo: tipoSanitizado,
+            tipo,
             descricao: descricaoSanitizada,
             latitude: finalLat,
             longitude: finalLng,
@@ -106,6 +110,9 @@ export async function PUT(request) {
         // Validar status se fornecido
         if (newStatus && !STATUS.includes(newStatus)) {
             return NextResponse.json({ error: 'Status inválido' }, { status: 400 });
+        }
+        if (tipo !== undefined && !tipoValido(tipo)) {
+            return NextResponse.json({ error: 'Tipo de problema inválido' }, { status: 400 });
         }
 
         // UPDATE único com todos os campos (em vez de 2 updates separados)
