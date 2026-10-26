@@ -1,29 +1,8 @@
 'use client';
 import { useState, useRef } from 'react';
 import { useForm } from 'react-hook-form';
-
-const comunidades = [
-    'Complexo do Alemão',
-    'Rocinha',
-    'Cidade de Deus',
-    'Maré',
-    'Vidigal',
-    'Jacarezinho',
-    'Manguinhos',
-    'Penha',
-    'Outra',
-];
-
-const comunidadeCoordenadas = {
-    'Complexo do Alemão': { lat: -22.8575, lng: -43.2650 },
-    'Rocinha': { lat: -22.9880, lng: -43.2480 },
-    'Cidade de Deus': { lat: -22.9480, lng: -43.3620 },
-    'Maré': { lat: -22.8620, lng: -43.2430 },
-    'Vidigal': { lat: -22.9940, lng: -43.2330 },
-    'Jacarezinho': { lat: -22.8880, lng: -43.2620 },
-    'Manguinhos': { lat: -22.8820, lng: -43.2500 },
-    'Penha': { lat: -22.8410, lng: -43.2710 },
-};
+import PrivacyLink from '@/components/PrivacyLink';
+import { COMUNIDADES, COMUNIDADE_OUTRA, COMUNIDADE_MAX_LENGTH, coordenadasDaComunidade } from '@/lib/comunidades';
 
 const tiposProblema = [
     { value: 'falta_de_luz', label: 'Falta de Luz' },
@@ -44,6 +23,8 @@ export default function EnviarDenunciaPage() {
             local_problema: '',
             tipo: '',
             descricao: '',
+            comunidade_outra: '',
+            anonimo: true,
         },
     });
 
@@ -57,13 +38,16 @@ export default function EnviarDenunciaPage() {
     const fileInputRef = useRef(null);
 
     const watchComunidade = watch('comunidade');
+    const watchAnonimo = watch('anonimo');
 
     const handleComunidadeChange = (e) => {
         const value = e.target.value;
-        setValue('comunidade', value);
-        if (comunidadeCoordenadas[value]) {
-            const c = comunidadeCoordenadas[value];
+        setValue('comunidade', value, { shouldValidate: true });
+        const c = coordenadasDaComunidade(value);
+        if (c && geoStatus !== 'success') {
             setCoords({ latitude: c.lat, longitude: c.lng });
+        } else if (!c && geoStatus !== 'success') {
+            setCoords({ latitude: null, longitude: null });
         }
     };
 
@@ -147,11 +131,16 @@ export default function EnviarDenunciaPage() {
                 setUploading(false);
             }
 
+            const { comunidade_outra, anonimo, ...campos } = data;
+            const comunidade = campos.comunidade === COMUNIDADE_OUTRA ? comunidade_outra.trim() : campos.comunidade;
+
             const res = await fetch('/api/denuncias', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    ...data,
+                    ...campos,
+                    comunidade,
+                    publicar_nome: !anonimo,
                     midia: midiaUrl,
                     latitude: coords.latitude,
                     longitude: coords.longitude,
@@ -188,11 +177,10 @@ export default function EnviarDenunciaPage() {
                         textAlign: 'center',
                     }}>
                         <h1 style={{ fontSize: '2rem', color: 'var(--color-green)', marginBottom: '1rem' }}>
-                            Denúncia Publicada!
+                            Denúncia recebida
                         </h1>
-                        <p style={{ color: 'var(--color-gray-light)', fontSize: '1.1rem', lineHeight: 1.7 }}>
-                            Sua denúncia foi publicada com sucesso e já está visível no mapa!
-                            A comunidade pode acompanhar o problema em tempo real.
+                        <p role="status" style={{ color: 'var(--color-gray-light)', fontSize: '1.1rem', lineHeight: 1.7 }}>
+                            Recebida. Vai ao ar depois da revisão.
                         </p>
                         <button
                             className="btn btn-primary"
@@ -211,7 +199,7 @@ export default function EnviarDenunciaPage() {
         <div>
             <div className="page-header">
                 <h1><span className="text-red">Enviar Denúncia</span></h1>
-                <p>Relate problemas da sua comunidade. Sua identidade pode ser preservada.</p>
+                <p>Relate problemas da sua comunidade. Por padrão, sua denúncia é publicada como anônima.</p>
             </div>
 
             <div className="container" style={{ maxWidth: '700px' }}>
@@ -237,34 +225,77 @@ export default function EnviarDenunciaPage() {
 
                     <form onSubmit={handleSubmit(onSubmit)}>
                         <div className="form-group">
-                            <label className="form-label">Nome (opcional)</label>
+                            <label className="form-label" htmlFor="denuncia-nome">Nome (opcional)</label>
                             <input
+                                id="denuncia-nome"
                                 type="text"
                                 className="form-input"
-                                placeholder="Seu nome ou deixe em branco para denúncia anônima"
+                                autoComplete="given-name"
+                                aria-describedby="denuncia-nome-ajuda"
+                                placeholder="Seu nome ou deixe em branco"
                                 {...register('nome', { maxLength: { value: 200, message: 'Máximo 200 caracteres' } })}
                             />
+                            <p id="denuncia-nome-ajuda" className="form-help">
+                                Opcional. Se preencher, só o primeiro nome pode aparecer.
+                            </p>
                             {errors.nome && <span style={{ color: '#ef4444', fontSize: '0.8rem' }}>{errors.nome.message}</span>}
                         </div>
 
                         <div className="form-group">
-                            <label className="form-label">Comunidade *</label>
+                            <div className="form-check">
+                                <input
+                                    id="denuncia-anonimo"
+                                    type="checkbox"
+                                    aria-describedby="denuncia-anonimo-ajuda"
+                                    {...register('anonimo')}
+                                />
+                                <label htmlFor="denuncia-anonimo">Publicar anonimamente</label>
+                            </div>
+                            <p id="denuncia-anonimo-ajuda" className="form-help">
+                                {watchAnonimo
+                                    ? 'A denúncia aparece como "Anônimo".'
+                                    : 'Você autoriza mostrar só o seu primeiro nome na denúncia publicada.'}
+                            </p>
+                        </div>
+
+                        <div className="form-group">
+                            <label className="form-label" htmlFor="denuncia-comunidade">Comunidade *</label>
                             <select
+                                id="denuncia-comunidade"
                                 className="form-select"
                                 {...register('comunidade', { required: 'Selecione a comunidade' })}
                                 onChange={handleComunidadeChange}
                             >
                                 <option value="">Selecione a comunidade</option>
-                                {comunidades.map(c => (
-                                    <option key={c} value={c}>{c}</option>
+                                {COMUNIDADES.map(c => (
+                                    <option key={c.nome} value={c.nome}>{c.nome}</option>
                                 ))}
+                                <option value={COMUNIDADE_OUTRA}>Outra</option>
                             </select>
                             {errors.comunidade && <span style={{ color: '#ef4444', fontSize: '0.8rem' }}>{errors.comunidade.message}</span>}
                         </div>
 
+                        {watchComunidade === COMUNIDADE_OUTRA && (
+                            <div className="form-group">
+                                <label className="form-label" htmlFor="denuncia-comunidade-outra">Qual comunidade? *</label>
+                                <input
+                                    id="denuncia-comunidade-outra"
+                                    type="text"
+                                    className="form-input"
+                                    placeholder="Nome da comunidade"
+                                    {...register('comunidade_outra', {
+                                        validate: (v) => (watchComunidade !== COMUNIDADE_OUTRA || v.trim().length > 0) || 'Informe a comunidade',
+                                        maxLength: { value: COMUNIDADE_MAX_LENGTH, message: `Máximo ${COMUNIDADE_MAX_LENGTH} caracteres` },
+                                    })}
+                                />
+                                {errors.comunidade_outra && <span style={{ color: '#ef4444', fontSize: '0.8rem' }}>{errors.comunidade_outra.message}</span>}
+                            </div>
+                        )}
+
                         <div className="form-group">
-                            <label className="form-label">Local do problema *</label>
+                            <label className="form-label" htmlFor="denuncia-local">Local do problema *</label>
                             <input
+                                id="denuncia-local"
                                 type="text"
                                 className="form-input"
                                 placeholder="Ex: Rua Principal, próximo ao mercado"
@@ -278,7 +309,7 @@ export default function EnviarDenunciaPage() {
 
                         {/* Geolocalização */}
                         <div className="form-group">
-                            <label className="form-label">Localização no mapa</label>
+                            <span className="form-label" id="denuncia-geo-label">Localização no mapa</span>
                             <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
                                 <button
                                     type="button"
@@ -289,6 +320,7 @@ export default function EnviarDenunciaPage() {
                                         border: '1px solid rgba(255,255,255,0.1)',
                                     }}
                                     onClick={handleGetLocation}
+                                    aria-describedby="denuncia-geo-label"
                                     disabled={geoStatus === 'loading'}
                                 >
                                     {geoStatus === 'loading' ? 'Obtendo...' : 'Usar minha localização'}
@@ -310,8 +342,9 @@ export default function EnviarDenunciaPage() {
                         </div>
 
                         <div className="form-group">
-                            <label className="form-label">Tipo de problema *</label>
+                            <label className="form-label" htmlFor="denuncia-tipo">Tipo de problema *</label>
                             <select
+                                id="denuncia-tipo"
                                 className="form-select"
                                 {...register('tipo', { required: 'Selecione o tipo de problema' })}
                             >
@@ -324,8 +357,13 @@ export default function EnviarDenunciaPage() {
                         </div>
 
                         <div className="form-group">
-                            <label className="form-label">Descrição detalhada *</label>
+                            <label className="form-label" htmlFor="denuncia-descricao">Descrição detalhada *</label>
+                            <p id="denuncia-descricao-aviso" className="form-notice">
+                                Não cite nome nem problema de saúde de outras pessoas. <PrivacyLink />
+                            </p>
                             <textarea
+                                id="denuncia-descricao"
+                                aria-describedby="denuncia-descricao-aviso"
                                 className="form-textarea"
                                 placeholder="Descreva o problema em detalhes. Quando começou, como afeta os moradores, etc."
                                 style={{ minHeight: '150px' }}
@@ -339,7 +377,7 @@ export default function EnviarDenunciaPage() {
 
                         {/* Upload de Mídia */}
                         <div className="form-group">
-                            <label className="form-label">Anexar Foto ou Vídeo (opcional)</label>
+                            <label className="form-label" htmlFor="denuncia-midia">Anexar Foto ou Vídeo (opcional)</label>
                             <div style={{
                                 border: '2px dashed var(--color-dark-gray)',
                                 borderRadius: 'var(--radius-md)',
@@ -353,6 +391,7 @@ export default function EnviarDenunciaPage() {
                                 onClick={() => !selectedFile && fileInputRef.current?.click()}
                             >
                                 <input
+                                    id="denuncia-midia"
                                     ref={fileInputRef}
                                     type="file"
                                     accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,video/quicktime"
@@ -418,8 +457,9 @@ export default function EnviarDenunciaPage() {
                             fontSize: '0.85rem',
                             color: 'var(--color-yellow)',
                         }}>
-                            Sua denúncia será publicada imediatamente no mapa.
-                            Se preferir permanecer anônimo, não preencha o campo de nome.
+                            Sua denúncia passa pela revisão da equipe antes de ir ao ar. Não escreva nome,
+                            telefone ou problema de saúde de outra pessoa.{' '}
+                            <PrivacyLink>Saiba como cuidamos dos seus dados</PrivacyLink>.
                         </div>
 
                         <button

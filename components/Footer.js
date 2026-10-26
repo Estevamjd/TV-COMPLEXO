@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { FaFacebook, FaInstagram, FaTiktok, FaYoutube } from 'react-icons/fa';
+import PrivacyLink from '@/components/PrivacyLink';
 
 export default function Footer() {
     return (
@@ -19,6 +20,7 @@ export default function Footer() {
                         <Link href="/noticias">Notícias</Link>
                         <Link href="/denuncias">Denúncias</Link>
                         <Link href="/sobre">Sobre Nós</Link>
+                        <PrivacyLink className="">Privacidade</PrivacyLink>
                     </div>
                     <div className="footer-col">
                         <h3>Comunidades</h3>

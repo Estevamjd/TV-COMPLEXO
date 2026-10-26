@@ -16,7 +16,7 @@
 --      (as que já estavam no ar continuam no ar).
 --
 -- CORTE_LEGADO: '2026-10-26 16:00:00' (UTC). Tem que ser IGUAL ao valor de
--- CORTE_LEGADO em lib/denuncias.js. Se o corte mudar antes do merge, troque
+-- CORTE_LEGADO em lib/corte-legado.js. Se o corte mudar antes do merge, troque
 -- nos dois lugares.
 -- =============================================================================
 
