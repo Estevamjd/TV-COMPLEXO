@@ -55,10 +55,48 @@ describe('mascararTextoPublico (R3)', () => {
     it('mascara nome completo em minúsculas e em CAIXA ALTA', () => {
         expect(mascararTextoPublico('o lixo é do joão da silva')).toBe('o lixo é do [nome]');
         expect(mascararTextoPublico('Falar com JOÃO DA SILVA amanhã')).toBe('Falar com [nome] amanhã');
-        expect(mascararTextoPublico('JOÃO DA SILVA JOGOU LIXO NA RUA')).toBe('[nome] JOGOU LIXO NA RUA');
+        expect(mascararTextoPublico('JOÃO DA SILVA JOGOU LIXO NA RUA')).toBe('[nome] NA RUA');
         expect(mascararTextoPublico('vizinho QUINTANILHA DA SILVA')).toBe('vizinho [nome]');
         expect(mascararTextoPublico('Maria Quintanilha reclamou')).toBe('[nome] reclamou');
-        expect(mascararTextoPublico('maria e josé foram')).toBe('[nome] foram');
+        expect(mascararTextoPublico('maria e josé foram passear longe')).toBe('[nome] longe');
+    });
+
+    it.each([
+        ['falar com joão quintanilha amanhã', 'falar com [nome] amanhã'],
+        ['falar com joão pedro quintanilha amanhã', 'falar com [nome] amanhã'],
+        ['falar com enzo gabriel bertolucci amanhã', 'falar com [nome] amanhã'],
+        ['falar com joão quintanilha bertolucci amanhã', 'falar com [nome] amanhã'],
+        ['joão zubrelvax de bertolucci reclamando demais', '[nome] reclamando demais'],
+        ['joão zubrelvax pedro bertolucci quintanilha amanhã', '[nome] amanhã'],
+        ['ENZO BERTOLUCCI RECLAMOU DO LIXO', '[nome] RECLAMOU DO LIXO'],
+        ['Enzo Bertolucci reclamou do lixo', '[nome] reclamou do lixo'],
+        ['enzo bertolucci reclamou do lixo', '[nome] reclamou do lixo'],
+        ['joão de zubrelvax bertolucci reclamando demais', '[nome] reclamando demais'],
+        ['joão cadê o posto', '[nome] posto'],
+        ['joão vive reclamando demais', '[nome] demais'],
+        ['maria chegou tarde ao posto', '[nome] ao posto'],
+        ['pedro precisa de remédio urgente', '[nome] urgente'],
+        ['joão e zubrelvax', 'joão e zubrelvax'],
+        ['joão quintanilha e maria', '[nome]'],
+        ['a guarda municipal João Quintanilha passou ontem sem avisar', 'a guarda municipal [nome] ontem sem avisar'],
+        ['guarda municipal joão quintanilha', 'guarda municipal [nome]'],
+        ['joão zubrelvax amanhã', '[nome] amanhã'],
+        ['JOÃO ZUBRELVAX AMANHÃ', '[nome] AMANHÃ'],
+        ['João Zubrelvax amanhã', '[nome] amanhã'],
+        ['joão de zubrelvax bertolucci reclamou', '[nome] reclamou'],
+    ])('sobrenome fora das listas: %s', (texto, esperado) => {
+        expect(mascararTextoPublico(texto)).toBe(esperado);
+    });
+
+    it.each(['joão foi ao posto', 'JOÃO FOI AO POSTO', 'João foi ao posto',
+        'enzo reclamou do lixo', 'ENZO RECLAMOU DO LIXO',
+        'rua joão quintanilha sem luz', 'Escola Municipal Enzo Bertolucci',
+        'avenida joão quintanilha', 'praça josé bonifácio',
+        'escola maria luiza dias', 'Escola Municipal Alice Pereira',
+        'escola municipal alice pereira', 'Hospital Estadual Alice Pereira',
+        'Unidade Federal Alice Pereira', 'UBS Municipal Alice Pereira'])
+    ('preserva frases e lugares: %s', (texto) => {
+        expect(mascararTextoPublico(texto)).toBe(texto);
     });
 
     it('texto gritado: mascara o nome sem engolir a frase', () => {
