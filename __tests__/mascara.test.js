@@ -39,6 +39,83 @@ describe('mascararTextoPublico (R3)', () => {
         expect(mascararTextoPublico('Ontem Beltrana Souza reclamou')).toBe('Ontem [nome] reclamou');
     });
 
+    it.each(['-', '\u2010', '\u2011', '\u00AD'])('mascara sobrenomes com hífen %s por inteiro (R3-1)', (hifen) => {
+        for (const nome of [
+            `Tiago Nóbrega${hifen}Assunção`,
+            `tiago nóbrega${hifen}assunção`,
+            `TIAGO NÓBREGA${hifen}ASSUNÇÃO`,
+            `Fulano Nóbrega${hifen}Assunção`,
+        ]) {
+            const out = mascararTextoPublico(`falar com ${nome} amanhã`);
+            expect(out).toBe('falar com [nome] amanhã');
+            expect(out).not.toMatch(/Assunção/i);
+        }
+    });
+
+    it.each(['ana-paula souza', 'JOÃO-PEDRO SANTOS', 'joão-pedro santos', 'MARIA-CLARA OLIVEIRA'])(
+        'mascara primeiro nome hifenizado: %s', (nome) => {
+            expect(mascararTextoPublico(nome)).toBe('[nome]');
+        },
+    );
+
+    it('processa uma cadeia longa de hífens em menos de um segundo', () => {
+        const texto = 'Ab-'.repeat(50000);
+        const inicio = performance.now();
+        const out = mascararTextoPublico(texto);
+        const duracao = performance.now() - inicio;
+        expect(out).toBe(texto);
+        expect(duracao).toBeLessThan(1000);
+    });
+
+    it('processa uma cadeia longa com nome conhecido em menos de um segundo', () => {
+        const texto = 'Maria-'.repeat(20000);
+        const inicio = performance.now();
+        const out = mascararTextoPublico(texto);
+        const duracao = performance.now() - inicio;
+        expect(out).toBe(texto);
+        expect(duracao).toBeLessThan(1000);
+    });
+
+    it.each(['Maria Segunda-Feira', 'Ligou Maria Terça-feira'])(
+        'preserva dia da semana hifenizado: %s', (texto) => {
+            expect(mascararTextoPublico(texto)).toBe(texto);
+        },
+    );
+
+    it('mascara sobrenome com mais de três segmentos sem deixar sufixos', () => {
+        expect(mascararTextoPublico('Tiago Ab-cd-ef-gh-ij')).toBe('[nome]');
+    });
+
+    it.each(['-', '\u2010', '\u2011', '\u00AD'])(
+        'mascara cadeia longa com primeiro nome desconhecido e hífen %s', (hifen) => {
+            expect(mascararTextoPublico(`Beltrana Souza${hifen}a${hifen}b${hifen}c${hifen}d`))
+                .toBe('[nome]');
+        },
+    );
+
+    it.each(['Ana Domingo', 'Ana Souza-Domingo', 'Beltrana Souza-Domingo'])(
+        'permite dia da semana como sobrenome: %s', (nome) => {
+            expect(mascararTextoPublico(nome)).toBe('[nome]');
+        },
+    );
+
+    it('mantém en dash como separador de trechos', () => {
+        expect(mascararTextoPublico('Tiago Nóbrega–Assunção'))
+            .toBe('[nome]–Assunção');
+    });
+
+    it('preserva intervalo de datas e as máscaras de telefone e CPF', () => {
+        expect(mascararTextoPublico('10-12 de março')).toBe('10-12 de março');
+        expect(mascararTextoPublico('(21) 99999-0000, 123.456.789-00'))
+            .toBe('[telefone], [CPF]');
+    });
+
+    it('combina sobrenome hifenizado com telefone, CPF e e-mail', () => {
+        const out = mascararTextoPublico('Tiago Nóbrega-Assunção, (21) 99999-0000, 123.456.789-00, tiago-assuncao@exemplo.com');
+        expect(out).toBe('[nome], [telefone], [CPF], [e-mail]');
+        expect(out).not.toContain('Assunção');
+    });
+
     it('mascara nome após tratamento ("Dona", "Seu")', () => {
         expect(mascararTextoPublico('A casa da Dona Fulana caiu')).toBe('A casa da Dona [nome] caiu');
     });
