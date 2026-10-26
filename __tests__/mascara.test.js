@@ -1,5 +1,67 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+
+vi.mock('@/lib/db', () => ({ default: { query: vi.fn() } }));
+import { paraSaidaPublica } from '@/lib/denuncias';
 import { mascararTextoPublico, autorPublico } from '@/lib/mascara';
+
+const REGRESSOES_HIFEN = [
+    ...['Valdirene Ferraz', 'Zorbaq Ulmenk', 'Maria Silva', 'João Zorbaq'].flatMap((nome) => (
+        ['-', '\u2010', '\u2011', '\u00AD'].flatMap((hifen) => {
+            const texto = `${nome} Segunda${hifen}Feira ${nome.startsWith('Zorbaq') ? 'passou' : 'veio'}`;
+            return [
+                [texto, `[nome] Segunda${hifen}Feira ${nome.startsWith('Zorbaq') ? 'passou' : 'veio'}`],
+                // Zorbaq Ulmenk e Valdirene Ferraz não estão nas listas: em
+                // minúsculas permanecem sem máscara, como em 71e9a24.
+                [texto.toLowerCase(), /^(Zorbaq|Valdirene)/.test(nome) ? texto.toLowerCase()
+                    : `[nome] segunda${hifen}feira veio`],
+            ];
+        })
+    )),
+    ['ZORBAQ ULMENK Segunda-Feira passou', '[nome] Segunda-Feira passou'],
+    ['água Zorbaq Ulmenk Segunda-Feira passou', 'água [nome] Segunda-Feira passou'],
+    ['zorbaq silva segunda-feira veio', '[nome] segunda-feira veio'],
+    ['João Silva-Pereira-Costa viu', '[nome] viu'],
+    ['Maria-Clara Ana-Beatriz Souza-Lima veio', '[nome] veio'],
+    ['Pedro Zorbaq-Ulmenk viu', '[nome] viu'],
+    ['Zorbaq Ulmenk-Pereira viu', '[nome] viu'],
+    ...['zorbaq souza-e-silva', 'Zorbaq Souza-e-Silva', 'Ulmenk Souza-e-Silva',
+        'ulmenk souza-e-silva', 'ZORBAQ SOUZA-E-SILVA'].map((nome) => [nome, '[nome]']),
+];
+
+describe('regressões LGPD R3r-1', () => {
+    it.each([
+        'maria joão costa pedro souza',
+        'maria zorbaq ulmenk bertolucci pedro souza',
+        'maria zorbaq ulmenk bertolucci pedro souza joão silva',
+    ])('mescla todos os trechos sobrepostos antes do dia: %s', (nome) => {
+        const saida = mascararTextoPublico(`${nome} segunda-feira veio`);
+        expect(saida).not.toMatch(/(?<!segun)da-feira/);
+        expect(saida).toBe('[nome] segunda-feira veio');
+    });
+
+    it.each(REGRESSOES_HIFEN)('limita o nome em %s', (texto, esperado) => {
+        expect(mascararTextoPublico(texto)).toBe(esperado);
+    });
+
+    it.each(REGRESSOES_HIFEN)('protege os campos públicos em %s', (texto, esperado) => {
+        const saida = paraSaidaPublica({
+            comunidade: texto, local_problema: texto, descricao: texto,
+        });
+        for (const campo of ['comunidade', 'local_problema', 'descricao']) {
+            expect(saida[campo]).toBe(esperado);
+        }
+    });
+
+    it.each(['guarda-chuva', 'segunda-feira', 'bem-te-vi', 'pré-natal',
+        'Na Segunda-Feira', 'Maria Segunda-Feira', 'na segunda-feira',
+        'choveu forte segunda-feira', 'falta água segunda-feira',
+        'Falta água segunda-feira', 'Choveu forte segunda-feira', 'Buraco enorme terça-feira',
+        'Ontem Falta água segunda-feira', 'Ontem Choveu forte segunda-feira',
+        'Ontem Buraco enorme terça-feira', 'Zorbaq água Ulmenk segunda-feira',
+        'o buraco aumentou segunda-feira', 'buraco enorme terça-feira'])('preserva %s', (texto) => {
+        expect(mascararTextoPublico(texto)).toBe(texto);
+    });
+});
 
 // Todos os exemplos são fictícios.
 describe('mascararTextoPublico (R3)', () => {
