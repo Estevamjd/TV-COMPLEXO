@@ -206,6 +206,8 @@ h6 {
 }
 
 .flex-between {
+    flex-wrap: wrap;
+    gap: 0.75rem 1rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -1985,4 +1987,22 @@ main {
     flex-wrap: wrap;
     gap: 0.5rem;
     margin-top: 0.75rem;
+}
+
+.btn:focus-visible,
+.card a:focus-visible {
+    outline: 3px solid var(--color-yellow);
+    outline-offset: 2px;
+}
+
+.card:has(:focus-visible) {
+    border-color: var(--color-red);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .card,
+    .card:hover {
+        transition: none;
+        transform: none;
+    }
 }

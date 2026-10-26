@@ -11,18 +11,18 @@ export default async function DenunciasPage() {
     return (
         <div>
             <div className="page-header">
-                <h1>📢 <span className="text-red">Denúncias</span></h1>
+                <h1><span aria-hidden="true">📢</span> <span className="text-red">Denúncias</span></h1>
                 <p>Problemas reportados pela comunidade. Veja o mapa e ajude a cobrar soluções.</p>
             </div>
 
             <div className="container">
                 {/* Mapa */}
                 <div style={{ marginBottom: '3rem' }}>
-                    <h2 className="section-title">🗺️ Mapa de Problemas</h2>
+                    <h2 className="section-title"><span aria-hidden="true">🗺️</span> Mapa de Problemas</h2>
                     <MapWrapper denuncias={denuncias} />
 
                     {/* Legenda */}
-                    <div style={{
+                    <div role="list" aria-label="Legenda do mapa" style={{
                         display: 'flex',
                         gap: '1rem',
                         flexWrap: 'wrap',
@@ -39,8 +39,10 @@ export default async function DenunciasPage() {
                             { label: 'Saneamento', color: '#2a9d8f' },
                             { label: 'Fios Energizados', color: '#f9c74f' },
                             { label: 'Poste Caído', color: '#999999' },
+                            { label: 'Violência', color: '#c1121f' },
+                            { label: 'Outros', color: '#666666' },
                         ].map(item => (
-                            <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem' }}>
+                            <div role="listitem" key={item.label} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem' }}>
                                 <div style={{ width: 12, height: 12, borderRadius: '50%', background: item.color }}></div>
                                 {item.label}
                             </div>
@@ -51,8 +53,8 @@ export default async function DenunciasPage() {
                 {/* Lista de Denúncias */}
                 <div>
                     <div className="flex-between" style={{ marginBottom: '1.5rem' }}>
-                        <h2 className="section-title" style={{ marginBottom: 0 }}>📋 Denúncias da Comunidade</h2>
-                        <Link href="/denuncias/enviar" className="btn btn-primary btn-sm">📢 Enviar Denúncia</Link>
+                        <h2 className="section-title" style={{ marginBottom: 0 }}><span aria-hidden="true">📋</span> Denúncias da Comunidade</h2>
+                        <Link href="/denuncias/enviar" className="btn btn-primary btn-sm"><span aria-hidden="true">📢</span> Enviar Denúncia</Link>
                     </div>
                     {denuncias.length === 0 ? (
                         <div className="empty-state">
