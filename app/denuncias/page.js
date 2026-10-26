@@ -1,4 +1,4 @@
-import db from '@/lib/db';
+import { listarDenunciasPublicas } from '@/lib/denuncias';
 import ReportCard from '@/components/ReportCard';
 import MapWrapper from './MapWrapper';
 import Link from 'next/link';
@@ -6,7 +6,7 @@ import Link from 'next/link';
 export const dynamic = 'force-dynamic';
 
 export default async function DenunciasPage() {
-    const { rows: denuncias } = await db.query("SELECT * FROM denuncias WHERE status IN ('pendente', 'resolvida') ORDER BY created_at DESC");
+    const denuncias = await listarDenunciasPublicas();
 
     return (
         <div>

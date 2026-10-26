@@ -1,0 +1,317 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { criarBanco, adaptador, inserirFicticia, contagemPorStatus, MIGRACAO, ROLLBACK } from './helpers/pglite-db';
+
+// R2/R3 — moderação e saída pública, contra Postgres local (PGlite).
+// Nada aqui toca banco remoto; dados fictícios.
+
+const estado = vi.hoisted(() => ({ db: null, admin: false }));
+
+vi.mock('@/lib/db', () => ({
+    default: { query: (...args) => estado.db.query(...args) },
+}));
+vi.mock('@/lib/auth', () => ({
+    isAuthenticated: async () => estado.admin,
+}));
+vi.mock('@/lib/audit', () => ({
+    auditLog: async () => {},
+}));
+
+const { GET, POST, PUT } = await import('@/app/api/denuncias/route');
+const { _resetDeteccaoColuna, CORTE_LEGADO } = await import('@/lib/denuncias');
+
+let ipSeq = 0;
+function req(method, { body, query = '' } = {}) {
+    ipSeq += 1;
+    return new Request(`http://localhost/api/denuncias${query}`, {
+        method,
+        headers: { 'content-type': 'application/json', 'x-real-ip': `10.9.0.${ipSeq}` },
+        body: body ? JSON.stringify(body) : undefined,
+    });
+}
+
+async function getPublico(query = '') {
+    estado.admin = false;
+    const res = await GET(req('GET', { query }));
+    expect(res.status).toBe(200);
+    return res.json();
+}
+
+async function getAdmin(query = '') {
+    estado.admin = true;
+    const res = await GET(req('GET', { query }));
+    estado.admin = false;
+    expect(res.status).toBe(200);
+    return res.json();
+}
+
+async function enviar(extra = {}) {
+    estado.admin = false;
+    const res = await POST(req('POST', {
+        body: {
+            nome: 'Fulano Ciclano da Silva',
+            comunidade: 'Complexo do Alemão',
+            local_problema: 'Beco Fictício',
+            tipo: 'lixo_acumulado',
+            descricao: 'Lixo acumulado. Falar com Beltrano Souza (21) 98888-7777, que teve AVC hemorrágico e tumor.',
+            ...extra,
+        },
+    }));
+    const json = await res.json();
+    return { res, json };
+}
+
+async function moderar(body) {
+    estado.admin = true;
+    const res = await PUT(req('PUT', { body }));
+    estado.admin = false;
+    return res;
+}
+
+function expectSaidaPublicaLimpa(lista) {
+    const texto = JSON.stringify(lista);
+    for (const d of lista) {
+        expect(Object.keys(d).sort()).toEqual(
+            ['autor', 'comunidade', 'created_at', 'descricao', 'id', 'latitude', 'local_problema', 'longitude', 'status', 'tipo'].sort());
+        expect(['aprovada', 'resolvida']).toContain(d.status);
+    }
+    expect(texto).not.toMatch(/"nome"/);
+    expect(texto).not.toMatch(/"midia"/);
+    expect(texto).not.toMatch(/"pendente"|"rejeitada"/);
+    expect(texto).not.toMatch(/Ciclano|Beltrano|Souza|da Silva|de Tal/);
+    expect(texto).not.toMatch(/98888|@/);
+    expect(texto).not.toMatch(/AVC|tumor/i);
+}
+
+describe.each([
+    { cenario: 'ANTES da migração, sem CHECK', checkLegado: false, migrar: false },
+    { cenario: 'ANTES da migração, com CHECK legado', checkLegado: true, migrar: false },
+    { cenario: 'DEPOIS da migração (com CHECK legado)', checkLegado: true, migrar: true },
+    { cenario: 'DEPOIS da migração (sem CHECK)', checkLegado: false, migrar: true },
+])('$cenario', ({ checkLegado, migrar }) => {
+    let pg;
+    let legadoPendente;
+    let legadoResolvida;
+    let legadoRejeitada;
+
+    beforeEach(async () => {
+        pg = await criarBanco({ checkLegado });
+        estado.db = adaptador(pg);
+        _resetDeteccaoColuna();
+        // Denúncias que já estavam no ar antes da moderação.
+        legadoPendente = await inserirFicticia(pg, { status: 'pendente', createdAt: '2026-10-01 10:00:00' });
+        legadoResolvida = await inserirFicticia(pg, { status: 'resolvida', createdAt: '2026-10-02 10:00:00' });
+        legadoRejeitada = await inserirFicticia(pg, { status: 'rejeitada', createdAt: '2026-10-03 10:00:00' });
+        if (migrar) await pg.exec(MIGRACAO);
+    });
+
+    it('as denúncias atuais (pendente antes do corte) continuam públicas; rejeitada não', async () => {
+        const ids = (await getPublico()).map((d) => d.id);
+        expect(ids).toContain(legadoPendente);
+        expect(ids).toContain(legadoResolvida);
+        expect(ids).not.toContain(legadoRejeitada);
+    });
+
+    it('POST: nasce pendente, responde "Recebida. Vai ao ar depois da revisão." e NÃO aparece no público', async () => {
+        const { res, json } = await enviar();
+        expect(res.status).toBe(201);
+        expect(json.message).toBe('Recebida. Vai ao ar depois da revisão.');
+
+        const { rows } = await pg.query('SELECT status FROM denuncias WHERE id = $1', [json.id]);
+        expect(rows[0].status).toBe('pendente');
+
+        const publico = await getPublico();
+        expect(publico.map((d) => d.id)).not.toContain(json.id);
+        // Nem pedindo status=pendente explicitamente.
+        expect((await getPublico('?status=pendente')).map((d) => d.id)).not.toContain(json.id);
+
+        // O admin vê o original, sem máscara.
+        const admin = await getAdmin('?status=pendente');
+        const original = admin.find((d) => d.id === json.id);
+        expect(original.nome).toBe('Fulano Ciclano da Silva');
+        expect(original.descricao).toMatch(/AVC hemorrágico e tumor/);
+        // Fila: pendentes no topo.
+        expect((await getAdmin())[0].status).toBe('pendente');
+    });
+
+    it('saída pública não traz nome completo, e-mail, telefone, mídia nem saúde', async () => {
+        await inserirFicticia(pg, {
+            status: 'resolvida',
+            nome: 'Fulana de Tal',
+            descricao: 'Contato fulana@exemplo.com, (21) 98888-7777. Beltrano Souza está com câncer.',
+        });
+        const publico = await getPublico();
+        expect(publico.length).toBeGreaterThan(0);
+        expectSaidaPublicaLimpa(publico);
+        expect(publico.every((d) => d.autor === 'Anônimo')).toBe(true);
+    });
+
+    if (migrar) {
+        it('aprovar torna pública; rejeitar nunca; resolvida pública', async () => {
+            const a = (await enviar()).json.id;
+            const r = (await enviar()).json.id;
+
+            // Admin edita a descrição (caminho principal) e aprova.
+            expect((await moderar({ id: a, descricao: 'Lixo acumulado na esquina.', status: 'aprovada' })).status).toBe(200);
+            expect((await moderar({ id: r, status: 'rejeitada' })).status).toBe(200);
+
+            let ids = (await getPublico()).map((d) => d.id);
+            expect(ids).toContain(a);
+            expect(ids).not.toContain(r);
+
+            expect((await moderar({ id: a, status: 'resolvida' })).status).toBe(200);
+            ids = (await getPublico()).map((d) => d.id);
+            expect(ids).toContain(a);
+
+            const publico = await getPublico();
+            expect(publico.find((d) => d.id === a).descricao).toBe('Lixo acumulado na esquina.');
+            expectSaidaPublicaLimpa(publico);
+        });
+
+        it('publicar_nome: consentiu → só o primeiro nome; padrão → Anônimo', async () => {
+            const comNome = (await enviar({ publicar_nome: true })).json.id;
+            const semNome = (await enviar()).json.id;
+            await moderar({ id: comNome, status: 'aprovada' });
+            await moderar({ id: semNome, status: 'aprovada' });
+
+            const publico = await getPublico();
+            expect(publico.find((d) => d.id === comNome).autor).toBe('Fulano');
+            expect(publico.find((d) => d.id === semNome).autor).toBe('Anônimo');
+            expectSaidaPublicaLimpa(publico);
+
+            const { rows } = await pg.query('SELECT id, publicar_nome FROM denuncias WHERE id IN ($1, $2)', [comNome, semNome]);
+            expect(Object.fromEntries(rows.map((x) => [x.id, x.publicar_nome]))).toEqual({ [comNome]: true, [semNome]: false });
+        });
+
+        it('migração: pendente antiga vira aprovada; contagens batem', async () => {
+            const { rows } = await pg.query('SELECT status FROM denuncias WHERE id = $1', [legadoPendente]);
+            expect(rows[0].status).toBe('aprovada');
+            expect(await contagemPorStatus(pg)).toEqual({ aprovada: 1, rejeitada: 1, resolvida: 1 });
+        });
+    } else {
+        it('sem a coluna publicar_nome, o POST funciona e o autor sai sempre "Anônimo"', async () => {
+            const { res } = await enviar({ publicar_nome: true });
+            expect(res.status).toBe(201);
+            const { rows } = await pg.query(`SELECT count(*)::int AS n FROM information_schema.columns
+                WHERE table_name = 'denuncias' AND column_name = 'publicar_nome'`);
+            expect(rows[0].n).toBe(0);
+            expect((await getPublico()).every((d) => d.autor === 'Anônimo')).toBe(true);
+        });
+
+        if (checkLegado) {
+            it('aprovar antes da migração (CHECK sem "aprovada") devolve 409 explicando', async () => {
+                const id = (await enviar()).json.id;
+                const res = await moderar({ id, status: 'aprovada' });
+                expect(res.status).toBe(409);
+                expect((await res.json()).error).toMatch(/migração/);
+                // Rejeitar funciona mesmo antes da migração.
+                expect((await moderar({ id, status: 'rejeitada' })).status).toBe(200);
+            });
+        } else {
+            it('sem CHECK, aprovar já funciona antes da migração', async () => {
+                const id = (await enviar()).json.id;
+                expect((await moderar({ id, status: 'aprovada' })).status).toBe(200);
+                expect((await getPublico()).map((d) => d.id)).toContain(id);
+            });
+        }
+    }
+});
+
+describe('PUT', () => {
+    beforeEach(async () => {
+        estado.db = adaptador(await criarBanco());
+        _resetDeteccaoColuna();
+    });
+
+    it('exige admin', async () => {
+        estado.admin = false;
+        const res = await PUT(req('PUT', { body: { id: '00000000-0000-0000-0000-000000000000', status: 'aprovada' } }));
+        expect(res.status).toBe(401);
+    });
+
+    it('recusa status inválido', async () => {
+        expect((await moderar({ id: '00000000-0000-0000-0000-000000000000', status: 'publicada' })).status).toBe(400);
+    });
+
+    it('404 se a denúncia não existe', async () => {
+        expect((await moderar({ id: '00000000-0000-0000-0000-000000000000', status: 'rejeitada' })).status).toBe(404);
+    });
+});
+
+describe('POST', () => {
+    beforeEach(async () => {
+        estado.db = adaptador(await criarBanco());
+        _resetDeteccaoColuna();
+    });
+
+    it('aceita comunidade fora da lista ("Outra" com texto livre)', async () => {
+        const { res } = await enviar({ comunidade: 'Comunidade Fictícia', latitude: null, longitude: null });
+        expect(res.status).toBe(201);
+    });
+
+    it('usa a coordenada da comunidade configurada quando o formulário não manda', async () => {
+        const { json } = await enviar({ comunidade: 'Penha', latitude: null, longitude: null });
+        const admin = await getAdmin();
+        const d = admin.find((x) => x.id === json.id);
+        expect(d.latitude).toBeCloseTo(-22.841, 3);
+    });
+
+    it('recusa campos obrigatórios vazios', async () => {
+        const { res } = await enviar({ descricao: '   ' });
+        expect(res.status).toBe(400);
+    });
+});
+
+describe('CORTE_LEGADO', () => {
+    it('é o mesmo valor no código e no arquivo de migração', () => {
+        expect(MIGRACAO).toContain(`TIMESTAMP '${CORTE_LEGADO}'`);
+    });
+});
+
+describe('Migração e rollback (arquivos SQL)', () => {
+    it.each([false, true])('idempotente e reversível (CHECK legado: %s)', async (checkLegado) => {
+        const pg = await criarBanco({ checkLegado });
+        await inserirFicticia(pg, { status: 'pendente', createdAt: '2026-10-01 10:00:00' });
+        await inserirFicticia(pg, { status: 'pendente', createdAt: '2026-10-05 10:00:00' });
+        await inserirFicticia(pg, { status: 'resolvida', createdAt: '2026-10-02 10:00:00' });
+        await inserirFicticia(pg, { status: 'rejeitada', createdAt: '2026-10-03 10:00:00' });
+        // Nova, depois do corte: não pode ser aprovada pela migração.
+        await inserirFicticia(pg, { status: 'pendente', createdAt: '2099-01-01 00:00:00' });
+        const antes = await contagemPorStatus(pg);
+        const checksAntes = (await pg.query(`SELECT conname, pg_get_constraintdef(oid) AS def FROM pg_constraint
+            WHERE conrelid = 'denuncias'::regclass AND contype = 'c' ORDER BY conname`)).rows;
+
+        await pg.exec(MIGRACAO);
+        const depois1 = await contagemPorStatus(pg);
+        await pg.exec(MIGRACAO); // idempotente
+        expect(await contagemPorStatus(pg)).toEqual(depois1);
+        expect(depois1).toEqual({ aprovada: 2, pendente: 1, rejeitada: 1, resolvida: 1 });
+        expect((await pg.query('SELECT count(*)::int AS n FROM denuncias_migracao_fase1')).rows[0].n).toBe(2);
+
+        const checks = (await pg.query(`SELECT conname FROM pg_constraint
+            WHERE conrelid = 'denuncias'::regclass AND contype = 'c'`)).rows.map((r) => r.conname);
+        expect(checks).toEqual(checkLegado ? ['denuncias_status_check_fase1'] : []);
+        if (checkLegado) {
+            await expect(pg.query("UPDATE denuncias SET status = 'publicada'")).rejects.toThrow();
+        }
+
+        await pg.exec(ROLLBACK);
+        await pg.exec(ROLLBACK); // idempotente
+        expect(await contagemPorStatus(pg)).toEqual(antes);
+        const checksDepois = (await pg.query(`SELECT conname, pg_get_constraintdef(oid) AS def FROM pg_constraint
+            WHERE conrelid = 'denuncias'::regclass AND contype = 'c' ORDER BY conname`)).rows;
+        expect(checksDepois).toEqual(checksAntes);
+    });
+
+    it('recusa rodar se status for ENUM, sem alterar nada', async () => {
+        const pg = await criarBanco();
+        await pg.exec(`DROP TABLE denuncias;
+            CREATE TYPE status_denuncia AS ENUM ('pendente', 'resolvida');
+            CREATE TABLE denuncias (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), status status_denuncia DEFAULT 'pendente',
+              created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);`);
+        await expect(pg.exec(MIGRACAO)).rejects.toThrow(/ENUM/);
+        await pg.exec('ROLLBACK;').catch(() => {});
+        const { rows } = await pg.query(`SELECT count(*)::int AS n FROM information_schema.columns
+            WHERE table_name = 'denuncias' AND column_name = 'publicar_nome'`);
+        expect(rows[0].n).toBe(0);
+    });
+});

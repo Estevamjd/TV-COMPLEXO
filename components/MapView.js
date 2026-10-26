@@ -118,7 +118,7 @@ export default function MapView({ denuncias = [] }) {
                 iconAnchor: [12, 12],
             });
 
-            const safeNome = escapeHtml(d.nome || 'Anônimo');
+            const safeNome = escapeHtml(d.autor || 'Anônimo');
             const safeTipo = escapeHtml(tipoLabels[d.tipo] || d.tipo);
             const safeComunidade = escapeHtml(d.comunidade);
             const safeLocal = escapeHtml(d.local_problema);

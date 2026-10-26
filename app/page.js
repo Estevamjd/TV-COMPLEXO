@@ -8,24 +8,29 @@ import SocialFeed from '@/components/SocialFeed';
 import CommunityChips from '@/components/CommunityChips';
 import HeroMap from '@/components/HeroMap';
 import { toEmbedUrl } from '@/lib/video-utils';
+import { listarDenunciasPublicas } from '@/lib/denuncias';
 
 export const dynamic = 'force-dynamic';
+
+export const metadata = {
+    alternates: { canonical: '/' },
+};
 
 export default async function HomePage() {
     // Executar todas as queries em paralelo para melhor performance
     const [destResult, videosResult, denunciasResult, noticiasResult, denunciasMapResult] = await Promise.all([
         db.query("SELECT * FROM videos WHERE destaque = 1 ORDER BY created_at DESC LIMIT 1"),
         db.query("SELECT * FROM videos ORDER BY created_at DESC LIMIT 6"),
-        db.query("SELECT * FROM denuncias WHERE status IN ('pendente', 'resolvida') ORDER BY created_at DESC LIMIT 6"),
+        listarDenunciasPublicas({ limit: 6 }),
         db.query("SELECT * FROM noticias WHERE publicada = 1 ORDER BY created_at DESC LIMIT 3"),
-        db.query("SELECT * FROM denuncias WHERE status IN ('pendente', 'resolvida') AND latitude IS NOT NULL AND longitude IS NOT NULL"),
+        listarDenunciasPublicas({ comCoordenadas: true }),
     ]);
 
     const destaqueVideo = destResult.rows[0] || null;
     const videosRecentes = videosResult.rows;
-    const denunciasRecentes = denunciasResult.rows;
+    const denunciasRecentes = denunciasResult;
     const noticiasRecentes = noticiasResult.rows;
-    const denunciasComCoords = denunciasMapResult.rows;
+    const denunciasComCoords = denunciasMapResult;
 
     return (
         <div>
