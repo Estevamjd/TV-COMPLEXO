@@ -198,6 +198,13 @@ describe.each([
             expect(await contagemPorStatus(pg)).toEqual({ aprovada: 1, rejeitada: 1, resolvida: 1 });
         });
     } else {
+        it('primeiro GET após migração já oculta antiga devolvida a pendente, sem reset nem espera', async () => {
+            expect((await getPublico()).map((d) => d.id)).toContain(legadoPendente);
+            await pg.exec(MIGRACAO);
+            expect((await moderar({ id: legadoPendente, status: 'pendente' })).status).toBe(200);
+            expect((await getPublico()).map((d) => d.id)).not.toContain(legadoPendente);
+        });
+
         it('antes da migração, pendente anterior ao corte segue no ar e o admin vê o aviso', async () => {
             expect((await getPublico()).map((d) => d.id)).toContain(legadoPendente);
             const admin = await getAdmin();
@@ -305,6 +312,32 @@ describe('Saída pública: comunidade, local e tipo', () => {
         expect(d.local_problema).toBe('Em frente à casa da [nome], tel [telefone]');
     });
 
+    it('mascara sobrenomes desconhecidos nos três campos de texto público', async () => {
+        const id = await inserirFicticia(pg, {
+            status: 'aprovada',
+            descricao: 'ENZO BERTOLUCCI RECLAMOU DO LIXO',
+            localProblema: 'falar com joão quintanilha amanhã',
+            comunidade: 'enzo zubrelvax',
+        });
+        const d = (await getPublico()).find((x) => x.id === id);
+        expect(d.descricao).toBe('[nome] RECLAMOU DO LIXO');
+        expect(d.local_problema).toBe('falar com [nome] amanhã');
+        expect(d.comunidade).toBe('[nome]');
+    });
+
+    it('mascara joão pedro quintanilha em paraSaidaPublica nos três campos livres', async () => {
+        const id = await inserirFicticia(pg, {
+            status: 'aprovada',
+            descricao: 'falar com joão pedro quintanilha amanhã',
+            localProblema: 'falar com joão pedro quintanilha amanhã',
+            comunidade: 'falar com joão pedro quintanilha amanhã',
+        });
+        const d = (await getPublico()).find((x) => x.id === id);
+        for (const campo of ['descricao', 'local_problema', 'comunidade']) {
+            expect(d[campo]).toBe('falar com [nome] amanhã');
+        }
+    });
+
     it('tipo fora da lista vira "outros" na saída', async () => {
         const id = await inserirFicticia(pg, { status: 'aprovada', tipo: 'Fulano Ciclano 21 98888-7777' });
         expect((await getPublico()).find((x) => x.id === id).tipo).toBe('outros');
@@ -366,6 +399,29 @@ describe('Migração e rollback (arquivos SQL)', () => {
         const checksDepois = (await pg.query(`SELECT conname, pg_get_constraintdef(oid) AS def FROM pg_constraint
             WHERE conrelid = 'denuncias'::regclass AND contype = 'c' ORDER BY conname`)).rows;
         expect(checksDepois).toEqual(checksAntes);
+    });
+
+    it.each([false, true])('reexecução preserva moderação; rollback permite nova conversão (CHECK: %s)', async (checkLegado) => {
+        const pg = await criarBanco({ checkLegado });
+        estado.db = adaptador(pg);
+        _resetDeteccaoColuna();
+        const id = await inserirFicticia(pg, { createdAt: '2026-10-01 10:00:00' });
+        const status = async () => (await pg.query('SELECT status FROM denuncias WHERE id = $1', [id])).rows[0].status;
+
+        await pg.exec(MIGRACAO);
+        expect(await status()).toBe('aprovada');
+        expect((await moderar({ id, status: 'pendente' })).status).toBe(200);
+        await pg.exec(MIGRACAO);
+        expect(await status()).toBe('pendente');
+        expect((await getPublico()).map((d) => d.id)).not.toContain(id);
+        expect((await pg.query('SELECT etapa FROM denuncias_migracao_fase1_execucao')).rows)
+            .toEqual([{ etapa: 'conversao_legado' }]);
+
+        await pg.exec(ROLLBACK);
+        expect((await pg.query("SELECT to_regclass('denuncias_migracao_fase1_execucao') AS tabela")).rows[0].tabela).toBeNull();
+        await pg.exec(MIGRACAO);
+        expect(await status()).toBe('aprovada');
+        expect((await getPublico()).map((d) => d.id)).toContain(id);
     });
 
     it('recusa rodar se status for ENUM, sem alterar nada', async () => {
