@@ -63,6 +63,50 @@ describe('regressões LGPD R3r-1', () => {
     });
 });
 
+describe('regressões LGPD R3r-4: dias como limites simétricos', () => {
+    const casos = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo']
+        .flatMap((dia) => (['Sábado', 'Domingo'].includes(dia) ? [dia]
+            : [`${dia}-Feira`, `${dia} Feira`]))
+        .flatMap((dia) => ['João Silva', 'Valdirene Ferraz', 'Zorbaq Ulmenk']
+            .flatMap((nome) => [false, true].flatMap((maiusculas) => {
+                const d = maiusculas ? dia.toUpperCase() : dia;
+                const n = maiusculas ? nome.toUpperCase() : nome;
+                return ['', ','].flatMap((virgula) => [
+                    [`${n}${virgula} ${d} veio`, `[nome]${virgula} ${d} veio`],
+                    [`${d}${virgula} ${n} veio`, `${d}${virgula} [nome] veio`],
+                    [`Na ${d}${virgula} ${n} veio`, `Na ${d}${virgula} [nome] veio`],
+                ]);
+            })));
+
+    it.each(casos)('protege todos os campos públicos: %s', (texto, esperado) => {
+        const saida = paraSaidaPublica({ comunidade: texto, local_problema: texto, descricao: texto });
+        for (const campo of ['comunidade', 'local_problema', 'descricao']) {
+            expect(saida[campo]).toBe(esperado);
+        }
+    });
+
+    it.each(['choveu forte segunda-feira', 'Falta água segunda-feira',
+        'Na Segunda-Feira', 'Sábado teve tiroteio', 'guarda-chuva', 'bem-te-vi',
+        'Segunda-Feira zorbaq ulmenk veio', 'zorbaq ulmenk Segunda-Feira veio'])(
+        'preserva negativos e risco residual aceito: %s', (texto) => {
+            expect(paraSaidaPublica({ descricao: texto }).descricao).toBe(texto);
+        },
+    );
+
+    it('processa muitos limites de dia em tempo linear', () => {
+        const texto = 'Segunda-Feira Zorbaq Ulmenk veio. '.repeat(10000);
+        const inicio = performance.now();
+        expect(paraSaidaPublica({ descricao: texto }).descricao)
+            .toBe('Segunda-Feira [nome] veio. '.repeat(10000));
+        expect(performance.now() - inicio).toBeLessThan(1000);
+    });
+
+    it.each(['O', 'A'])('preserva artigo %s antes do nome', (artigo) => {
+        expect(paraSaidaPublica({ descricao: `${artigo} Tiago Nóbrega-Assunção Segunda-Feira` }).descricao)
+            .toBe(`${artigo} [nome] Segunda-Feira`);
+    });
+});
+
 // Todos os exemplos são fictícios.
 describe('mascararTextoPublico (R3)', () => {
     it('mascara termos de saúde, inclusive "AVC hemorrágico e tumor"', () => {
