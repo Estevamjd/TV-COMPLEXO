@@ -25,7 +25,9 @@ Só viram `aprovada` as `pendente` com `created_at < '2026-10-26 16:00:00'` (UTC
 **O mesmo valor está em `lib/corte-legado.js`.** O código usa esse corte para manter no ar as denúncias antigas enquanto a migração não roda. **Antes do merge, troque o valor nos dois lugares pelo instante do deploy em produção.** Assim as denúncias enviadas entre o PR e o deploy, que já estavam no ar, também continuam públicas. Um teste automatizado (`__tests__/denuncias-moderacao.test.js`, "CORTE_LEGADO") falha se os dois valores divergirem.
 
 ### Compatibilidade do código (funciona antes e depois)
-- **Público:** `status IN ('aprovada','resolvida') OR (status='pendente' AND created_at < CORTE_LEGADO)`. Antes da migração, as antigas continuam visíveis e as novas ficam ocultas. Depois da migração, a cláusula legada não pega nada.
+- **Público, antes da migração:** `status IN ('aprovada','resolvida') OR (status='pendente' AND created_at < CORTE_LEGADO)`. As antigas continuam visíveis e as novas ficam ocultas.
+- **Público, depois da migração:** só `status IN ('aprovada','resolvida')`. O código detecta a migração pela coluna `publicar_nome` (criada na mesma transação) e **desliga a cláusula legada**: se o admin devolver uma denúncia antiga para `pendente`, ela sai do ar. No admin, o selo "No ar (anterior à moderação)" só aparece antes da migração.
+- Janela de 1 minuto: se o código tiver memorizado "sem coluna" pouco antes da migração, por até 1 minuto ainda usa o filtro antigo. Como a migração já trocou as `pendente` antigas por `aprovada`, isso só afeta uma antiga devolvida para `pendente` dentro desse minuto. Para zerar a janela, basta não mexer nas antigas no primeiro minuto depois da migração.
 - **`publicar_nome` ausente:** a consulta com a coluna falha com `42703`, o código usa a versão sem a coluna e lembra disso por 1 minuto. Sem a coluna, o autor sai sempre "Anônimo". No primeiro minuto depois da migração o consentimento ainda pode ser ignorado, e a denúncia sai como "Anônimo", que é o lado seguro.
 - **Aprovar antes da migração:** se o banco tiver um CHECK sem `aprovada`, o PUT responde `409` com mensagem clara. Rejeitar funciona.
 
