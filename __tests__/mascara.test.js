@@ -48,6 +48,29 @@ describe('mascararTextoPublico (R3)', () => {
         expect(mascararTextoPublico(texto)).toBe(texto);
     });
 
+    it.each(['Av', 'Estr', 'Trav', 'Pça', 'Pca'])('preserva abreviação de logradouro %s com ou sem ponto', (prefixo) => {
+        for (const ponto of ['', '.']) {
+            const texto = `${prefixo}${ponto} Leopoldo Bulhões`;
+            expect(mascararTextoPublico(texto)).toBe(texto);
+        }
+    });
+
+    it('preserva logradouros com ponto e continua mascarando pessoas', () => {
+        expect(mascararTextoPublico('Av. Leopoldo Bulhões')).toBe('Av. Leopoldo Bulhões');
+        expect(mascararTextoPublico('Estr. José Rucas')).toBe('Estr. José Rucas');
+        expect(mascararTextoPublico('R. José Rucas')).toBe('R. [nome]');
+        expect(mascararTextoPublico('R joão pedro quintanilha')).toBe('R [nome]');
+        expect(mascararTextoPublico('falar com joão pedro quintanilha')).toBe('falar com [nome]');
+    });
+
+    it.each(['Posto Maria Souza Lima', 'Vila João Pedro Silva'])('mantém o comportamento do HEAD para %s', (texto) => {
+        expect(mascararTextoPublico(texto)).toBe(texto);
+    });
+
+    it.each(['R.', 'R', 'Al.'])('mascara nomes após a possível inicial %s', (prefixo) => {
+        expect(mascararTextoPublico(`falei com ${prefixo} Maria Santos Lima`)).toBe(`falei com ${prefixo} [nome]`);
+    });
+
     it('mantém palavra capitalizada isolada (início de frase, primeiro nome)', () => {
         expect(mascararTextoPublico('Estamos sem luz. Carlos avisou a Light.')).toBe('Estamos sem luz. Carlos avisou a Light.');
     });
