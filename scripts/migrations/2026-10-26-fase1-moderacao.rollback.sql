@@ -8,7 +8,9 @@
 --   1. Toda 'aprovada' volta a 'pendente' (no código antigo, 'pendente' é
 --      pública). Isso inclui as migradas e as aprovadas pelo admin depois.
 --   2. Remove o CHECK desta migração e recria os CHECKs originais guardados.
---   3. NÃO apaga publicar_nome nem as tabelas de registro (o código antigo
+--   3. Apaga a marca de execução (denuncias_migracao_fase1_execucao), para que
+--      uma nova aplicação da migração volte a converter as antigas.
+--   4. NÃO apaga publicar_nome nem as tabelas de registro (o código antigo
 --      ignora a coluna; apagar perde os consentimentos). Os comandos de
 --      limpeza estão comentados no fim, para uso só com OK do Estevam.
 --
@@ -55,6 +57,9 @@ BEGIN
         END IF;
     END LOOP;
 END $$;
+
+-- 3. Marca de execução: sem ela, reaplicar a migração converte de novo.
+DROP TABLE IF EXISTS denuncias_migracao_fase1_execucao;
 
 COMMIT;
 

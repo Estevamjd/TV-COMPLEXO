@@ -19,6 +19,7 @@ Arquivos:
 Registros criados pela migração (usados pelo rollback):
 - `denuncias_migracao_fase1(id, status_anterior, migrado_em)`: ids que passaram de `pendente` para `aprovada`.
 - `denuncias_migracao_fase1_checks(conname, definicao, salvo_em)`: definição original dos CHECKs removidos.
+- `denuncias_migracao_fase1_execucao(etapa, concluida_em)`: marca `conversao_legado`, gravada na mesma transação. Reexecutar preserva antigas devolvidas pelo admin para `pendente`, sem reaprovar.
 
 ### Corte (`CORTE_LEGADO`)
 Só viram `aprovada` as `pendente` com `created_at < '2026-10-26 16:00:00'` (UTC, 13:00 BRT de 26/10/2026, hora do PR).
@@ -27,8 +28,11 @@ Só viram `aprovada` as `pendente` com `created_at < '2026-10-26 16:00:00'` (UTC
 ### Compatibilidade do código (funciona antes e depois)
 - **Público, antes da migração:** `status IN ('aprovada','resolvida') OR (status='pendente' AND created_at < CORTE_LEGADO)`. As antigas continuam visíveis e as novas ficam ocultas.
 - **Público, depois da migração:** só `status IN ('aprovada','resolvida')`. O código detecta a migração pela coluna `publicar_nome` (criada na mesma transação) e **desliga a cláusula legada**: se o admin devolver uma denúncia antiga para `pendente`, ela sai do ar. No admin, o selo "No ar (anterior à moderação)" só aparece antes da migração.
-- Janela de 1 minuto: se o código tiver memorizado "sem coluna" pouco antes da migração, por até 1 minuto ainda usa o filtro antigo. Como a migração já trocou as `pendente` antigas por `aprovada`, isso só afeta uma antiga devolvida para `pendente` dentro desse minuto. Para zerar a janela, basta não mexer nas antigas no primeiro minuto depois da migração.
-- **`publicar_nome` ausente:** a consulta com a coluna falha com `42703`, o código usa a versão sem a coluna e lembra disso por 1 minuto. Sem a coluna, o autor sai sempre "Anônimo". No primeiro minuto depois da migração o consentimento ainda pode ser ignorado, e a denúncia sai como "Anônimo", que é o lado seguro.
+- **`publicar_nome` ausente:** a consulta com a coluna falha com `42703` e o código usa a versão sem ela, com autor "Anônimo". A ausência não é memorizada: cada request tenta a coluna novamente. Assim, o primeiro GET após a migração já desliga a cláusula legada, sem espera nem reinício do processo. Só a detecção positiva é memorizada.
+Se a coluna `publicar_nome` for removida após a migração (limpeza opcional), é preciso reiniciar/redeployar a aplicação, pois o código memoriza que a coluna existe.
+
+Antes da migração, o log do banco terá erros `42703` esperados nas tentativas de consultar `publicar_nome`; o fallback sem a coluna mantém as consultas funcionando.
+
 - **Aprovar antes da migração:** se o banco tiver um CHECK sem `aprovada`, o PUT responde `409` com mensagem clara. Rejeitar funciona.
 
 ## 2. Antes de tudo: as 3 consultas de schema (só leitura)
@@ -70,10 +74,23 @@ O ensaio local já foi feito com PGlite (Postgres em memória), nos testes autom
 4. No SQL editor do Neon: colar e executar **todo** o conteúdo de `scripts/migrations/2026-10-26-fase1-moderacao.sql`. Ele roda em uma transação (`BEGIN … COMMIT`).
 5. Verificação (seção 6).
 
+### Ambiente com versão anterior já aplicada sem a marca
+
+Antes de reexecutar, se uma versão anterior desta migração já foi aplicada sem a marca `conversao_legado`, criar a tabela e inserir a marca manualmente. Isso impede reaprovar denúncias antigas que o admin já devolveu para `pendente`:
+
+```sql
+CREATE TABLE IF NOT EXISTS denuncias_migracao_fase1_execucao (
+    etapa TEXT PRIMARY KEY,
+    concluida_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+INSERT INTO denuncias_migracao_fase1_execucao (etapa) VALUES ('conversao_legado') ON CONFLICT DO NOTHING;
+```
+
 ## 6. Verificação depois da migração
 ```sql
 SELECT status, count(*) FROM denuncias GROUP BY status ORDER BY status;
 SELECT count(*) FROM denuncias_migracao_fase1;
+SELECT etapa, concluida_em FROM denuncias_migracao_fase1_execucao;
 SELECT conname, pg_get_constraintdef(oid) FROM pg_constraint WHERE conrelid = 'denuncias'::regclass;
 SELECT count(*) FILTER (WHERE publicar_nome) AS com_nome, count(*) AS total FROM denuncias;
 ```
@@ -91,7 +108,8 @@ Usar **junto com a volta do código anterior** (revert do merge), porque o códi
 1. Reverter o código e fazer o deploy.
 2. Executar `scripts/migrations/2026-10-26-fase1-moderacao.rollback.sql` (idempotente, em transação):
    - toda `aprovada` volta para `pendente` (no código antigo, `pendente` é pública). Isso inclui as aprovadas pelo admin depois da migração;
-   - remove `denuncias_status_check_fase1` e recria os CHECKs originais guardados.
+   - remove `denuncias_status_check_fase1` e recria os CHECKs originais guardados;
+   - apaga `denuncias_migracao_fase1_execucao`. Reaplicar depois do rollback converte novamente as antigas `pendente`, inclusive as devolvidas pelo admin. Os registros de ids e CHECKs são preservados.
 3. Verificar com as consultas da seção 3. As contagens por status devem bater com as de antes, mais as denúncias novas criadas no meio tempo.
 4. Efeito colateral: com o código antigo, as `pendente` não moderadas voltam a ser públicas. As `rejeitada` seguem ocultas.
 5. Limpeza opcional, só com OK do Estevam (está comentada no fim do rollback): `DROP COLUMN publicar_nome` (perde os consentimentos) e `DROP TABLE` dos dois registros.
