@@ -10,6 +10,7 @@ const tipoLabels = {
 };
 
 const statusLabels = {
+    aprovada: '🔴 Problema Ativo',
     pendente: '🔴 Problema Ativo',
     resolvida: '✅ Resolvido',
 };
@@ -56,8 +57,8 @@ export default function ReportCard({ denuncia }) {
                     lineHeight: 1.5
                 }}>{denuncia.descricao}</p>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--color-gray-medium)' }}>
-                        👤 {denuncia.nome || 'Anônimo'} · 📅 {date}
+                    <span style={{ fontSize: '0.8rem', color: 'var(--color-gray-light)' }}>
+                        <span aria-hidden="true">👤</span> {denuncia.autor || 'Anônimo'} · <span aria-hidden="true">📅</span> {date}
                     </span>
                 </div>
             </div>

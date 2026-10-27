@@ -13,11 +13,12 @@ export default async function AdminDashboard() {
             (SELECT COUNT(*) FROM denuncias) AS total_denuncias,
             (SELECT COUNT(*) FROM denuncias WHERE status = 'pendente') AS denuncias_pendentes,
             (SELECT COUNT(*) FROM denuncias WHERE status = 'resolvida') AS denuncias_resolvidas,
+            (SELECT COUNT(*) FROM denuncias WHERE status = 'aprovada') AS denuncias_aprovadas,
             (SELECT COUNT(*) FROM comentarios) AS total_comentarios
     `);
 
     const { rows: recentDenuncias } = await db.query(
-        "SELECT * FROM denuncias WHERE status = 'pendente' ORDER BY created_at DESC LIMIT 5"
+        "SELECT id, comunidade, tipo, local_problema, created_at FROM denuncias WHERE status = 'pendente' ORDER BY created_at DESC LIMIT 5"
     );
 
     return (
@@ -53,6 +54,10 @@ export default async function AdminDashboard() {
                     <div className="stat-card">
                         <div className="stat-number" style={{ color: 'var(--color-yellow)' }}>{Number(stats.denuncias_pendentes)}</div>
                         <div className="stat-label">Denúncias Pendentes</div>
+                    </div>
+                    <div className="stat-card">
+                        <div className="stat-number">{Number(stats.denuncias_aprovadas)}</div>
+                        <div className="stat-label">Denúncias Aprovadas</div>
                     </div>
                     <div className="stat-card">
                         <div className="stat-number" style={{ color: 'var(--color-green)' }}>{Number(stats.denuncias_resolvidas)}</div>

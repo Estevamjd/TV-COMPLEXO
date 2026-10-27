@@ -5,22 +5,14 @@ import { isAuthenticated } from '@/lib/auth';
 import { rateLimitResponse } from '@/lib/rate-limit';
 import sanitizeHtml from 'sanitize-html';
 import { auditLog } from '@/lib/audit';
+import { COMUNIDADE_MAX_LENGTH, coordenadasDaComunidade } from '@/lib/comunidades';
+import { tipoValido } from '@/lib/tipos';
+import { STATUS, inserirDenuncia, listarDenunciasAdmin, listarDenunciasPublicas } from '@/lib/denuncias';
 
 const sanitizeText = (text) => sanitizeHtml(text, { allowedTags: [], allowedAttributes: {} }).trim();
 
-// Fallback de coordenadas por comunidade (usado quando o frontend não envia)
-const comunidadeCoordenadas = {
-    'Complexo do Alemão': { lat: -22.8575, lng: -43.2650 },
-    'Rocinha': { lat: -22.9880, lng: -43.2480 },
-    'Cidade de Deus': { lat: -22.9480, lng: -43.3620 },
-    'Maré': { lat: -22.8620, lng: -43.2430 },
-    'Vidigal': { lat: -22.9940, lng: -43.2330 },
-    'Jacarezinho': { lat: -22.8880, lng: -43.2620 },
-    'Manguinhos': { lat: -22.8820, lng: -43.2500 },
-    'Penha': { lat: -22.8410, lng: -43.2710 },
-};
-
-const VALID_STATUSES = ['pendente', 'resolvida', 'rejeitada'];
+const ERRO_CHECK = '23514';
+const ERRO_COLUNA_INEXISTENTE = '42703';
 
 export async function GET(request) {
     try {
@@ -30,42 +22,16 @@ export async function GET(request) {
         const comunidade = searchParams.get('comunidade');
         const limit = Math.max(1, Math.min(200, parseInt(searchParams.get('limit')) || 50));
 
-        // Verificar se é admin para ver denúncias pendentes
+        // Admin vê tudo (original, sem máscara); público só aprovada/resolvida,
+        // anonimizada e mascarada no servidor. O parâmetro status é ignorado no público.
         const admin = await isAuthenticated();
+        const denuncias = admin
+            ? await listarDenunciasAdmin({ status, tipo, comunidade, limit })
+            : await listarDenunciasPublicas({ tipo, comunidade, limit });
 
-        let query = 'SELECT * FROM denuncias';
-        const conditions = [];
-        const params = [];
-
-        // Público vê denúncias pendentes e resolvidas; admin vê todas
-        if (!admin) {
-            conditions.push("status IN ('pendente', 'resolvida')");
-        } else if (status && status !== 'todos') {
-            params.push(status);
-            conditions.push(`status = $${params.length}`);
-        }
-
-        if (tipo && tipo !== 'todos') {
-            params.push(tipo);
-            conditions.push(`tipo = $${params.length}`);
-        }
-
-        if (comunidade && comunidade !== 'todos') {
-            params.push(comunidade);
-            conditions.push(`comunidade = $${params.length}`);
-        }
-
-        if (conditions.length > 0) {
-            query += ' WHERE ' + conditions.join(' AND ');
-        }
-
-        params.push(limit);
-        query += ` ORDER BY created_at DESC LIMIT $${params.length}`;
-
-        const { rows: denuncias } = await db.query(query, params);
-        return NextResponse.json(denuncias);
+        return NextResponse.json(denuncias, admin ? { headers: { 'Cache-Control': 'private, no-store' } } : undefined);
     } catch (error) {
-        console.error('[denuncias GET]', error);
+        console.error('[denuncias GET]', error?.message);
         return NextResponse.json({ error: 'Erro interno ao buscar denúncias' }, { status: 500 });
     }
 }
@@ -78,33 +44,53 @@ export async function POST(request) {
         const body = await request.json();
         const { nome, comunidade, local_problema, tipo, descricao, latitude, longitude, midia } = body;
 
-        if (!comunidade || !local_problema || !tipo || !descricao) {
+        if (![comunidade, local_problema, tipo, descricao].every((v) => typeof v === 'string' && v.trim())) {
             return NextResponse.json({ error: 'Comunidade, local, tipo e descrição são obrigatórios' }, { status: 400 });
         }
 
-        if (descricao.length > 5000 || (nome && nome.length > 200) || local_problema.length > 500) {
+        if (!tipoValido(tipo)) {
+            return NextResponse.json({ error: 'Tipo de problema inválido' }, { status: 400 });
+        }
+
+        if (descricao.length > 5000 || (nome && String(nome).length > 200) || local_problema.length > 500
+            || comunidade.length > COMUNIDADE_MAX_LENGTH) {
             return NextResponse.json({ error: 'Campos excedem o tamanho máximo permitido' }, { status: 400 });
         }
 
         // Sanitizar inputs de texto
-        const nomeSanitizado = nome ? sanitizeText(nome) : 'Anônimo';
+        const nomeSanitizado = nome ? sanitizeText(String(nome)) || 'Anônimo' : 'Anônimo';
+        const comunidadeSanitizada = sanitizeText(comunidade);
         const descricaoSanitizada = sanitizeText(descricao);
         const localSanitizado = sanitizeText(local_problema);
 
+        // Anônimo por padrão: só publica o primeiro nome com consentimento
+        // explícito (publicar_nome === true) e se houver nome.
+        const publicarNome = body.publicar_nome === true && nomeSanitizado !== 'Anônimo';
+
         // Usar coordenadas enviadas ou fallback da comunidade
-        const fallback = comunidadeCoordenadas[comunidade];
-        const finalLat = latitude || fallback?.lat || null;
-        const finalLng = longitude || fallback?.lng || null;
+        const fallback = coordenadasDaComunidade(comunidadeSanitizada);
+        const lat = Number(latitude);
+        const lng = Number(longitude);
+        const finalLat = latitude != null && Number.isFinite(lat) ? lat : fallback?.lat ?? null;
+        const finalLng = longitude != null && Number.isFinite(lng) ? lng : fallback?.lng ?? null;
 
         const id = uuidv4();
-        await db.query(`
-      INSERT INTO denuncias (id, nome, comunidade, local_problema, tipo, descricao, latitude, longitude, midia, status)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'pendente')
-    `, [id, nomeSanitizado, comunidade, localSanitizado, tipo, descricaoSanitizada, finalLat, finalLng, midia || '']);
+        await inserirDenuncia({
+            id,
+            nome: nomeSanitizado,
+            comunidade: comunidadeSanitizada,
+            localProblema: localSanitizado,
+            tipo,
+            descricao: descricaoSanitizada,
+            latitude: finalLat,
+            longitude: finalLng,
+            midia: typeof midia === 'string' ? midia : '',
+            publicarNome,
+        });
 
-        return NextResponse.json({ id, message: 'Denúncia enviada com sucesso! Ela já está visível no mapa.' }, { status: 201 });
+        return NextResponse.json({ id, message: 'Recebida. Vai ao ar depois da revisão.' }, { status: 201 });
     } catch (error) {
-        console.error('[denuncias POST]', error);
+        console.error('[denuncias POST]', error?.message);
         return NextResponse.json({ error: 'Erro interno ao enviar denúncia' }, { status: 500 });
     }
 }
@@ -115,15 +101,18 @@ export async function PUT(request) {
             return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
         }
         const body = await request.json();
-        const { id, status: newStatus, nome, comunidade, local_problema, tipo, descricao } = body;
+        const { id, status: newStatus, nome, comunidade, local_problema, tipo, descricao, publicar_nome } = body;
 
         if (!id) {
             return NextResponse.json({ error: 'ID é obrigatório' }, { status: 400 });
         }
 
         // Validar status se fornecido
-        if (newStatus && !VALID_STATUSES.includes(newStatus)) {
+        if (newStatus && !STATUS.includes(newStatus)) {
             return NextResponse.json({ error: 'Status inválido' }, { status: 400 });
+        }
+        if (tipo !== undefined && !tipoValido(tipo)) {
+            return NextResponse.json({ error: 'Tipo de problema inválido' }, { status: 400 });
         }
 
         // UPDATE único com todos os campos (em vez de 2 updates separados)
@@ -154,18 +143,32 @@ export async function PUT(request) {
             params.push(descricao);
             fields.push(`descricao = $${params.length}`);
         }
+        if (publicar_nome !== undefined) {
+            params.push(publicar_nome === true);
+            fields.push(`publicar_nome = $${params.length}`);
+        }
 
         if (fields.length === 0) {
             return NextResponse.json({ error: 'Nenhum campo para atualizar' }, { status: 400 });
         }
 
         params.push(id);
-        await db.query(`UPDATE denuncias SET ${fields.join(', ')} WHERE id = $${params.length}`, params);
+        const { rowCount } = await db.query(`UPDATE denuncias SET ${fields.join(', ')} WHERE id = $${params.length}`, params);
+        if (rowCount === 0) {
+            return NextResponse.json({ error: 'Denúncia não encontrada' }, { status: 404 });
+        }
 
         auditLog('update', 'denuncia', id, null, { newStatus, tipo });
         return NextResponse.json({ message: 'Denúncia atualizada com sucesso' });
     } catch (error) {
-        console.error('[denuncias PUT]', error);
+        // Antes da migração: CHECK antigo sem 'aprovada' ou coluna publicar_nome ausente.
+        if (error?.code === ERRO_CHECK || error?.code === ERRO_COLUNA_INEXISTENTE) {
+            return NextResponse.json(
+                { error: 'O banco ainda não recebeu a migração da moderação (status aprovada/publicar_nome). Veja MIGRACAO-PLANO.md.' },
+                { status: 409 }
+            );
+        }
+        console.error('[denuncias PUT]', error?.message);
         return NextResponse.json({ error: 'Erro interno ao atualizar denúncia' }, { status: 500 });
     }
 }
@@ -186,7 +189,7 @@ export async function DELETE(request) {
         auditLog('delete', 'denuncia', id);
         return NextResponse.json({ message: 'Denúncia deletada com sucesso' });
     } catch (error) {
-        console.error('[denuncias DELETE]', error);
+        console.error('[denuncias DELETE]', error?.message);
         return NextResponse.json({ error: 'Erro interno ao deletar denúncia' }, { status: 500 });
     }
 }

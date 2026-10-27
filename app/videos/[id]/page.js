@@ -1,4 +1,5 @@
 import db from '@/lib/db';
+import { COLUNAS_VIDEOS } from '@/lib/colunas-publicas';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { toEmbedUrl } from '@/lib/video-utils';
@@ -7,7 +8,7 @@ export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({ params }) {
     const { id } = await params;
-    const { rows } = await db.query('SELECT * FROM videos WHERE id = $1', [id]);
+    const { rows } = await db.query(`SELECT ${COLUNAS_VIDEOS} FROM videos WHERE id = $1`, [id]);
     const video = rows[0];
     if (!video) return { title: 'Vídeo não encontrado' };
     return { title: `${video.titulo} | TV Complexo` };
@@ -15,7 +16,7 @@ export async function generateMetadata({ params }) {
 
 export default async function VideoPage({ params }) {
     const { id } = await params;
-    const { rows } = await db.query('SELECT * FROM videos WHERE id = $1', [id]);
+    const { rows } = await db.query(`SELECT ${COLUNAS_VIDEOS} FROM videos WHERE id = $1`, [id]);
     const video = rows[0];
 
     if (!video) {

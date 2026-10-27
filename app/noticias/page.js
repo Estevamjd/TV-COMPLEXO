@@ -1,10 +1,11 @@
 import NewsCard from '@/components/NewsCard';
 import db from '@/lib/db';
+import { COLUNAS_NOTICIAS } from '@/lib/colunas-publicas';
 
 export const dynamic = 'force-dynamic';
 
 export default async function NoticiasPage() {
-    const { rows: noticias } = await db.query('SELECT * FROM noticias WHERE publicada = 1 ORDER BY created_at DESC');
+    const { rows: noticias } = await db.query(`SELECT ${COLUNAS_NOTICIAS} FROM noticias WHERE publicada = 1 ORDER BY created_at DESC`);
 
     return (
         <div>

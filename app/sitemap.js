@@ -1,6 +1,6 @@
 import db from '@/lib/db';
 
-const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://tvcomplexo.com.br';
+import { SITE_URL as BASE_URL } from '@/lib/site-url';
 
 export default async function sitemap() {
     const staticPages = [
@@ -10,6 +10,7 @@ export default async function sitemap() {
         { url: `${BASE_URL}/denuncias`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.8 },
         { url: `${BASE_URL}/denuncias/enviar`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.7 },
         { url: `${BASE_URL}/sobre`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.5 },
+        { url: `${BASE_URL}/privacidade`, lastModified: new Date(), changeFrequency: 'yearly', priority: 0.3 },
     ];
 
     let dynamicPages = [];

@@ -118,7 +118,7 @@ export default function MapView({ denuncias = [] }) {
                 iconAnchor: [12, 12],
             });
 
-            const safeNome = escapeHtml(d.nome || 'Anônimo');
+            const safeNome = escapeHtml(d.autor || 'Anônimo');
             const safeTipo = escapeHtml(tipoLabels[d.tipo] || d.tipo);
             const safeComunidade = escapeHtml(d.comunidade);
             const safeLocal = escapeHtml(d.local_problema);
@@ -130,8 +130,8 @@ export default function MapView({ denuncias = [] }) {
                     <div style="font-family: Inter, sans-serif; min-width: 200px;">
                         <strong style="color: ${color};">${safeTipo}</strong><br/>
                         <span style="font-size: 0.85em;">📍 ${safeComunidade} — ${safeLocal}</span><br/>
-                        <p style="font-size: 0.85em; margin: 0.5rem 0;">${safeDescricao}...</p>
-                        <span style="font-size: 0.75em; color: #999;">👤 ${safeNome}</span>
+                        <p style="font-size: 0.85em; margin: 0.5rem 0;">${safeDescricao}${(d.descricao || '').length > 100 ? '...' : ''}</p>
+                        <span style="font-size: 0.75em; color: #555;">👤 ${safeNome}</span>
                     </div>
                 `);
 
@@ -139,5 +139,5 @@ export default function MapView({ denuncias = [] }) {
         });
     }, [mapReady, denuncias]);
 
-    return <div ref={mapRef} className="map-container" />;
+    return <div ref={mapRef} className="map-container" role="region" aria-label="Mapa dos problemas reportados" />;
 }

@@ -17,7 +17,7 @@ const legendItems = [
 
 export default function HeroMap({ denuncias = [] }) {
     const totalDenuncias = denuncias.length;
-    const pendentes = denuncias.filter(d => d.status === 'pendente').length;
+    const ativas = denuncias.filter(d => d.status !== 'resolvida').length;
 
     return (
         <section className="hero-map">
@@ -39,7 +39,7 @@ export default function HeroMap({ denuncias = [] }) {
                             <span className="hero-map-stat-label">Denúncias</span>
                         </div>
                         <div className="hero-map-stat">
-                            <span className="hero-map-stat-number">{pendentes}</span>
+                            <span className="hero-map-stat-number">{ativas}</span>
                             <span className="hero-map-stat-label">Problemas Ativos</span>
                         </div>
                     </div>
