@@ -17,7 +17,7 @@
 --      a marca em denuncias_migracao_fase1_execucao impede que uma reexecução
 --      reaprove antigas que o admin devolveu para 'pendente' depois.
 --
--- CORTE_LEGADO: '2026-10-26 16:00:00' (UTC). Tem que ser IGUAL ao valor de
+-- CORTE_LEGADO: '2026-10-27 22:15:00' (UTC). Tem que ser IGUAL ao valor de
 -- CORTE_LEGADO em lib/corte-legado.js. Se o corte mudar antes do merge, troque
 -- nos dois lugares.
 -- =============================================================================
@@ -95,7 +95,7 @@ INSERT INTO denuncias_migracao_fase1 (id, status_anterior, migrado_em)
 SELECT d.id, d.status, CURRENT_TIMESTAMP
 FROM denuncias d
 WHERE d.status = 'pendente'
-  AND d.created_at < TIMESTAMP '2026-10-26 16:00:00'
+  AND d.created_at < TIMESTAMP '2026-10-27 22:15:00'
   AND NOT EXISTS (SELECT 1 FROM denuncias_migracao_fase1 m WHERE m.id = d.id)
   AND NOT EXISTS (SELECT 1 FROM denuncias_migracao_fase1_execucao e WHERE e.etapa = 'conversao_legado');
 

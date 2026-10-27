@@ -22,7 +22,7 @@ Registros criados pela migração (usados pelo rollback):
 - `denuncias_migracao_fase1_execucao(etapa, concluida_em)`: marca `conversao_legado`, gravada na mesma transação. Reexecutar preserva antigas devolvidas pelo admin para `pendente`, sem reaprovar.
 
 ### Corte (`CORTE_LEGADO`)
-Só viram `aprovada` as `pendente` com `created_at < '2026-10-26 16:00:00'` (UTC, 13:00 BRT de 26/10/2026, hora do PR).
+Só viram `aprovada` as `pendente` com `created_at < '2026-10-27 22:15:00'` (UTC, 19:15 BRT de 27/10/2026, hora planejada da migração e do deploy).
 **O mesmo valor está em `lib/corte-legado.js`.** O código usa esse corte para manter no ar as denúncias antigas enquanto a migração não roda. **Antes do merge, troque o valor nos dois lugares pelo instante do deploy em produção.** Assim as denúncias enviadas entre o PR e o deploy, que já estavam no ar, também continuam públicas. Um teste automatizado (`__tests__/denuncias-moderacao.test.js`, "CORTE_LEGADO") falha se os dois valores divergirem.
 
 ### Compatibilidade do código (funciona antes e depois)
