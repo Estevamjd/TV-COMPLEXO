@@ -9,9 +9,9 @@
 -- O que faz (idempotente — rodar duas vezes não muda o resultado):
 --   1. Recusa rodar se denuncias.status for ENUM (exige outro caminho).
 --   2. Adiciona publicar_nome BOOLEAN NOT NULL DEFAULT false (consentimento).
---   3. Se existir CHECK sobre status: guarda a definição original e o recria
---      aceitando os 4 status (pendente, aprovada, rejeitada, resolvida).
---      Se não existir CHECK, não cria nenhum (schema real ainda não lido).
+--   3. Guarda e remove os CHECKs preexistentes sobre status. Sempre cria
+--      denuncias_status_check_fase1, se ainda não existir, aceitando os
+--      4 status (pendente, aprovada, rejeitada, resolvida).
 --   4. Registra e troca para 'aprovada' as 'pendente' criadas ANTES do corte
 --      (as que já estavam no ar continuam no ar). Só na PRIMEIRA execução:
 --      a marca em denuncias_migracao_fase1_execucao impede que uma reexecução
@@ -49,7 +49,6 @@ CREATE TABLE IF NOT EXISTS denuncias_migracao_fase1_checks (
 DO $$
 DECLARE
     r record;
-    havia_check boolean := false;
 BEGIN
     FOR r IN
         SELECT conname, pg_get_constraintdef(oid) AS definicao
@@ -58,7 +57,6 @@ BEGIN
           AND contype = 'c'
           AND pg_get_constraintdef(oid) ILIKE '%status%'
     LOOP
-        havia_check := true;
         IF r.conname = 'denuncias_status_check_fase1' THEN
             CONTINUE; -- já é o CHECK desta migração (segunda execução)
         END IF;
@@ -68,7 +66,7 @@ BEGIN
         EXECUTE format('ALTER TABLE denuncias DROP CONSTRAINT %I', r.conname);
     END LOOP;
 
-    IF havia_check AND NOT EXISTS (
+    IF NOT EXISTS (
         SELECT 1 FROM pg_constraint
         WHERE conrelid = 'denuncias'::regclass AND conname = 'denuncias_status_check_fase1'
     ) THEN

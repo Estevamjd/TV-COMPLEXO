@@ -388,10 +388,8 @@ describe('Migração e rollback (arquivos SQL)', () => {
 
         const checks = (await pg.query(`SELECT conname FROM pg_constraint
             WHERE conrelid = 'denuncias'::regclass AND contype = 'c'`)).rows.map((r) => r.conname);
-        expect(checks).toEqual(checkLegado ? ['denuncias_status_check_fase1'] : []);
-        if (checkLegado) {
-            await expect(pg.query("UPDATE denuncias SET status = 'publicada'")).rejects.toThrow();
-        }
+        expect(checks).toEqual(['denuncias_status_check_fase1']);
+        await expect(pg.query("UPDATE denuncias SET status = 'publicada'")).rejects.toThrow();
 
         await pg.exec(ROLLBACK);
         await pg.exec(ROLLBACK); // idempotente

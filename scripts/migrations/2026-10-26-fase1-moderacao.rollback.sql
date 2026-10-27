@@ -7,7 +7,8 @@
 -- O que faz:
 --   1. Toda 'aprovada' volta a 'pendente' (no código antigo, 'pendente' é
 --      pública). Isso inclui as migradas e as aprovadas pelo admin depois.
---   2. Remove o CHECK desta migração e recria os CHECKs originais guardados.
+--   2. Remove o CHECK desta migração com DROP CONSTRAINT IF EXISTS e recria
+--      os CHECKs originais guardados.
 --   3. Apaga a marca de execução (denuncias_migracao_fase1_execucao), para que
 --      uma nova aplicação da migração volte a converter as antigas.
 --   4. NÃO apaga publicar_nome nem as tabelas de registro (o código antigo
@@ -37,7 +38,8 @@ END $$;
 -- 1. aprovada → pendente
 UPDATE denuncias SET status = 'pendente' WHERE status = 'aprovada';
 
--- 2. CHECK: remove o da migração e recria os originais (se foram guardados).
+-- 2. CHECK: remove o da migração com DROP CONSTRAINT IF EXISTS e recria
+--    os originais (se foram guardados).
 ALTER TABLE denuncias DROP CONSTRAINT IF EXISTS denuncias_status_check_fase1;
 
 DO $$

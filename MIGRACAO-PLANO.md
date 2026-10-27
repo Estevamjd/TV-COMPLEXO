@@ -13,7 +13,7 @@ Arquivos:
 |---|---|---|
 | Status | `pendente` (pública), `resolvida`, `rejeitada` | `pendente` (**oculta**), `aprovada` (pública), `rejeitada` (nunca pública), `resolvida` (pública) |
 | Consentimento de nome | não existe | `publicar_nome BOOLEAN NOT NULL DEFAULT false` |
-| CHECK de status | desconhecido (schema real não lido) | se existia um CHECK sobre `status`, ele é guardado e recriado como `denuncias_status_check_fase1` com os 4 status. Se não existia, nenhum é criado |
+| CHECK de status | desconhecido (schema real não lido) | CHECKs preexistentes sobre `status` são guardados e removidos. `denuncias_status_check_fase1` com os 4 status é sempre criado, se ainda não existir (idempotente) |
 | Denúncias atuais | `pendente`, no ar | `aprovada`, continuam no ar (decisão §12.3) |
 
 Registros criados pela migração (usados pelo rollback):
@@ -114,6 +114,8 @@ Usar **junto com a volta do código anterior** (revert do merge), porque o códi
 4. Efeito colateral: com o código antigo, as `pendente` não moderadas voltam a ser públicas. As `rejeitada` seguem ocultas.
 5. Limpeza opcional, só com OK do Estevam (está comentada no fim do rollback): `DROP COLUMN publicar_nome` (perde os consentimentos) e `DROP TABLE` dos dois registros.
 6. Último recurso: restaurar o backup da seção 3. Isso perde tudo o que foi escrito depois.
+
+**Nota sobre produção:** já existe 1 denúncia `aprovada` anterior à migração (não criada por ela). Como o rollback também a converte para `pendente`, o resultado esperado é 12 `pendente` (11 + 1), não 11, sem considerar novas denúncias ou moderações.
 
 ## 8. Fora deste plano
 - Upload público de mídia (`/api/upload` exige admin e responde 401 para o público). É pendência da Fase 1.
