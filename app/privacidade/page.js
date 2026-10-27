@@ -32,7 +32,7 @@ export default function PrivacidadePage() {
                 <h2>Quem cuida dos seus dados</h2>
                 <p>
                     A responsável pelos dados (controladora) é a TV Complexo.{' '}
-                    <Lacuna>razão social / CNPJ ou CPF do responsável legal pela TV Complexo, se houver</Lacuna>
+                    Responsável: Estevam Juliano
                 </p>
 
                 <h2>Quais dados a gente coleta</h2>

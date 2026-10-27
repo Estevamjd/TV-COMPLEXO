@@ -1,3 +1,4 @@
+import { paraExibicaoPublica } from '@/lib/exibicao';
 import { NextResponse } from 'next/server';
 import db from '@/lib/db';
 import { v4 as uuidv4 } from 'uuid';
@@ -27,7 +28,7 @@ export async function GET(request) {
         const admin = await isAuthenticated();
         const denuncias = admin
             ? await listarDenunciasAdmin({ status, tipo, comunidade, limit })
-            : await listarDenunciasPublicas({ tipo, comunidade, limit });
+            : (await listarDenunciasPublicas({ tipo, comunidade, limit })).map(paraExibicaoPublica);
 
         return NextResponse.json(denuncias, admin ? { headers: { 'Cache-Control': 'private, no-store' } } : undefined);
     } catch (error) {

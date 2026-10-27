@@ -1,3 +1,5 @@
+import { suavizarPlaceholders } from '@/lib/exibicao';
+
 const tipoLabels = {
     falta_de_luz: '💡 Falta de Luz',
     lixo_acumulado: '🗑️ Lixo Acumulado',
@@ -30,7 +32,7 @@ export default function ReportCard({ denuncia }) {
                         {tipoLabels[denuncia.tipo] || denuncia.tipo}
                     </span>
                     <span className="badge badge-yellow">
-                        📍 {denuncia.comunidade}
+                        📍 {suavizarPlaceholders(denuncia.comunidade)}
                     </span>
                     <span className={`badge ${denuncia.status === 'resolvida' ? 'badge-green' : 'badge-red'}`}
                         style={{ fontSize: '0.7rem' }}>
@@ -44,7 +46,7 @@ export default function ReportCard({ denuncia }) {
                     marginBottom: '0.5rem',
                     lineHeight: 1.3,
                 }}>
-                    {tipoLabels[denuncia.tipo]?.split(' ').slice(1).join(' ') || denuncia.tipo} — {denuncia.local_problema}
+                    {tipoLabels[denuncia.tipo]?.split(' ').slice(1).join(' ') || denuncia.tipo} — {suavizarPlaceholders(denuncia.local_problema)}
                 </h3>
                 <p style={{
                     fontSize: '0.85rem',
@@ -55,7 +57,7 @@ export default function ReportCard({ denuncia }) {
                     WebkitBoxOrient: 'vertical',
                     overflow: 'hidden',
                     lineHeight: 1.5
-                }}>{denuncia.descricao}</p>
+                }}>{suavizarPlaceholders(denuncia.descricao)}</p>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
                     <span style={{ fontSize: '0.8rem', color: 'var(--color-gray-light)' }}>
                         <span aria-hidden="true">👤</span> {denuncia.autor || 'Anônimo'} · <span aria-hidden="true">📅</span> {date}
