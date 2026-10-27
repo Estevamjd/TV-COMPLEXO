@@ -119,6 +119,10 @@ describe.each([
         const { rows } = await pg.query('SELECT status FROM denuncias WHERE id = $1', [json.id]);
         expect(rows[0].status).toBe('pendente');
 
+        // Simula uma denúncia enviada depois do deploy (após o CORTE_LEGADO),
+        // para o teste não depender do relógio da máquina.
+        await pg.query(`UPDATE denuncias SET created_at = TIMESTAMP '${CORTE_LEGADO}' + INTERVAL '1 minute' WHERE id = $1`, [json.id]);
+
         const publico = await getPublico();
         expect(publico.map((d) => d.id)).not.toContain(json.id);
         // Nem pedindo status=pendente explicitamente.
