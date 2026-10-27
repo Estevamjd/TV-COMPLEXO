@@ -304,8 +304,8 @@ describe('Saída pública: comunidade, local e tipo', () => {
         const caixaAlta = await inserirFicticia(pg, { status: 'aprovada', comunidade: 'perto da casa do JOÃO DA SILVA' });
         const conhecida = await inserirFicticia(pg, { status: 'aprovada', comunidade: 'Complexo do Alemão' });
         const publico = await getPublico();
-        expect(publico.find((d) => d.id === livre).comunidade).toBe('[nome]');
-        expect(publico.find((d) => d.id === caixaAlta).comunidade).toBe('perto da casa do [nome]');
+        expect(publico.find((d) => d.id === livre).comunidade).toBe('•••');
+        expect(publico.find((d) => d.id === caixaAlta).comunidade).toBe('perto da casa do •••');
         expect(publico.find((d) => d.id === conhecida).comunidade).toBe('Complexo do Alemão');
         expect(JSON.stringify(publico)).not.toMatch(/Quintanilha|SILVA/);
     });
@@ -313,7 +313,7 @@ describe('Saída pública: comunidade, local e tipo', () => {
     it('local_problema é mascarado', async () => {
         const id = await inserirFicticia(pg, { status: 'aprovada', localProblema: 'Em frente à casa da maria santos, tel 21 98888-7777' });
         const d = (await getPublico()).find((x) => x.id === id);
-        expect(d.local_problema).toBe('Em frente à casa da [nome], tel [telefone]');
+        expect(d.local_problema).toBe('Em frente à casa da •••, tel •••');
     });
 
     it('mascara sobrenomes desconhecidos nos três campos de texto público', async () => {
@@ -324,9 +324,9 @@ describe('Saída pública: comunidade, local e tipo', () => {
             comunidade: 'enzo zubrelvax',
         });
         const d = (await getPublico()).find((x) => x.id === id);
-        expect(d.descricao).toBe('[nome] RECLAMOU DO LIXO');
-        expect(d.local_problema).toBe('falar com [nome] amanhã');
-        expect(d.comunidade).toBe('[nome]');
+        expect(d.descricao).toBe('••• RECLAMOU DO LIXO');
+        expect(d.local_problema).toBe('falar com ••• amanhã');
+        expect(d.comunidade).toBe('•••');
     });
 
     it('mascara joão pedro quintanilha em paraSaidaPublica nos três campos livres', async () => {
@@ -338,7 +338,7 @@ describe('Saída pública: comunidade, local e tipo', () => {
         });
         const d = (await getPublico()).find((x) => x.id === id);
         for (const campo of ['descricao', 'local_problema', 'comunidade']) {
-            expect(d[campo]).toBe('falar com [nome] amanhã');
+            expect(d[campo]).toBe('falar com ••• amanhã');
         }
     });
 

@@ -2,7 +2,7 @@ import Link from 'next/link';
 import db from '@/lib/db';
 import { COLUNAS_NOTICIAS, COLUNAS_VIDEOS } from '@/lib/colunas-publicas';
 import VideoCard from '@/components/VideoCard';
-import NewsCard from '@/components/NewsCard';
+import HomeNews from '@/components/HomeNews';
 import ReportCard from '@/components/ReportCard';
 import ScrollReveal from '@/components/ScrollReveal';
 import SocialFeed from '@/components/SocialFeed';
@@ -138,21 +138,7 @@ export default async function HomePage() {
             )}
 
             {/* NOTÍCIAS */}
-            <section className="section">
-                <div className="container">
-                    <div className="flex-between" style={{ marginBottom: '1.5rem' }}>
-                        <h2 className="section-title">📰 Notícias</h2>
-                        <Link href="/noticias" className="btn btn-secondary btn-sm">Ver Todas →</Link>
-                    </div>
-                    <div className="grid-3">
-                        {noticiasRecentes.map((noticia, idx) => (
-                            <ScrollReveal key={noticia.id} delay={idx * 0.1}>
-                                <NewsCard noticia={noticia} />
-                            </ScrollReveal>
-                        ))}
-                    </div>
-                </div>
-            </section>
+            <HomeNews noticiasRecentes={noticiasRecentes} />
 
             {/* REDES SOCIAIS E FEED AUTOMÁTICO */}
             <SocialFeed />

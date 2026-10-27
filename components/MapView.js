@@ -1,4 +1,5 @@
 'use client';
+import { suavizarPlaceholders } from '@/lib/exibicao';
 import { useEffect, useRef, useState } from 'react';
 
 const tipoColors = {
@@ -120,9 +121,10 @@ export default function MapView({ denuncias = [] }) {
 
             const safeNome = escapeHtml(d.autor || 'Anônimo');
             const safeTipo = escapeHtml(tipoLabels[d.tipo] || d.tipo);
-            const safeComunidade = escapeHtml(d.comunidade);
-            const safeLocal = escapeHtml(d.local_problema);
-            const safeDescricao = escapeHtml((d.descricao || '').substring(0, 100));
+            const safeComunidade = escapeHtml(suavizarPlaceholders(d.comunidade));
+            const safeLocal = escapeHtml(suavizarPlaceholders(d.local_problema));
+            const descricao = suavizarPlaceholders(d.descricao);
+            const safeDescricao = escapeHtml(descricao.substring(0, 100));
 
             const marker = L.marker([lat, lng], { icon })
                 .addTo(map)
@@ -130,7 +132,7 @@ export default function MapView({ denuncias = [] }) {
                     <div style="font-family: Inter, sans-serif; min-width: 200px;">
                         <strong style="color: ${color};">${safeTipo}</strong><br/>
                         <span style="font-size: 0.85em;">📍 ${safeComunidade} — ${safeLocal}</span><br/>
-                        <p style="font-size: 0.85em; margin: 0.5rem 0;">${safeDescricao}${(d.descricao || '').length > 100 ? '...' : ''}</p>
+                        <p style="font-size: 0.85em; margin: 0.5rem 0;">${safeDescricao}${descricao.length > 100 ? '...' : ''}</p>
                         <span style="font-size: 0.75em; color: #555;">👤 ${safeNome}</span>
                     </div>
                 `);
