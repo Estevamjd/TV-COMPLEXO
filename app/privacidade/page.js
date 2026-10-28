@@ -10,12 +10,9 @@ export const metadata = {
     },
 };
 
-// Lacunas ficam visíveis até o Estevam preencher (PRIVACIDADE.md §5).
-function Lacuna({ children }) {
-    return <mark className="lacuna">[LACUNA: {children}]</mark>;
-}
-
 export default function PrivacidadePage() {
+    const ultimaAtualizacao = '28/10/2026';
+
     return (
         <div>
             <div className="page-header">
@@ -65,7 +62,7 @@ export default function PrivacidadePage() {
                     <li>
                         <strong>E-mail da newsletter:</strong> só para mandar novidades da TV Complexo, e só se você
                         marcou que quer receber. Você pode sair quando quiser.{' '}
-                        <Lacuna>forma de descadastro (link no e-mail ou pedido pelo contato) e frequência dos envios</Lacuna>
+                        Os envios são semanais, com link de descadastro em cada e-mail. Você também pode pedir para sair pelo contato.
                     </li>
                 </ul>
                 <p>A gente não vende seus dados.</p>
@@ -89,15 +86,15 @@ export default function PrivacidadePage() {
 
                 <h2>Por quanto tempo a gente guarda</h2>
                 <ul>
-                    <li>Dados de quem manda denúncia: <Lacuna>prazo de retenção — L6</Lacuna></li>
-                    <li>E-mail da newsletter: até você pedir para sair. <Lacuna>confirmar com o Estevam</Lacuna></li>
+                    <li>Dados de quem manda denúncia: guardados por 2 anos e depois apagados.</li>
+                    <li>E-mail da newsletter: guardado até você pedir para sair, pelo link de descadastro em cada e-mail.</li>
                 </ul>
-                <p>Depois desse prazo, os dados são apagados ou anonimizados.</p>
+                <p>Depois desse prazo, os dados são apagados.</p>
 
                 <h2>Onde os dados ficam</h2>
                 <p>
                     Os dados ficam guardados no banco de dados do site, com acesso restrito à equipe.{' '}
-                    <Lacuna>confirmar se citar os fornecedores de hospedagem/banco e se há envio de dados para fora do Brasil</Lacuna>
+                    Usamos Vercel para hospedagem e Neon para banco de dados. Esses fornecedores podem tratar dados fora do Brasil.
                 </p>
 
                 <h2>Seus direitos</h2>
@@ -112,14 +109,14 @@ export default function PrivacidadePage() {
                 <h2>Como pedir</h2>
                 <p>
                     Fale com a gente em:{' '}
-                    <Lacuna>contato do titular para pedidos LGPD — L6. Candidato para o Estevam confirmar: contato@tvcomplexo.com.br</Lacuna>
+                    Estevam Juliano, <a href="mailto:contato@tvcomplexo.com.br">contato@tvcomplexo.com.br</a>.
                 </p>
-                <p>Encarregado de dados (DPO): <Lacuna>nome ou canal do encarregado, se houver</Lacuna></p>
-                <p>Prazo de resposta: <Lacuna>prazo de resposta aos pedidos</Lacuna></p>
+                <p>Encarregado de dados (DPO): Estevam Juliano, <a href="mailto:contato@tvcomplexo.com.br">contato@tvcomplexo.com.br</a>.</p>
+                <p>Prazo de resposta: até 15 dias.</p>
 
                 <h2>Mudanças nesta página</h2>
                 <p>Se a gente mudar a forma de tratar os dados, esta página será atualizada.</p>
-                <p>Última atualização: <Lacuna>data de publicação</Lacuna></p>
+                <p>Última atualização: {ultimaAtualizacao}</p>
 
                 <p><em>Este texto não é parecer jurídico.</em></p>
 
