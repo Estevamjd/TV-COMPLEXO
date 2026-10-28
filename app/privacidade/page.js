@@ -11,7 +11,6 @@ export const metadata = {
 };
 
 export default function PrivacidadePage() {
-    // TODO: ajustar para a data do deploy.
     const ultimaAtualizacao = '28/10/2026';
 
     return (
