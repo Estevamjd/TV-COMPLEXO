@@ -2000,6 +2000,11 @@ main {
 }
 
 @media (prefers-reduced-motion: reduce) {
+    /* links âncora (#grade, #instalar, pular para o conteúdo) pulam direto, sem rolagem animada */
+    html {
+        scroll-behavior: auto;
+    }
+
     .card,
     .card:hover {
         transition: none;

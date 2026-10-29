@@ -1,5 +1,5 @@
 {
-  "_leia": "Canal 24h: playlist de vídeos PRÓPRIOS do @tvcomplexofc. A posição é (agora - epoch) mod duração total, então todo mundo vê o mesmo vídeo no mesmo segundo. Para pôr no ar: troque youtubeId (11 caracteres), titulo e duracaoSeg pelos dados reais e mude placeholder para false. Enquanto placeholder for true, o topo mostra o quadro 'FOTO REAL DO CANAL' em vez do player.",
+  "_leia": "Canal 24h: playlist de vídeos PRÓPRIOS do @tvcomplexofc. A posição é (agora - epoch) mod duração total, então todo mundo vê o mesmo vídeo no mesmo segundo. Para pôr no ar: troque youtubeId (11 caracteres), titulo e duracaoSeg pelos dados reais e mude placeholder para false. Enquanto placeholder for true, o topo mostra a etiqueta 'DEMONSTRAÇÃO — vídeos de exemplo' e o quadro 'foto do canal em breve' em vez do player.",
   "canal": "@tvcomplexofc",
   "epoch": "2026-01-05T00:00:00-03:00",
   "videos": [

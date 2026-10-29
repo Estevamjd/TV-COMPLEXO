@@ -8,22 +8,39 @@ import s from './urbano.module.css';
 const CANAL_URL = 'https://www.youtube.com/@tvcomplexofc';
 const CHECAR_LIVE_MS = 120_000;
 const DESVIO_MAX_SEG = 4;
+const CONFERIR_DESVIO_MS = 5000;
+const TENTATIVAS_API = 3;
 
 // IFrame API oficial do YouTube: o script só entra na página depois do clique em assistir.
+// Se o script falhar, a promessa rejeita e a próxima chamada tenta de novo.
 let apiYT = null;
 function carregarApiYT() {
     if (apiYT) return apiYT;
-    apiYT = new Promise(resolve => {
+    apiYT = new Promise((resolve, reject) => {
         if (window.YT?.Player) { resolve(window.YT); return; }
         const anterior = window.onYouTubeIframeAPIReady;
         window.onYouTubeIframeAPIReady = () => { anterior?.(); resolve(window.YT); };
         const tag = document.createElement('script');
         tag.src = 'https://www.youtube.com/iframe_api';
         tag.async = true;
-        tag.onerror = () => { apiYT = null; };
+        tag.onerror = () => {
+            apiYT = null;
+            tag.remove();
+            reject(new Error('IFrame API do YouTube não carregou'));
+        };
         document.head.appendChild(tag);
     });
     return apiYT;
+}
+
+/**
+ * Relógio do canal ancorado na hora do servidor (agoraInicial) e avançado com
+ * performance.now(), que é monotônico: relógio errado no aparelho não adianta
+ * nem atrasa o canal. O erro fica no tempo entre o render e a hidratação.
+ */
+function criarRelogio(servidorMs) {
+    const base = performance.now();
+    return () => servidorMs + (performance.now() - base);
 }
 
 /** Posição atual do canal 24h como alvo do player (null se não dá para embutir). */
@@ -53,6 +70,7 @@ function IconeBaixar() {
  * A tela nunca fica vazia: sem vídeo real configurado, mostra o quadro reservado.
  */
 export default function CanalTopo({ agoraInicial, demoLive = false }) {
+    const [agoraCanal] = useState(() => criarRelogio(agoraInicial));
     const [agora, setAgora] = useState(agoraInicial);
     const [live, setLive] = useState(
         demoLive ? { demo: true, videoId: null, titulo: 'Live de demonstração (exemplo)', inicio: agoraInicial - 25 * 60_000 } : null,
@@ -61,13 +79,15 @@ export default function CanalTopo({ agoraInicial, demoLive = false }) {
     const [aviso, setAviso] = useState('');
     const [copiado, setCopiado] = useState(false);
     const [faixaParada, setFaixaParada] = useState(false);
-    const estavaLive = useRef(demoLive);
+    const [syncFalhou, setSyncFalhou] = useState(null); // id do vídeo em que a IFrame API não carregou
+    // vídeo da live em exibição (null = canal 24h): troca de live A para live B também conta
+    const liveAtual = useRef(demoLive ? 'demo' : null);
     const iframeRef = useRef(null);
 
     // relógio: avança o progresso e passa para o próximo vídeo na hora certa
     useEffect(() => {
         const t = setInterval(() => {
-            const agoraMs = Date.now();
+            const agoraMs = agoraCanal();
             setAgora(agoraMs);
             setTocando(atual => {
                 if (!atual || atual.live) return atual;
@@ -76,7 +96,7 @@ export default function CanalTopo({ agoraInicial, demoLive = false }) {
             });
         }, 1000);
         return () => clearInterval(t);
-    }, []);
+    }, [agoraCanal]);
 
     // checagem de live (cache de 2 min no servidor). No modo demo não consulta nada.
     useEffect(() => {
@@ -92,14 +112,15 @@ export default function CanalTopo({ agoraInicial, demoLive = false }) {
                 const novo = d.live
                     ? { videoId: d.videoId, titulo: d.titulo, inicio: d.inicio ? Date.parse(d.inicio) : null }
                     : null;
-                if (estavaLive.current !== !!novo) {
-                    estavaLive.current = !!novo;
+                const chave = novo ? novo.videoId ?? 'live' : null;
+                if (liveAtual.current !== chave) {
+                    liveAtual.current = chave;
                     // quem já estava assistindo continua assistindo: vai direto para a live
                     // ou para a posição atual do canal 24h; quem não apertou play fica no pôster
                     setTocando(t => {
                         if (!t) return null;
                         if (novo) return novo.videoId ? { live: true, id: novo.videoId, start: 0 } : null;
-                        return alvo24h(Date.now());
+                        return alvo24h(agoraCanal());
                     });
                     setAviso(novo ? `Ao vivo agora: ${novo.titulo}` : 'A live acabou. O canal 24h voltou.');
                 }
@@ -112,49 +133,73 @@ export default function CanalTopo({ agoraInicial, demoLive = false }) {
         const t = setInterval(checar, CHECAR_LIVE_MS);
         document.addEventListener('visibilitychange', checar);
         return () => { ativo = false; clearInterval(t); document.removeEventListener('visibilitychange', checar); };
-    }, [demoLive]);
+    }, [demoLive, agoraCanal]);
 
     // canal 24h tocando: confere a posição pela IFrame API e corrige desvio
-    // (depois de pausa/buffering) e o fim do vídeo/ciclo (inclusive playlist de um vídeo só)
+    // (depois de pausa/buffering/seek) e o fim do vídeo/ciclo (inclusive playlist de um vídeo só)
     const tocandoId = tocando && !tocando.live ? tocando.id : null;
     const tocandoStart = tocando?.start;
     useEffect(() => {
         if (!tocandoId) return;
         let ativo = true;
         let espera;
-        carregarApiYT().then(YT => {
-            if (!ativo || !YT?.Player || !iframeRef.current) return;
-            const player = new YT.Player(iframeRef.current, {
-                events: {
-                    onStateChange(e) {
-                        if (!ativo) return;
-                        const agoraMs = Date.now();
-                        let p = posicaoCanal(agoraMs);
-                        if (!p) return;
-                        if (e.data === YT.PlayerState.ENDED && p.atual.youtubeId === tocandoId && p.fimMs - agoraMs < 3000) {
-                            p = posicaoCanal(p.fimMs); // acabou um pouco antes do relógio: já é o próximo ciclo
-                        }
-                        if (e.data !== YT.PlayerState.ENDED && e.data !== YT.PlayerState.PLAYING) return;
-                        if (p.atual.youtubeId !== tocandoId) {
-                            if (podeEmbutir(p.atual)) setTocando({ id: p.atual.youtubeId, start: p.offsetSeg });
-                            return;
-                        }
-                        const esperado = Math.max(0, (agoraMs - p.inicioMs) / 1000);
-                        if (e.data === YT.PlayerState.ENDED && esperado >= player.getDuration() - 1) {
-                            // vídeo real mais curto que a duração cadastrada: espera o relógio virar
-                            espera = setTimeout(() => { if (ativo) setTocando(alvo24h(Date.now())); }, p.fimMs - agoraMs + 500);
-                            return;
-                        }
-                        if (e.data === YT.PlayerState.ENDED || Math.abs(player.getCurrentTime() - esperado) > DESVIO_MAX_SEG) {
-                            player.seekTo(esperado, true);
-                            player.playVideo();
-                        }
+        let conferir;
+        let retentar;
+
+        function sincronizar(YT, player, estado) {
+            const agoraMs = agoraCanal();
+            let p = posicaoCanal(agoraMs);
+            if (!p) return;
+            if (estado === YT.PlayerState.ENDED && p.atual.youtubeId === tocandoId && p.fimMs - agoraMs < 3000) {
+                p = posicaoCanal(p.fimMs); // acabou um pouco antes do relógio: já é o próximo ciclo
+            }
+            if (estado !== YT.PlayerState.ENDED && estado !== YT.PlayerState.PLAYING) return;
+            if (p.atual.youtubeId !== tocandoId) {
+                if (podeEmbutir(p.atual)) setTocando({ id: p.atual.youtubeId, start: p.offsetSeg });
+                return;
+            }
+            const esperado = Math.max(0, (agoraMs - p.inicioMs) / 1000);
+            if (estado === YT.PlayerState.ENDED && esperado >= player.getDuration() - 1) {
+                // vídeo real mais curto que a duração cadastrada: espera o relógio virar
+                clearTimeout(espera);
+                espera = setTimeout(() => { if (ativo) setTocando(alvo24h(agoraCanal())); }, p.fimMs - agoraMs + 500);
+                return;
+            }
+            if (estado === YT.PlayerState.ENDED || Math.abs(player.getCurrentTime() - esperado) > DESVIO_MAX_SEG) {
+                player.seekTo(esperado, true);
+                player.playVideo();
+            }
+        }
+
+        function iniciar(tentativa) {
+            carregarApiYT().then(YT => {
+                if (!ativo || !YT?.Player || !iframeRef.current) return;
+                const player = new YT.Player(iframeRef.current, {
+                    events: {
+                        onReady() {
+                            if (!ativo) return;
+                            // checagem periódica: pega desvio que não gera troca de estado
+                            conferir = setInterval(() => {
+                                if (ativo && player.getPlayerState() === YT.PlayerState.PLAYING) {
+                                    sincronizar(YT, player, YT.PlayerState.PLAYING);
+                                }
+                            }, CONFERIR_DESVIO_MS);
+                        },
+                        onStateChange(e) {
+                            if (ativo) sincronizar(YT, player, e.data);
+                        },
                     },
-                },
+                });
+            }).catch(() => {
+                if (!ativo) return;
+                if (tentativa < TENTATIVAS_API) retentar = setTimeout(() => iniciar(tentativa + 1), 3000 * tentativa);
+                else setSyncFalhou(tocandoId);
             });
-        });
-        return () => { ativo = false; clearTimeout(espera); };
-    }, [tocandoId, tocandoStart]);
+        }
+        iniciar(1);
+
+        return () => { ativo = false; clearTimeout(espera); clearTimeout(retentar); clearInterval(conferir); };
+    }, [tocandoId, tocandoStart, agoraCanal]);
 
     const estado = live ? 'live' : '24h';
     const pos = posicaoCanal(agora);
@@ -184,6 +229,8 @@ export default function CanalTopo({ agoraInicial, demoLive = false }) {
     }
 
     const podeTocarAqui = live ? !!live.videoId : embutivel24h;
+    // playlist ainda com vídeos de exemplo (lib/canal24h.json): deixa claro que é demonstração
+    const canalDemo = !live && !!atual && !embutivel24h;
     const linkExterno = live ? `${CANAL_URL}/live` : CANAL_URL;
     const tituloAtual = live ? live.titulo : atual?.titulo ?? 'Canal 24h da TV Complexo';
     const rotuloPlay = live ? 'Assistir ao vivo' : 'Assistir agora';
@@ -245,7 +292,7 @@ export default function CanalTopo({ agoraInicial, demoLive = false }) {
                                     ) : (
                                         <a href={linkExterno} target="_blank" rel="noopener noreferrer" className={`${s.posterBtn} ${s.ph}`}
                                             aria-label={`${rotuloPlay} no YouTube do @tvcomplexofc (abre em nova aba)`}>
-                                            <span className={s.phTag} aria-hidden="true">FOTO REAL DO CANAL · player do YouTube</span>
+                                            <span className={s.phTag} aria-hidden="true">foto do canal em breve</span>
                                             <span className={s.playDiamante} aria-hidden="true"><IconePlay /></span>
                                         </a>
                                     )}
@@ -264,6 +311,7 @@ export default function CanalTopo({ agoraInicial, demoLive = false }) {
                         </div>
 
                         <div className={s.heroInfo}>
+                            {canalDemo && <p className={s.demoTag}>Demonstração — vídeos de exemplo</p>}
                             <p className={s.kicker}>
                                 {live ? (
                                     <><span className={s.badgeLive}>AO VIVO</span>{live.inicio ? ` desde ${horaBrasilia(live.inicio)}` : ' agora'}</>
@@ -275,6 +323,7 @@ export default function CanalTopo({ agoraInicial, demoLive = false }) {
                             <p className={s.heroSub}>
                                 {live
                                     ? 'O canal 24h saiu do ar sozinho e volta quando a live acabar.'
+                                    : canalDemo ? 'Player ainda não configurado: o botão abre o YouTube do @tvcomplexofc.'
                                     : pos ? `A seguir: ${pos.proximo.titulo}` : 'Vídeos do @tvcomplexofc sem parar.'}
                             </p>
                             <div className={s.botoes}>
@@ -294,6 +343,11 @@ export default function CanalTopo({ agoraInicial, demoLive = false }) {
                                 )}
                             </div>
                             {live?.demo && <p className={s.demoNota}>Modo demonstração (?demo=live): só visual, sem live de verdade.</p>}
+                            {syncFalhou && syncFalhou === tocandoId && (
+                                <p className={s.demoNota} role="status">
+                                    Não deu para sincronizar o player com o relógio do canal. O vídeo toca, mas pode ficar fora de hora.
+                                </p>
+                            )}
                         </div>
                     </div>
                 </div>

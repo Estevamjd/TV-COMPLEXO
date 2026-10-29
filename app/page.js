@@ -63,6 +63,7 @@ export default async function HomePage({ searchParams }) {
             externo: true,
             thumb: podeEmbutir(v) ? `https://i.ytimg.com/vi/${v.youtubeId}/hqdefault.jpg` : null,
         }));
+    const videosDemo = videosDb.length === 0 && PLAYLIST.some(v => !podeEmbutir(v));
 
     return (
         <div className={`${s.root} ${fontesUrbano}`}>
@@ -79,6 +80,7 @@ export default async function HomePage({ searchParams }) {
                                 <h2 id="videos-titulo" className={s.display}>Últimos<br />vídeos</h2>
                                 <Link href="/videos" className={s.verTudo}>ver tudo →</Link>
                             </div>
+                            {videosDemo && <p className={s.demoTag}>Demonstração — vídeos de exemplo</p>}
                             <Fileira rotulo="Últimos vídeos">
                                 {videos.map((v, i) => {
                                     const linkProps = v.externo ? { target: '_blank', rel: 'noopener noreferrer' } : {};
@@ -92,7 +94,7 @@ export default async function HomePage({ searchParams }) {
                                                             <img src={v.thumb} alt="" loading="lazy" decoding="async" />
                                                         ) : (
                                                             <span className={`${s.ph} ${s.phFill}`}>
-                                                                <span className={s.phTag}>FOTO REAL DO CANAL</span>
+                                                                <span className={s.phTag}>foto do canal em breve</span>
                                                             </span>
                                                         )}
                                                     </span>

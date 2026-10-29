@@ -29,7 +29,8 @@
 .root a { color: inherit; }
 .root :focus-visible { outline: 4px solid var(--ink); outline-offset: 3px; }
 /* foco: tinta sobre papel/amarelo/rosa (>= 5,6:1); amarelo sobre tinta/azul/vermelho (seções escuras abaixo) */
-.root ul, .root ol { list-style: none; margin: 0; padding: 0; }
+/* :where = especificidade zero, para não passar por cima de .fileiraLista, .noticiasLista, .diaProgs */
+:where(.root ul, .root ol) { list-style: none; margin: 0; padding: 0; }
 .root img { display: block; max-width: 100%; }
 
 .wrap { max-width: calc(var(--content-max) + 2 * var(--gutter)); margin: 0 auto; padding: 0 var(--gutter); }
@@ -157,6 +158,13 @@
 }
 .heroTitulo { font: 26px/1.1 var(--f-heading); margin: 8px 0 0; }
 .heroSub { font-size: 16px; font-weight: 600; margin: 8px 0 0; }
+/* etiqueta "demonstração" enquanto a playlist do canal 24h é de exemplo */
+.demoTag {
+    width: fit-content; max-width: calc(100% - 112px); /* não passa por baixo do carimbo no celular */
+    margin: 0 0 10px; padding: 4px 8px; background: var(--ink); color: var(--yellow);
+    font: 700 16px/1.25 var(--f-mono); text-transform: uppercase; letter-spacing: .4px;
+    transform: rotate(-1deg);
+}
 .demoNota {
     display: inline-block; margin: 16px 0 0; padding: 6px 10px; border: 2px dashed var(--ink);
     font: 700 16px/1.3 var(--f-mono);
@@ -217,7 +225,7 @@
 .videoTitulo { display: block; margin-top: 12px; font: 16px/1.2 var(--f-heading); }
 .videoCard:hover .videoTitulo { text-decoration: underline; }
 
-/* placeholder "FOTO REAL DO CANAL" (lugar reservado; troca por foto real) */
+/* placeholder "foto do canal em breve" (lugar reservado; troca por foto real) */
 .ph { background: repeating-linear-gradient(135deg, var(--ph-a) 0 14px, var(--ph-b) 14px 28px); }
 .phFill { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
 .phTag {
@@ -316,6 +324,7 @@
     .stamp small { font-size: 18px; }
     .heroInfo { padding-top: 20px; }
     .kicker { padding-right: 0; }
+    .demoTag { max-width: none; }
     .heroTitulo { font-size: 34px; }
     .heroSub { font-size: 18px; }
 
