@@ -1,0 +1,110 @@
+
+/tmp/tv8/app/admin/noticias/page.js
+  24:23  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  22 |     };
+  23 |
+> 24 |     useEffect(() => { fetchNoticias(); }, []);
+     |                       ^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  25 |
+  26 |     const handleChange = (e) => {
+  27 |         setForm({ ...form, [e.target.name]: e.target.value });  react-hooks/set-state-in-effect
+
+/tmp/tv8/app/admin/videos/page.js
+   26:23  error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  24 |     };
+  25 |
+> 26 |     useEffect(() => { fetchVideos(); }, []);
+     |                       ^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  27 |
+  28 |     const handleChange = (e) => {
+  29 |         const { name, type, value, checked } = e.target;  react-hooks/set-state-in-effect
+  196:45  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  @next/next/no-img-element
+
+/tmp/tv8/app/denuncias/enviar/page.js
+   32:29  warning  Compilation Skipped: Use of incompatible library
+
+This API returns functions which cannot be memoized without leading to stale UI. To prevent this, by default React Compiler will skip memoizing this component/hook. However, you may see issues if values from this API are passed to other components/hooks that are memoized.
+
+  30 |     const fileInputRef = useRef(null);
+  31 |
+> 32 |     const watchComunidade = watch('comunidade');
+     |                             ^^^^^ React Hook Form's `useForm()` API returns a `watch()` function which cannot be memoized safely.
+  33 |     const watchAnonimo = watch('anonimo');
+  34 |
+  35 |     const handleComunidadeChange = (e) => {  react-hooks/incompatible-library
+  406:45  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element                                                                                                                                                                                                                                                                                                                                                                                                                @next/next/no-img-element
+
+/tmp/tv8/app/noticias/[id]/CommentSection.js
+  19:9  error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  17 |
+  18 |     useEffect(() => {
+> 19 |         fetchComentarios();
+     |         ^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  20 |     }, []);
+  21 |
+  22 |     const onSubmit = async (data) => {  react-hooks/set-state-in-effect
+  20:8  warning  React Hook useEffect has a missing dependency: 'fetchComentarios'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   react-hooks/exhaustive-deps
+
+/tmp/tv8/app/videos/page.js
+  26:9  error    Error: Cannot access variable before it is declared
+
+`fetchVideos` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+  24 |
+  25 |     useEffect(() => {
+> 26 |         fetchVideos();
+     |         ^^^^^^^^^^^ `fetchVideos` accessed before it is declared
+  27 |     }, [filtro]);
+  28 |
+  29 |     // Fechar modal com ESC
+
+  38 |     }, [selectedVideo]);
+  39 |
+> 40 |     const fetchVideos = async () => {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 41 |         if (videos.length === 0) setLoading(true); // Apenas load inicial
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 42 |         setIsFetching(true);
+     …
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 54 |         setIsFetching(false);
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 55 |     };
+     | ^^^^^^^ `fetchVideos` is declared here
+  56 |
+  57 |     const handleSearch = (e) => {
+  58 |         e.preventDefault();  react-hooks/immutability
+  27:8  warning  React Hook useEffect has a missing dependency: 'fetchVideos'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               react-hooks/exhaustive-deps
+
+/tmp/tv8/components/TikTokFeed.js
+  66:51  warning  The ref value 'observerTarget.current' will likely have changed by the time this effect cleanup function runs. If this ref points to a node rendered by React, copy 'observerTarget.current' to a variable inside the effect, and use that variable in the cleanup function  react-hooks/exhaustive-deps
+
+/tmp/tv8/components/TikTokVideo.js
+  38:71  warning  The ref value 'containerRef.current' will likely have changed by the time this effect cleanup function runs. If this ref points to a node rendered by React, copy 'containerRef.current' to a variable inside the effect, and use that variable in the cleanup function  react-hooks/exhaustive-deps
+
+/tmp/tv8/lib/db.ts
+  30:1  warning  Assign object to a variable before exporting as module default  import/no-anonymous-default-export
+
+✖ 12 problems (4 errors, 8 warnings)
+

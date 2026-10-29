@@ -1,0 +1,54 @@
+
+> tv-complexo@0.1.0 build
+> next build
+
+▲ Next.js 16.1.6 (Turbopack)
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 2.4s
+  Running TypeScript ...
+  Collecting page data using 7 workers ...
+  Generating static pages using 7 workers (0/23) ...
+  Generating static pages using 7 workers (5/23) 
+  Generating static pages using 7 workers (11/23) 
+DB query error: 
+  Generating static pages using 7 workers (17/23) 
+✓ Generating static pages using 7 workers (23/23) in 458.1ms
+  Finalizing page optimization ...
+
+Route (app)                Revalidate  Expire
+┌ ƒ /
+├ ○ /_not-found
+├ ƒ /admin
+├ ○ /admin/denuncias
+├ ○ /admin/login
+├ ○ /admin/noticias
+├ ○ /admin/videos
+├ ƒ /api/auth
+├ ƒ /api/comentarios
+├ ƒ /api/cron/youtube
+├ ƒ /api/denuncias
+├ ƒ /api/hora
+├ ○ /api/live                      2m      1y
+├ ƒ /api/noticias
+├ ƒ /api/upload
+├ ƒ /api/videos
+├ ƒ /api/webhooks/social
+├ ƒ /denuncias
+├ ○ /denuncias/enviar
+├ ○ /manifest.webmanifest
+├ ƒ /noticias
+├ ƒ /noticias/[id]
+├ ○ /privacidade
+├ ○ /robots.txt
+├ ○ /sitemap.xml
+├ ○ /sobre
+├ ○ /videos
+└ ƒ /videos/[id]
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

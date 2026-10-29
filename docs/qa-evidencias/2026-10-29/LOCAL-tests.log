@@ -1,0 +1,9 @@
+
+ RUN  v4.1.2 /tmp/tv8
+
+
+ Test Files  9 passed (9)
+      Tests  736 passed (736)
+   Start at  12:21:55
+   Duration  3.20s (transform 604ms, setup 0ms, import 1.35s, tests 2.97s, environment 1ms)
+
