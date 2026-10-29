@@ -1,0 +1,24 @@
+**REQUEST CHANGES**
+
+- **P1 — A frequência de busca esgota a cota e inviabiliza a detecção contínua.** [route.ts:27](/tmp/tv8/app/api/live/route.ts:27), [route.ts:53](/tmp/tv8/app/api/live/route.ts:53), [CanalTopo.js:150](/tmp/tv8/components/home-urbano/CanalTopo.js:150). Mesmo supondo CDN compartilhado perfeito, com uma consulta a cada 120 segundos são **720 buscas/dia = 72.000 unidades**, ou **72.720** com detalhes em todas elas. No orçamento informado de 10.000/dia, esgota em aproximadamente **3h20**. `stale-while-revalidate=60` não estabelece um limite global de consultas. `force-dynamic` e os fetches upstream com `no-store` deixam a proteção dependente do CDN; misses, regiões e requisições que evitem cache ampliam o consumo. Como o GET é público e não há limitação no servidor, também existe risco de esgotamento deliberado. É necessário controlar globalmente frequência, concorrência e orçamento, preservando o último estado confirmado durante falhas.
+
+- **P2 — A consulta de detalhes não confirma que a transmissão continua ativa.** [route.ts:35](/tmp/tv8/app/api/live/route.ts:35). Basta existir um vídeo com o ID retornado pela busca para responder `live: true`. Se a transmissão terminar entre as consultas, os detalhes podem conter `actualEndTime`, mas a rota ainda anuncia e cacheia a live como ativa. Validar o término nos detalhes e cobrir esse cenário em teste.
+
+O objetivo de abandonar os cinco últimos uploads foi atendido pela busca com `channelId`, `eventType=live` e `type=video`. O tratamento de falhas também está correto no caminho inspecionado: HTTP inválido, exceção ou resposta malformada produzem **503 + `no-store`**, e o cliente preserva a live e o player existentes.
+
+Os testes novos cobrem esses caminhos básicos, mas não verificam orçamento/cache compartilhado nem transmissão encerrada nos detalhes. **Não consegui executá-los:** o Vitest falhou antes da coleta ao criar um diretório temporário (`ENOENT`). Nenhum arquivo foi editado. Não identifiquei exposição da chave ou nova possibilidade direta de injeção.
+
+Há uma atualização relevante na [documentação oficial de cotas](https://developers.google.com/youtube/data/determine_quota_cost): atualmente ela informa um bucket separado de **100 chamadas de `search.list` por dia**. Fiz o cálculo solicitado com 100 unidades/10.000; no modelo documentado atual, 720 buscas/dia também excedem o limite.
+tokens used
+30,920
+**REQUEST CHANGES**
+
+- **P1 — A frequência de busca esgota a cota e inviabiliza a detecção contínua.** [route.ts:27](/tmp/tv8/app/api/live/route.ts:27), [route.ts:53](/tmp/tv8/app/api/live/route.ts:53), [CanalTopo.js:150](/tmp/tv8/components/home-urbano/CanalTopo.js:150). Mesmo supondo CDN compartilhado perfeito, com uma consulta a cada 120 segundos são **720 buscas/dia = 72.000 unidades**, ou **72.720** com detalhes em todas elas. No orçamento informado de 10.000/dia, esgota em aproximadamente **3h20**. `stale-while-revalidate=60` não estabelece um limite global de consultas. `force-dynamic` e os fetches upstream com `no-store` deixam a proteção dependente do CDN; misses, regiões e requisições que evitem cache ampliam o consumo. Como o GET é público e não há limitação no servidor, também existe risco de esgotamento deliberado. É necessário controlar globalmente frequência, concorrência e orçamento, preservando o último estado confirmado durante falhas.
+
+- **P2 — A consulta de detalhes não confirma que a transmissão continua ativa.** [route.ts:35](/tmp/tv8/app/api/live/route.ts:35). Basta existir um vídeo com o ID retornado pela busca para responder `live: true`. Se a transmissão terminar entre as consultas, os detalhes podem conter `actualEndTime`, mas a rota ainda anuncia e cacheia a live como ativa. Validar o término nos detalhes e cobrir esse cenário em teste.
+
+O objetivo de abandonar os cinco últimos uploads foi atendido pela busca com `channelId`, `eventType=live` e `type=video`. O tratamento de falhas também está correto no caminho inspecionado: HTTP inválido, exceção ou resposta malformada produzem **503 + `no-store`**, e o cliente preserva a live e o player existentes.
+
+Os testes novos cobrem esses caminhos básicos, mas não verificam orçamento/cache compartilhado nem transmissão encerrada nos detalhes. **Não consegui executá-los:** o Vitest falhou antes da coleta ao criar um diretório temporário (`ENOENT`). Nenhum arquivo foi editado. Não identifiquei exposição da chave ou nova possibilidade direta de injeção.
+
+Há uma atualização relevante na [documentação oficial de cotas](https://developers.google.com/youtube/data/determine_quota_cost): atualmente ela informa um bucket separado de **100 chamadas de `search.list` por dia**. Fiz o cálculo solicitado com 100 unidades/10.000; no modelo documentado atual, 720 buscas/dia também excedem o limite.

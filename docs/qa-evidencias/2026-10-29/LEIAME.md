@@ -21,3 +21,14 @@ Os 12 problemas são **idênticos** na base `origin/master` e no `f9e05db` (mesm
 ## "DB query error" no build
 O build roda sem `DATABASE_URL` (proposital: nunca usar o banco real em teste local). A mensagem `DB query error:` no build é **limite do teste local**, não prova de que a integração com o banco funciona — a integração com Neon NÃO foi validada aqui.
 Impacto no fluxo da demo: a home é `force-dynamic` e envolve a consulta em try/catch (renderiza sem as listas do banco, sem quebrar). `/videos` e `/noticias/[id]` dependem do banco em runtime e não foram exercitados com dados reais: falha nelas em runtime não está descartada. `/api/live` não usa o banco.
+
+## Correção P1/P2 — progresso parcial (WIP, NÃO commitado no feat/home-urbano)
+Implementação: Codex CLI (gpt-6.1-sol), porque Claude Code está limitado até 16:20 BRT. Pasta `correcao-p1p2-wip/`.
+- **Rodada 1** (`rodada1-fix.diff`): /api/live usa `search.list` (channelId, eventType=live, type=video) + `videos.list`; erro → 503 `no-store`, fetch sem cache; cliente preserva live/player em erro. Vitest LOCAL (fora do sandbox): **748/748** (11 suítes); `next build` passou sem DATABASE_URL.
+- **Uso da API na rodada 1:** por requisição sem cache = 1 search.list (100 un.) + 1 videos.list (1 un.). Cache de sucesso: `s-maxage=120, stale-while-revalidate=60` (só CDN). Cache de erro: nenhum (503 no-store). Estimativa: até 720 buscas/dia ≈ 72.000–72.720 un./dia.
+- **Re-review independente rodada 1** (`review-rodada1.md`): **REQUEST CHANGES** — P1 cota (720 buscas/dia > 10.000 un. e > bucket de 100 search.list/dia; GET público sem limite global); P2 `actualEndTime` não verificado (live encerrada ainda marcada ativa).
+- **Rodada 2 em andamento**: cache de servidor compartilhado com TTL de busca ≥ 900 s (≤ 96 search.list/dia), deduplicação de concorrência, revalidação de live conhecida via videos.list (1 un.) ~120 s, checagem de actualEndTime/liveBroadcastContent, mantém último estado confirmado em erro. Nenhuma chave, acesso ou OAuth novo.
+
+## Vercel (registro, nada alterado)
+- O push deste branch de evidências gerou automaticamente a preview `dpl_TgcjyLTKTGiGPYcnHazRJiUJHZ9b` (READY, target null = preview, não produção). Não foi criada por nós manualmente; não alteramos configuração.
+- Confraria `4cdf31a` (branch qa/evidencias-2026-10-29-wip): deploy automático ficou "blocked" (autor do commit não vinculado). Esperado; não alteramos a Vercel.
