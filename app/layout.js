@@ -2,6 +2,7 @@ import './globals.css';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import BottomNav from '@/components/BottomNav';
+import OcultarNaHome from '@/components/OcultarNaHome';
 import { SITE_URL } from '@/lib/site-url';
 
 export const metadata = {
@@ -38,7 +39,7 @@ export default function RootLayout({ children }) {
       <body>
         <Header />
         <main>{children}</main>
-        <Footer />
+        <OcultarNaHome><Footer /></OcultarNaHome>
         <BottomNav />
       </body>
     </html>

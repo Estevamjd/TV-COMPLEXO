@@ -1,0 +1,12 @@
+{
+  "_leia": "Grade da semana (seg a dom). Cada programa: { \"titulo\": \"...\", \"inicio\": \"HH:MM\", \"fim\": \"HH:MM\" } no horário de Brasília. Dia sem programa aparece como EM BREVE. Não preencher com exemplo falso (RN3).",
+  "dias": {
+    "seg": [],
+    "ter": [],
+    "qua": [],
+    "qui": [],
+    "sex": [],
+    "sab": [],
+    "dom": []
+  }
+}
