@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Bebas+Neue&display=swap');
-
 /* ===== CSS VARIABLES ===== */
 :root {
     --color-black: #0a0a0a;
@@ -20,8 +18,9 @@
     --color-yellow-light: #fcd34d;
     --color-green: #2dd4bf;
 
-    --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    --font-display: 'Bebas Neue', 'Impact', sans-serif;
+    /* Inter e Bebas Neue via next/font (app/layout.js): sem @import bloqueando o render */
+    --font-primary: var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-display: var(--font-bebas), 'Impact', sans-serif;
 
     --radius-sm: 6px;
     --radius-md: 10px;

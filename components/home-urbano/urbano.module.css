@@ -228,13 +228,18 @@
 /* placeholder "foto do canal em breve" (lugar reservado; troca por foto real) */
 .ph { background: repeating-linear-gradient(135deg, var(--ph-a) 0 14px, var(--ph-b) 14px 28px); }
 .phFill { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+/* centraliza por left/right + margin auto (não por translate -50%): a etiqueta quebra
+   dentro da moldura em vez de vazar e ser cortada pelo overflow (320–390px) */
 .phTag {
-    position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 1;
+    position: absolute; left: 8px; right: 8px; top: 50%; transform: translateY(-50%); z-index: 1;
+    margin-inline: auto; width: fit-content;
     background: var(--paper); border: 2px solid var(--muted); color: var(--muted);
     font: 700 16px/1.2 var(--f-mono); padding: 4px 8px; text-align: center;
-    width: max-content; max-width: calc(100% - 16px);
+    white-space: normal; text-wrap: balance; overflow-wrap: break-word;
 }
-.posterBtn .phTag { top: auto; bottom: 10px; transform: translateX(-50%); white-space: normal; width: max-content; max-width: calc(100% - 24px); }
+/* no player: canto inferior esquerdo, com a borda direita antes do selo "canal 24h"
+   (108px a right: 4px; cobre ~104px da tela) e acima da barra de progresso */
+.posterBtn .phTag { top: auto; bottom: 14px; transform: none; left: 12px; right: 120px; margin-inline: 0; }
 
 /* notícias */
 .noticias { margin-top: 40px; background: var(--ink); color: var(--paper); padding: 36px 0 28px; }
@@ -322,6 +327,7 @@
     .playDiamante { width: 88px; height: 88px; font-size: 32px; }
     .stamp { width: 150px; right: -26px; bottom: -48px; font-size: 30px; }
     .stamp small { font-size: 18px; }
+    .posterBtn .phTag { right: 136px; } /* selo maior: cobre ~114px da tela */
     .heroInfo { padding-top: 20px; }
     .kicker { padding-right: 0; }
     .demoTag { max-width: none; }

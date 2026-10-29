@@ -10,37 +10,63 @@ const CHECAR_LIVE_MS = 120_000;
 const DESVIO_MAX_SEG = 4;
 const CONFERIR_DESVIO_MS = 5000;
 const TENTATIVAS_API = 3;
+const PRONTO_API_MS = 10_000;
+const IDA_VOLTA_MAX_MS = 5000;
 
 // IFrame API oficial do YouTube: o script só entra na página depois do clique em assistir.
-// Se o script falhar, a promessa rejeita e a próxima chamada tenta de novo.
+// Se o script falhar ou o onYouTubeIframeAPIReady não vier em 10 s, a promessa rejeita
+// e a próxima chamada tenta de novo.
 let apiYT = null;
 function carregarApiYT() {
     if (apiYT) return apiYT;
     apiYT = new Promise((resolve, reject) => {
         if (window.YT?.Player) { resolve(window.YT); return; }
-        const anterior = window.onYouTubeIframeAPIReady;
-        window.onYouTubeIframeAPIReady = () => { anterior?.(); resolve(window.YT); };
         const tag = document.createElement('script');
-        tag.src = 'https://www.youtube.com/iframe_api';
-        tag.async = true;
-        tag.onerror = () => {
+        let prazo;
+        function falhar(msg) {
+            clearTimeout(prazo);
             apiYT = null;
             tag.remove();
-            reject(new Error('IFrame API do YouTube não carregou'));
-        };
+            reject(new Error(msg));
+        }
+        const anterior = window.onYouTubeIframeAPIReady;
+        window.onYouTubeIframeAPIReady = () => { clearTimeout(prazo); anterior?.(); resolve(window.YT); };
+        tag.src = 'https://www.youtube.com/iframe_api';
+        tag.async = true;
+        tag.onerror = () => falhar('IFrame API do YouTube não carregou');
+        prazo = setTimeout(() => falhar('IFrame API do YouTube não ficou pronta a tempo'), PRONTO_API_MS);
         document.head.appendChild(tag);
     });
     return apiYT;
 }
 
 /**
- * Relógio do canal ancorado na hora do servidor (agoraInicial) e avançado com
- * performance.now(), que é monotônico: relógio errado no aparelho não adianta
- * nem atrasa o canal. O erro fica no tempo entre o render e a hidratação.
+ * Relógio do canal ancorado na hora do servidor e avançado com performance.now(),
+ * que é monotônico: relógio errado no aparelho não adianta nem atrasa o canal.
+ * Começa em agoraInicial (render) e é reancorado por ajustar() com uma amostra
+ * fresca de /api/hora, para o tempo de banco/hidratação não virar desvio fixo.
  */
 function criarRelogio(servidorMs) {
-    const base = performance.now();
-    return () => servidorMs + (performance.now() - base);
+    let ancora = servidorMs;
+    let base = performance.now();
+    const agora = () => ancora + (performance.now() - base);
+    agora.ajustar = (ms, emPerf) => { ancora = ms; base = emPerf; };
+    return agora;
+}
+
+/** Amostra a hora do servidor compensando metade da ida e volta; null se falhar. */
+async function amostrarHoraServidor() {
+    try {
+        const t0 = performance.now();
+        const r = await fetch('/api/hora', { cache: 'no-store' });
+        const t1 = performance.now();
+        if (!r.ok) return null;
+        const { agora } = await r.json();
+        if (!Number.isFinite(agora) || t1 - t0 > IDA_VOLTA_MAX_MS) return null; // amostra ruim
+        return { ms: agora + (t1 - t0) / 2, emPerf: t1 };
+    } catch {
+        return null;
+    }
 }
 
 /** Posição atual do canal 24h como alvo do player (null se não dá para embutir). */
@@ -96,6 +122,22 @@ export default function CanalTopo({ agoraInicial, demoLive = false }) {
             });
         }, 1000);
         return () => clearInterval(t);
+    }, [agoraCanal]);
+
+    // reancora o relógio com a hora do servidor depois da hidratação e ao voltar para a aba.
+    // Se a amostra falhar, segue com o relógio atual (agoraInicial + performance.now()).
+    useEffect(() => {
+        let ativo = true;
+        async function reamostrar() {
+            if (document.visibilityState === 'hidden') return;
+            const amostra = await amostrarHoraServidor();
+            if (!ativo || !amostra) return;
+            agoraCanal.ajustar(amostra.ms, amostra.emPerf);
+            setAgora(agoraCanal());
+        }
+        reamostrar();
+        document.addEventListener('visibilitychange', reamostrar);
+        return () => { ativo = false; document.removeEventListener('visibilitychange', reamostrar); };
     }, [agoraCanal]);
 
     // checagem de live (cache de 2 min no servidor). No modo demo não consulta nada.
