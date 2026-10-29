@@ -1,0 +1,216 @@
+diff --git a/app/api/live/route.ts b/app/api/live/route.ts
+index 5d4523d..9a99c0a 100644
+--- a/app/api/live/route.ts
++++ b/app/api/live/route.ts
+@@ -1,64 +1,148 @@
+ import { NextResponse } from 'next/server';
+ 
+ /**
+- * GET /api/live — o @tvcomplexofc está ao vivo agora?
+- *
+- * Só leitura, sem banco. Usa a YouTube Data API com custo baixo:
+- * playlistItems.list (1 unidade) nos uploads do canal + videos.list (1 unidade)
+- * para ver se algum está "live". Cache de 2 min: ~720 checagens × 2 = ~1.440
+- * unidades/dia (≈14% da cota de 10.000). Não depende do cron diário.
+- *
++ * GET /api/live — somente leitura, sem banco.
++ * Cotas oficiais (15/10/2026): search.list tem bucket próprio de 100 chamadas/dia,
++ * custo 1; videos.list custa 1 no bucket de 10.000 unidades/dia dos demais endpoints.
++ * Erros também contam; reset à meia-noite em America/Los_Angeles (Pacific Time).
++ * Tetos locais: search.list 40/dia, videos.list 600/dia, reservados antes do fetch.
++ * Busca bem-sucedida: intervalo 960s; falhas: 300s, 600s, 960s (teto).
++ * Detalhes: intervalo 120s; falhas: 120s, 240s, 480s, 960s (teto).
++ * Cache, limites, orçamento e deduplicação são POR INSTÂNCIA/PROCESSO.
++ * Em Vercel, reinícios, várias instâncias e cold starts podem multiplicar chamadas.
++ * BLOQUEIO: limite global real exige armazenamento compartilhado com reserva
++ * atômica, não provisionado. Reiniciar o módulo também zera os tetos locais.
++ * Falhas/bloqueios: 503 no-store; último estado confirmado preservado em memória.
+  * Variáveis (só servidor): YOUTUBE_API_KEY e YOUTUBE_CHANNEL_ID.
+- * Sem elas a rota responde { live: false } e a home fica no canal 24h.
+  */
+-
+-export const revalidate = 120;
++export const dynamic = 'force-dynamic';
+ 
+ const API = 'https://www.googleapis.com/youtube/v3';
+-
+ type LiveStatus = { live: false } | { live: true; videoId: string; titulo: string; inicio: string | null };
+ 
+-async function buscarLive(): Promise<LiveStatus> {
+-    const chave = process.env.YOUTUBE_API_KEY;
+-    const canal = process.env.YOUTUBE_CHANNEL_ID;
+-    if (!chave || !canal || !canal.startsWith('UC')) return { live: false };
++async function consultar(recurso: string, parametros: Record<string, string>) {
++    const resposta = await fetch(`${API}/${recurso}?${new URLSearchParams(parametros)}`, { cache: 'no-store' });
++    if (!resposta.ok) throw new Error('YouTube indisponível');
++    const dados = await resposta.json();
++    if (!Array.isArray(dados.items)) throw new Error('Resposta inválida do YouTube');
++    return dados.items;
++}
++
++type Recurso = 'search' | 'videos';
++const limites = { search: 40, videos: 600 };
++const minimos = { search: 300_000, videos: 120_000 };
++const controles = {
++    search: { proxima: 0, falhas: 0, dia: '', usadas: 0 },
++    videos: { proxima: 0, falhas: 0, dia: '', usadas: 0 },
++};
++const calendarioPacific = new Intl.DateTimeFormat('en-CA', {
++    timeZone: 'America/Los_Angeles', year: 'numeric', month: '2-digit', day: '2-digit',
++});
++
++async function limitada<T>(recurso: Recurso, executar: () => Promise<T>): Promise<T> {
++    const controle = controles[recurso];
++    const agora = Date.now();
++    const dia = calendarioPacific.format(agora);
++    if (controle.dia !== dia) { controle.dia = dia; controle.usadas = 0; }
++    if (agora < controle.proxima || controle.usadas >= limites[recurso]) {
++        throw new Error('Intervalo ou orçamento local excedido');
++    }
++    // Reserva síncrona antes de qualquer await; erros também consomem a cota.
++    controle.usadas++;
++    controle.proxima = agora + minimos[recurso];
++    try {
++        const resultado = await executar();
++        controle.falhas = 0;
++        controle.proxima = Date.now() + (recurso === 'search' ? 960_000 : 120_000);
++        return resultado;
++    } catch (erro) {
++        controle.falhas = Math.min(controle.falhas + 1, 4);
++        controle.proxima = Date.now() + Math.min(960_000, minimos[recurso] * 2 ** (controle.falhas - 1));
++        throw erro;
++    }
++}
+ 
+-    const uploads = 'UU' + canal.slice(2);
+-    const itens = await fetch(
+-        `${API}/playlistItems?part=contentDetails&maxResults=5&playlistId=${encodeURIComponent(uploads)}&key=${encodeURIComponent(chave)}`
+-    );
+-    if (!itens.ok) return { live: false };
+-    const ids: string[] = ((await itens.json()).items ?? [])
+-        .map((i: { contentDetails?: { videoId?: string } }) => i.contentDetails?.videoId)
+-        .filter(Boolean);
+-    if (ids.length === 0) return { live: false };
++type Descoberta = { item: { videoId: string; titulo: string } | null; expira: number };
++const descobertas = new Map<string, Descoberta>();
++async function descobrir(chave: string, canal: string): Promise<Descoberta> {
++    const key = JSON.stringify([chave, canal]);
++    const cache = descobertas.get(key);
++    if (cache && Date.now() < cache.expira) return cache;
++    return limitada('search', async () => {
++        const itens = await consultar('search', {
++            part: 'snippet', channelId: canal, eventType: 'live', type: 'video', maxResults: '1', key: chave,
++        });
++        const item = itens[0];
++        if (item && (!item.id?.videoId || item.snippet?.channelId !== canal || typeof item.snippet?.title !== 'string')) {
++            throw new Error('Live inválida');
++        }
++        const descoberta = {
++            item: item ? { videoId: item.id.videoId as string, titulo: item.snippet.title as string } : null,
++            expira: Date.now() + 960_000,
++        };
++        descobertas.set(key, descoberta);
++        return descoberta;
++    });
++}
+ 
+-    const videos = await fetch(
+-        `${API}/videos?part=snippet,liveStreamingDetails&id=${ids.join(',')}&key=${encodeURIComponent(chave)}`
+-    );
+-    if (!videos.ok) return { live: false };
+-    const aoVivo = ((await videos.json()).items ?? []).find(
+-        (v: { snippet?: { liveBroadcastContent?: string; channelId?: string } }) =>
+-            v.snippet?.liveBroadcastContent === 'live' && v.snippet?.channelId === canal,
+-    );
+-    if (!aoVivo) return { live: false };
++type Estado = { status?: LiveStatus; expira: number; pendente?: Promise<LiveStatus> };
++const estados = new Map<string, Estado>();
+ 
+-    return {
+-        live: true,
+-        videoId: aoVivo.id,
+-        titulo: aoVivo.snippet.title,
+-        inicio: aoVivo.liveStreamingDetails?.actualStartTime ?? null,
+-    };
++async function consultarStatus(chave: string, canal: string, anterior?: LiveStatus): Promise<LiveStatus> {
++    let item;
++    if (anterior?.live) item = anterior;
++    else {
++        const descoberta = await descobrir(chave, canal);
++        item = descoberta.item;
++    }
++    if (!item) return { live: false };
++    return limitada('videos', async (): Promise<LiveStatus> => {
++        const videos = await consultar('videos', {
++            part: 'snippet,liveStreamingDetails', id: item.videoId, key: chave,
++        });
++        // Uma busca positiva seguida de detalhes ausentes é inconclusiva, não fim confirmado.
++        const video = videos.find((v: { id: string }) => v.id === item.videoId);
++        if (!video) throw new Error('Detalhes da live indisponíveis');
++        if (!video.liveStreamingDetails || !video.snippet) throw new Error('Detalhes inválidos');
++        if (video.liveStreamingDetails.actualEndTime || video.snippet.liveBroadcastContent !== 'live') return { live: false };
++        if (video.snippet.channelId !== canal) throw new Error('Canal inválido');
++        return {
++            live: true,
++            videoId: item.videoId,
++            titulo: item.titulo,
++            inicio: video.liveStreamingDetails?.actualStartTime ?? null,
++        };
++    });
++}
++
++async function buscarLive(): Promise<LiveStatus> {
++    const chave = process.env.YOUTUBE_API_KEY;
++    const canal = process.env.YOUTUBE_CHANNEL_ID;
++    if (!chave || !canal || !canal.startsWith('UC')) throw new Error('YouTube não configurado');
++    const key = JSON.stringify([chave, canal]);
++    let estado = estados.get(key);
++    if (!estado) { estado = { expira: 0 }; estados.set(key, estado); }
++    if (estado.status && Date.now() < estado.expira) return estado.status;
++    if (estado.pendente) return estado.pendente;
++    const atual = estado;
++    atual.pendente = consultarStatus(chave, canal, atual.status).then(status => {
++        atual.status = status;
++        atual.expira = Date.now() + 120_000;
++        return status;
++    }).finally(() => { atual.pendente = undefined; });
++    return atual.pendente;
+ }
+ 
+ export async function GET() {
+-    let status: LiveStatus = { live: false };
+     try {
+-        status = await buscarLive();
++        const status = await buscarLive();
++        return NextResponse.json(status, {
++            headers: { 'Cache-Control': 'public, s-maxage=120, stale-while-revalidate=60' },
++        });
+     } catch {
+-        // falha na API = fica no canal 24h, sem erro para o público
++        return NextResponse.json({ error: 'Status da live indisponível' }, {
++            status: 503,
++            headers: { 'Cache-Control': 'no-store' },
++        });
+     }
+-    return NextResponse.json(status, {
+-        headers: { 'Cache-Control': 'public, s-maxage=120, stale-while-revalidate=60' },
+-    });
+ }
+diff --git a/components/home-urbano/CanalTopo.js b/components/home-urbano/CanalTopo.js
+index 3cd2d45..279c022 100644
+--- a/components/home-urbano/CanalTopo.js
++++ b/components/home-urbano/CanalTopo.js
+@@ -147,10 +147,11 @@ export default function CanalTopo({ agoraInicial, demoLive = false }) {
+         async function checar() {
+             if (document.visibilityState === 'hidden') return;
+             try {
+-                const r = await fetch('/api/live');
++                const r = await fetch('/api/live', { cache: 'no-store' });
+                 if (!r.ok) return;
+                 const d = await r.json();
+-                if (!ativo) return;
++                if (!ativo || (d.live !== true && d.live !== false)) return;
++                if (d.live && (typeof d.videoId !== 'string' || !d.videoId || typeof d.titulo !== 'string')) return;
+                 const novo = d.live
+                     ? { videoId: d.videoId, titulo: d.titulo, inicio: d.inicio ? Date.parse(d.inicio) : null }
+                     : null;

@@ -1,0 +1,533 @@
+diff --git a/__tests__/canal-topo-live.test.js b/__tests__/canal-topo-live.test.js
+new file mode 100644
+index 0000000..fa42818
+--- /dev/null
++++ b/__tests__/canal-topo-live.test.js
+@@ -0,0 +1,47 @@
++import { afterEach, expect, it, vi } from 'vitest';
++
++// Executa o efeito real de polling com estados e relógio controlados, sem DOM ou rede.
++const hooks = vi.hoisted(() => ({ estados: [], efeitos: [] }));
++vi.mock('react', () => ({
++    useState(inicial) {
++        const i = hooks.estados.length;
++        hooks.estados.push(typeof inicial === 'function' ? inicial() : inicial);
++        return [hooks.estados[i], valor => { hooks.estados[i] = typeof valor === 'function' ? valor(hooks.estados[i]) : valor; }];
++    },
++    useRef: valor => ({ current: valor }),
++    useEffect: efeito => hooks.efeitos.push(efeito),
++}));
++vi.mock('next/image', () => ({ default: () => null }));
++vi.mock('next/link', () => ({ default: () => null }));
++import CanalTopo from '@/components/home-urbano/CanalTopo';
++
++afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); hooks.estados = []; hooks.efeitos = []; });
++
++it.each(['http', 'exceção', 'resposta inválida'])('preserva live e player em %s e tenta novamente no próximo ciclo', async erro => {
++    vi.useFakeTimers();
++    vi.stubGlobal('document', { visibilityState: 'visible', addEventListener: vi.fn(), removeEventListener: vi.fn() });
++    const fetchMock = vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({ live: true, videoId: 'live-id', titulo: 'Live atual', inicio: null })));
++    if (erro === 'http') fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ live: false }), { status: 503 }));
++    else if (erro === 'exceção') fetchMock.mockRejectedValueOnce(new Error('offline'));
++    else fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ error: 'indisponível' })));
++    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ live: false })));
++    vi.stubGlobal('fetch', fetchMock);
++    CanalTopo({ agoraInicial: Date.now() });
++    const limpar = hooks.efeitos[2]();
++    await vi.advanceTimersByTimeAsync(0);
++    expect(hooks.estados[2]?.videoId).toBe('live-id');
++    // Simula o espectador já assistindo à transmissão encontrada.
++    const player = { live: true, id: 'live-id', start: 0 };
++    hooks.estados[3] = player;
++    await vi.advanceTimersByTimeAsync(120_000);
++    expect(hooks.estados[2]?.videoId).toBe('live-id');
++    expect(hooks.estados[3]).toBe(player);
++    expect(hooks.estados[4]).not.toContain('acabou');
++    await vi.advanceTimersByTimeAsync(120_000);
++    expect(fetchMock).toHaveBeenCalledTimes(3);
++    expect(fetchMock).toHaveBeenCalledWith('/api/live', { cache: 'no-store' });
++    expect(hooks.estados[2]).toBeNull();
++    expect(hooks.estados[3]).not.toBe(player);
++    expect(hooks.estados[4]).toContain('A live acabou');
++    limpar();
++});
+diff --git a/__tests__/live.test.ts b/__tests__/live.test.ts
+new file mode 100644
+index 0000000..ff302dc
+--- /dev/null
++++ b/__tests__/live.test.ts
+@@ -0,0 +1,223 @@
++import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
++let GET: typeof import('@/app/api/live/route').GET;
++const fetchMock = vi.fn();
++const json = (body: unknown) => new Response(JSON.stringify(body));
++
++beforeEach(async () => {
++    vi.resetModules();
++    ({ GET } = await import('@/app/api/live/route'));
++    vi.useFakeTimers();
++    vi.setSystemTime(new Date('2026-10-29T07:00:00Z'));
++    vi.stubEnv('LIVE_YOUTUBE_AUTO', '1');
++    vi.stubEnv('YOUTUBE_API_KEY', 'teste');
++    vi.stubEnv('YOUTUBE_CHANNEL_ID', 'UCteste');
++    vi.stubGlobal('fetch', fetchMock);
++    fetchMock.mockReset();
++});
++afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
++
++async function esperarIndisponivel() {
++    const r = await GET();
++    expect(r.status).toBe(503);
++    expect(r.headers.get('Cache-Control')).toBe('no-store');
++    expect(await r.json()).not.toHaveProperty('live');
++    for (const [, options] of fetchMock.mock.calls) expect(options).toEqual({ cache: 'no-store' });
++}
++
++describe('/api/live', () => {
++    it.each([undefined, '', '0', 'true'])('desliga upstream sem opt-in explícito (%s)', async flag => {
++        vi.stubEnv('LIVE_YOUTUBE_AUTO', flag);
++        const r = await GET();
++        expect(r.status).toBe(200);
++        expect(r.headers.get('Cache-Control')).toBe('no-store');
++        expect(await r.json()).toEqual({ live: false, demo: true, motivo: 'deteccao-automatica-desligada' });
++        expect(fetchMock).not.toHaveBeenCalled();
++    });
++    it('encontra live pela busca de transmissões ativas e mantém o contrato', async () => {
++        fetchMock.mockResolvedValueOnce(json({ items: [{ id: { videoId: 'live-antiga' }, snippet: { channelId: 'UCteste', title: 'No ar' } }] }))
++            .mockResolvedValueOnce(json({ items: [{ id: 'live-antiga', snippet: { liveBroadcastContent: 'live', channelId: 'UCteste' }, liveStreamingDetails: { actualStartTime: '2026-10-29T10:00:00Z' } }] }));
++        const r = await GET();
++        expect(r.status).toBe(200);
++        expect(await r.json()).toEqual({ live: true, videoId: 'live-antiga', titulo: 'No ar', inicio: '2026-10-29T10:00:00Z' });
++        const url = new URL(fetchMock.mock.calls[0][0]);
++        expect(url.pathname).toBe('/youtube/v3/search');
++        for (const [key, value] of Object.entries({ channelId: 'UCteste', eventType: 'live', type: 'video' })) {
++            expect(url.searchParams.get(key)).toBe(value);
++        }
++        for (const [, options] of fetchMock.mock.calls) expect(options).toEqual({ cache: 'no-store' });
++        expect(r.headers.get('Cache-Control')).toContain('s-maxage=120');
++    });
++    it('retorna ausência confirmada cacheável quando a busca está vazia', async () => {
++        fetchMock.mockResolvedValueOnce(json({ items: [] }));
++        const r = await GET();
++        expect(r.status).toBe(200);
++        expect(await r.json()).toEqual({ live: false });
++        expect(r.headers.get('Cache-Control')).toContain('s-maxage=120');
++        expect(fetchMock).toHaveBeenCalledTimes(1);
++    });
++    it.each([403, 500])('não cacheia erro HTTP %s', async status => {
++        fetchMock.mockResolvedValueOnce(new Response(null, { status }));
++        await esperarIndisponivel();
++    });
++    it('não cacheia exceção de rede', async () => {
++        fetchMock.mockRejectedValueOnce(new Error('rede'));
++        await esperarIndisponivel();
++    });
++    it('não cacheia erro na consulta de detalhes', async () => {
++        fetchMock.mockResolvedValueOnce(json({ items: [{ id: { videoId: 'live' }, snippet: { channelId: 'UCteste', title: 'Live' } }] }))
++            .mockResolvedValueOnce(new Response(null, { status: 503 }));
++        await esperarIndisponivel();
++    });
++    it('não considera resposta inválida como ausência confirmada', async () => {
++        fetchMock.mockResolvedValueOnce(json({ error: {} }));
++        await esperarIndisponivel();
++    });
++    it.each(['YOUTUBE_API_KEY', 'YOUTUBE_CHANNEL_ID'])('não cacheia configuração ausente: %s', async nome => {
++        vi.stubEnv(nome, '');
++        await esperarIndisponivel();
++        expect(fetchMock).not.toHaveBeenCalled();
++    });
++    const busca = { items: [{ id: { videoId: 'id-live' }, snippet: { channelId: 'UCteste', title: 'Live' } }] };
++    const detalhes = (fim = false) => ({ items: [{ id: 'id-live', snippet: { channelId: 'UCteste', liveBroadcastContent: 'live' }, liveStreamingDetails: fim ? { actualEndTime: '2026-10-29T12:00:00Z' } : {} }] });
++
++    it.each([
++        { channelId: 'UCteste' },
++        { channelId: 'UCteste', liveBroadcastContent: 'invalido' },
++        { channelId: 'UCoutro', liveBroadcastContent: 'none' },
++        { channelId: 'UCoutro', liveBroadcastContent: 'live' },
++    ])('preserva live confirmada quando detalhes são inconclusivos: %j', async snippet => {
++        fetchMock.mockResolvedValueOnce(json(busca)).mockResolvedValueOnce(json(detalhes()));
++        expect(await (await GET()).json()).toMatchObject({ live: true });
++        await vi.advanceTimersByTimeAsync(120_000);
++        fetchMock.mockResolvedValueOnce(json({ items: [{ id: 'id-live', snippet, liveStreamingDetails: { actualEndTime: '2026-10-29T12:00:00Z' } }] }));
++        await esperarIndisponivel();
++        await esperarIndisponivel();
++        expect(fetchMock).toHaveBeenCalledTimes(3);
++        await vi.advanceTimersByTimeAsync(120_000);
++        fetchMock.mockResolvedValueOnce(json(detalhes()));
++        expect(await (await GET()).json()).toMatchObject({ live: true });
++        expect(new URL(fetchMock.mock.calls.at(-1)![0]).pathname).toBe('/youtube/v3/videos');
++    });
++
++    it('confirma fim nos detalhes mesmo com snippet ainda live', async () => {
++        fetchMock.mockResolvedValueOnce(json(busca)).mockResolvedValueOnce(json(detalhes(true)));
++        expect(await (await GET()).json()).toEqual({ live: false });
++    });
++    it('rejeita snippet que não indica live', async () => {
++        const dados = detalhes();
++        dados.items[0].snippet.liveBroadcastContent = 'none';
++        fetchMock.mockResolvedValueOnce(json(busca)).mockResolvedValueOnce(json(dados));
++        expect(await (await GET()).json()).toEqual({ live: false });
++    });
++    it('deduplica consultas concorrentes e respeita TTL de pelo menos 900s da busca vazia', async () => {
++        fetchMock.mockImplementation(async () => json({ items: [] }));
++        await Promise.all(Array.from({ length: 20 }, () => GET()));
++        expect(fetchMock).toHaveBeenCalledTimes(1);
++        await vi.advanceTimersByTimeAsync(899_000);
++        await GET();
++        expect(fetchMock).toHaveBeenCalledTimes(1);
++        await vi.advanceTimersByTimeAsync(120_000);
++        await GET();
++        expect(fetchMock).toHaveBeenCalledTimes(2);
++    });
++    it('revalida live conhecida somente com videos.list, inclusive após 900s', async () => {
++        fetchMock.mockResolvedValueOnce(json(busca)).mockImplementation(async () => json(detalhes()));
++        await GET();
++        await GET();
++        expect(fetchMock).toHaveBeenCalledTimes(2);
++        await vi.advanceTimersByTimeAsync(120_000);
++        await Promise.all([GET(), GET()]);
++        expect(fetchMock).toHaveBeenCalledTimes(3);
++        await vi.advanceTimersByTimeAsync(900_000);
++        await GET();
++        expect(fetchMock).toHaveBeenCalledTimes(4);
++        for (const [url] of fetchMock.mock.calls.slice(1)) {
++            expect(new URL(url).pathname).toBe('/youtube/v3/videos');
++            expect(new URL(url).searchParams.get('part')).toBe('snippet,liveStreamingDetails');
++        }
++    });
++    it('não cacheia falha de detalhes nem perde live conhecida e permite nova tentativa', async () => {
++        fetchMock.mockResolvedValueOnce(json(busca)).mockResolvedValueOnce(json(detalhes()));
++        await GET();
++        await vi.advanceTimersByTimeAsync(120_000);
++        fetchMock.mockResolvedValueOnce(new Response(null, { status: 503 }));
++        await esperarIndisponivel();
++        await esperarIndisponivel();
++        expect(fetchMock).toHaveBeenCalledTimes(3);
++        await vi.advanceTimersByTimeAsync(120_000);
++        fetchMock.mockResolvedValueOnce(json(detalhes()));
++        expect(await (await GET()).json()).toMatchObject({ live: true });
++        expect(fetchMock).toHaveBeenCalledTimes(4);
++    });
++    it.each([
++        ['search', [300, 600, 960, 960]],
++        ['videos', [120, 240, 480, 960, 960]],
++    ] as const)('aplica backoff às falhas de %s', async (recurso, intervalos) => {
++        if (recurso === 'videos') {
++            fetchMock.mockResolvedValueOnce(json(busca)).mockResolvedValueOnce(json(detalhes()));
++            await GET();
++            await vi.advanceTimersByTimeAsync(120_000);
++        }
++        fetchMock.mockRejectedValue(new Error('rede'));
++        for (const segundos of intervalos) {
++            await esperarIndisponivel();
++            const chamadas = fetchMock.mock.calls.length;
++            await Promise.all(Array.from({ length: 20 }, () => esperarIndisponivel()));
++            await vi.advanceTimersByTimeAsync(segundos * 1000 - 1);
++            await esperarIndisponivel();
++            expect(fetchMock).toHaveBeenCalledTimes(chamadas);
++            await vi.advanceTimersByTimeAsync(1);
++        }
++        if (recurso === 'videos') {
++            fetchMock.mockResolvedValueOnce(json(detalhes()));
++            expect(await (await GET()).json()).toMatchObject({ live: true });
++            expect(new URL(fetchMock.mock.calls.at(-1)![0]).pathname).toContain('/videos');
++        } else {
++            fetchMock.mockResolvedValueOnce(json({ items: [] }));
++            expect(await (await GET()).json()).toEqual({ live: false });
++        }
++    });
++
++    it.each(['search', 'videos'])('limita orçamento diário de %s e reseta à meia-noite Pacific', async recurso => {
++        const teto = recurso === 'search' ? 40 : 600;
++        const intervalo = recurso === 'search' ? 960_000 : 120_000;
++        if (recurso === 'videos') {
++            fetchMock.mockResolvedValueOnce(json(busca));
++        }
++        fetchMock.mockImplementation(async () => json(recurso === 'search' ? { items: [] } : detalhes()));
++        for (let i = 0; i < teto; i++) {
++            expect((await GET()).status).toBe(200);
++            await vi.advanceTimersByTimeAsync(intervalo);
++        }
++        const chamadas = fetchMock.mock.calls.length;
++        await esperarIndisponivel();
++        expect(fetchMock).toHaveBeenCalledTimes(chamadas);
++        // UTC já mudou de dia, mas Pacific ainda é 29/10 (PDT).
++        vi.setSystemTime(new Date('2026-10-30T06:59:59Z'));
++        await esperarIndisponivel();
++        expect(fetchMock).toHaveBeenCalledTimes(chamadas);
++        vi.setSystemTime(new Date('2026-10-30T07:00:00Z'));
++        expect((await GET()).status).toBe(200);
++        expect(fetchMock).toHaveBeenCalledTimes(chamadas + 1);
++    });
++
++    it('conta erros no teto e reiniciar módulo zera orçamento e estado local', async () => {
++        fetchMock.mockRejectedValue(new Error('rede'));
++        for (let i = 0; i < 40; i++) {
++            await esperarIndisponivel();
++            await vi.advanceTimersByTimeAsync(960_000);
++        }
++        await esperarIndisponivel();
++        expect(fetchMock).toHaveBeenCalledTimes(40);
++        vi.resetModules();
++        ({ GET } = await import('@/app/api/live/route'));
++        fetchMock.mockResolvedValueOnce(json(busca)).mockResolvedValueOnce(json(detalhes()));
++        expect(await (await GET()).json()).toMatchObject({ live: true });
++        expect(fetchMock).toHaveBeenCalledTimes(42);
++        vi.resetModules();
++        ({ GET } = await import('@/app/api/live/route'));
++        fetchMock.mockResolvedValueOnce(json({ items: [] }));
++        expect(await (await GET()).json()).toEqual({ live: false });
++        expect(fetchMock).toHaveBeenCalledTimes(43);
++    });
++});
+diff --git a/app/api/live/route.ts b/app/api/live/route.ts
+index 5d4523d..6113bcb 100644
+--- a/app/api/live/route.ts
++++ b/app/api/live/route.ts
+@@ -1,64 +1,164 @@
+ import { NextResponse } from 'next/server';
+ 
+ /**
+- * GET /api/live — o @tvcomplexofc está ao vivo agora?
+- *
+- * Só leitura, sem banco. Usa a YouTube Data API com custo baixo:
+- * playlistItems.list (1 unidade) nos uploads do canal + videos.list (1 unidade)
+- * para ver se algum está "live". Cache de 2 min: ~720 checagens × 2 = ~1.440
+- * unidades/dia (≈14% da cota de 10.000). Não depende do cron diário.
+- *
++ * GET /api/live — somente leitura, sem banco.
++ * Detecção automática BLOQUEADA por padrão; só LIVE_YOUTUBE_AUTO='1' habilita.
++ * Limite global exige store atômico compartilhado não autorizado. Intervalo longo
++ * NÃO resolve cota: os tetos abaixo protegem somente um processo.
++ * Modelo atual de cota: search.list tem bucket próprio de 100 chamadas/dia,
++ * custo 1; videos.list custa 1 no bucket de 10.000 unidades/dia dos demais endpoints.
++ * Erros também contam; reset à meia-noite em America/Los_Angeles (Pacific Time).
++ * Tetos locais: search.list 40/dia, videos.list 600/dia, reservados antes do fetch.
++ * Busca bem-sucedida: intervalo 960s; falhas: 300s, 600s, 960s (teto).
++ * Detalhes: intervalo 120s; falhas: 120s, 240s, 480s, 960s (teto).
++ * Cache, limites, orçamento e deduplicação são POR INSTÂNCIA/PROCESSO.
++ * Em Vercel, reinícios, várias instâncias e cold starts podem multiplicar chamadas.
++ * BLOQUEIO: limite global real exige armazenamento compartilhado com reserva
++ * atômica, não provisionado. Reiniciar o módulo também zera os tetos locais.
++ * Falhas/bloqueios: 503 no-store; último estado confirmado preservado em memória.
+  * Variáveis (só servidor): YOUTUBE_API_KEY e YOUTUBE_CHANNEL_ID.
+- * Sem elas a rota responde { live: false } e a home fica no canal 24h.
+  */
+-
+-export const revalidate = 120;
++export const dynamic = 'force-dynamic';
+ 
+ const API = 'https://www.googleapis.com/youtube/v3';
+-
+ type LiveStatus = { live: false } | { live: true; videoId: string; titulo: string; inicio: string | null };
+ 
+-async function buscarLive(): Promise<LiveStatus> {
+-    const chave = process.env.YOUTUBE_API_KEY;
+-    const canal = process.env.YOUTUBE_CHANNEL_ID;
+-    if (!chave || !canal || !canal.startsWith('UC')) return { live: false };
++async function consultar(recurso: string, parametros: Record<string, string>) {
++    const resposta = await fetch(`${API}/${recurso}?${new URLSearchParams(parametros)}`, { cache: 'no-store' });
++    if (!resposta.ok) throw new Error('YouTube indisponível');
++    const dados = await resposta.json();
++    if (!Array.isArray(dados.items)) throw new Error('Resposta inválida do YouTube');
++    return dados.items;
++}
+ 
+-    const uploads = 'UU' + canal.slice(2);
+-    const itens = await fetch(
+-        `${API}/playlistItems?part=contentDetails&maxResults=5&playlistId=${encodeURIComponent(uploads)}&key=${encodeURIComponent(chave)}`
+-    );
+-    if (!itens.ok) return { live: false };
+-    const ids: string[] = ((await itens.json()).items ?? [])
+-        .map((i: { contentDetails?: { videoId?: string } }) => i.contentDetails?.videoId)
+-        .filter(Boolean);
+-    if (ids.length === 0) return { live: false };
++type Recurso = 'search' | 'videos';
++const limites = { search: 40, videos: 600 };
++const minimos = { search: 300_000, videos: 120_000 };
++const controles = {
++    search: { proxima: 0, falhas: 0, dia: '', usadas: 0 },
++    videos: { proxima: 0, falhas: 0, dia: '', usadas: 0 },
++};
++const calendarioPacific = new Intl.DateTimeFormat('en-CA', {
++    timeZone: 'America/Los_Angeles', year: 'numeric', month: '2-digit', day: '2-digit',
++});
+ 
+-    const videos = await fetch(
+-        `${API}/videos?part=snippet,liveStreamingDetails&id=${ids.join(',')}&key=${encodeURIComponent(chave)}`
+-    );
+-    if (!videos.ok) return { live: false };
+-    const aoVivo = ((await videos.json()).items ?? []).find(
+-        (v: { snippet?: { liveBroadcastContent?: string; channelId?: string } }) =>
+-            v.snippet?.liveBroadcastContent === 'live' && v.snippet?.channelId === canal,
+-    );
+-    if (!aoVivo) return { live: false };
++async function limitada<T>(recurso: Recurso, executar: () => Promise<T>): Promise<T> {
++    const controle = controles[recurso];
++    const agora = Date.now();
++    const dia = calendarioPacific.format(agora);
++    if (controle.dia !== dia) { controle.dia = dia; controle.usadas = 0; }
++    if (agora < controle.proxima || controle.usadas >= limites[recurso]) {
++        throw new Error('Intervalo ou orçamento local excedido');
++    }
++    // Reserva síncrona antes de qualquer await; erros também consomem a cota.
++    controle.usadas++;
++    controle.proxima = agora + minimos[recurso];
++    try {
++        const resultado = await executar();
++        controle.falhas = 0;
++        controle.proxima = Date.now() + (recurso === 'search' ? 960_000 : 120_000);
++        return resultado;
++    } catch (erro) {
++        controle.falhas = Math.min(controle.falhas + 1, 4);
++        controle.proxima = Date.now() + Math.min(960_000, minimos[recurso] * 2 ** (controle.falhas - 1));
++        throw erro;
++    }
++}
+ 
+-    return {
+-        live: true,
+-        videoId: aoVivo.id,
+-        titulo: aoVivo.snippet.title,
+-        inicio: aoVivo.liveStreamingDetails?.actualStartTime ?? null,
+-    };
++type Descoberta = { item: { videoId: string; titulo: string } | null; expira: number };
++const descobertas = new Map<string, Descoberta>();
++async function descobrir(chave: string, canal: string): Promise<Descoberta> {
++    const key = JSON.stringify([chave, canal]);
++    const cache = descobertas.get(key);
++    if (cache && Date.now() < cache.expira) return cache;
++    return limitada('search', async () => {
++        const itens = await consultar('search', {
++            part: 'snippet', channelId: canal, eventType: 'live', type: 'video', maxResults: '1', key: chave,
++        });
++        const item = itens[0];
++        if (item && (!item.id?.videoId || item.snippet?.channelId !== canal || typeof item.snippet?.title !== 'string')) {
++            throw new Error('Live inválida');
++        }
++        const descoberta = {
++            item: item ? { videoId: item.id.videoId as string, titulo: item.snippet.title as string } : null,
++            expira: Date.now() + 960_000,
++        };
++        descobertas.set(key, descoberta);
++        return descoberta;
++    });
++}
++
++type Estado = { status?: LiveStatus; expira: number; pendente?: Promise<LiveStatus> };
++const estados = new Map<string, Estado>();
++
++async function consultarStatus(chave: string, canal: string, anterior?: LiveStatus): Promise<LiveStatus> {
++    let item;
++    if (anterior?.live) item = anterior;
++    else {
++        const descoberta = await descobrir(chave, canal);
++        item = descoberta.item;
++    }
++    if (!item) return { live: false };
++    return limitada('videos', async (): Promise<LiveStatus> => {
++        const videos = await consultar('videos', {
++            part: 'snippet,liveStreamingDetails', id: item.videoId, key: chave,
++        });
++        // Uma busca positiva seguida de detalhes ausentes é inconclusiva, não fim confirmado.
++        const video = videos.find((v: { id: string }) => v.id === item.videoId);
++        if (!video) throw new Error('Detalhes da live indisponíveis');
++        if (!video.liveStreamingDetails || !video.snippet) throw new Error('Detalhes inválidos');
++        if (video.snippet.channelId !== canal) throw new Error('Canal inválido');
++        const conteudo = video.snippet.liveBroadcastContent;
++        if (!['live', 'none', 'upcoming'].includes(conteudo)) throw new Error('Estado da live inválido');
++        const fim = video.liveStreamingDetails.actualEndTime;
++        const inicio = video.liveStreamingDetails.actualStartTime;
++        if ((fim !== undefined && (typeof fim !== 'string' || !Number.isFinite(Date.parse(fim)))) ||
++            (inicio !== undefined && (typeof inicio !== 'string' || !Number.isFinite(Date.parse(inicio))))) {
++            throw new Error('Datas da live inválidas');
++        }
++        if (fim || conteudo !== 'live') return { live: false };
++        return {
++            live: true,
++            videoId: item.videoId,
++            titulo: item.titulo,
++            inicio: video.liveStreamingDetails?.actualStartTime ?? null,
++        };
++    });
++}
++
++async function buscarLive(): Promise<LiveStatus> {
++    const chave = process.env.YOUTUBE_API_KEY;
++    const canal = process.env.YOUTUBE_CHANNEL_ID;
++    if (!chave || !canal || !canal.startsWith('UC')) throw new Error('YouTube não configurado');
++    const key = JSON.stringify([chave, canal]);
++    let estado = estados.get(key);
++    if (!estado) { estado = { expira: 0 }; estados.set(key, estado); }
++    if (estado.status && Date.now() < estado.expira) return estado.status;
++    if (estado.pendente) return estado.pendente;
++    const atual = estado;
++    atual.pendente = consultarStatus(chave, canal, atual.status).then(status => {
++        atual.status = status;
++        atual.expira = Date.now() + 120_000;
++        return status;
++    }).finally(() => { atual.pendente = undefined; });
++    return atual.pendente;
+ }
+ 
+ export async function GET() {
+-    let status: LiveStatus = { live: false };
++    if (process.env.LIVE_YOUTUBE_AUTO !== '1') {
++        return NextResponse.json({ live: false, demo: true, motivo: 'deteccao-automatica-desligada' }, {
++            headers: { 'Cache-Control': 'no-store' },
++        });
++    }
+     try {
+-        status = await buscarLive();
++        const status = await buscarLive();
++        return NextResponse.json(status, {
++            headers: { 'Cache-Control': 'public, s-maxage=120, stale-while-revalidate=60' },
++        });
+     } catch {
+-        // falha na API = fica no canal 24h, sem erro para o público
++        return NextResponse.json({ error: 'Status da live indisponível' }, {
++            status: 503,
++            headers: { 'Cache-Control': 'no-store' },
++        });
+     }
+-    return NextResponse.json(status, {
+-        headers: { 'Cache-Control': 'public, s-maxage=120, stale-while-revalidate=60' },
+-    });
+ }
+diff --git a/components/home-urbano/CanalTopo.js b/components/home-urbano/CanalTopo.js
+index 3cd2d45..10d198c 100644
+--- a/components/home-urbano/CanalTopo.js
++++ b/components/home-urbano/CanalTopo.js
+@@ -109,6 +109,7 @@ export default function CanalTopo({ agoraInicial, demoLive = false }) {
+     // vídeo da live em exibição (null = canal 24h): troca de live A para live B também conta
+     const liveAtual = useRef(demoLive ? 'demo' : null);
+     const iframeRef = useRef(null);
++    const [deteccaoDemo, setDeteccaoDemo] = useState(false);
+ 
+     // relógio: avança o progresso e passa para o próximo vídeo na hora certa
+     useEffect(() => {
+@@ -147,11 +148,13 @@ export default function CanalTopo({ agoraInicial, demoLive = false }) {
+         async function checar() {
+             if (document.visibilityState === 'hidden') return;
+             try {
+-                const r = await fetch('/api/live');
++                const r = await fetch('/api/live', { cache: 'no-store' });
+                 if (!r.ok) return;
+                 const d = await r.json();
+-                if (!ativo) return;
+-                const novo = d.live
++                if (!ativo || (d.live !== true && d.live !== false)) return;
++                if (d.live && (typeof d.videoId !== 'string' || !d.videoId || typeof d.titulo !== 'string')) return;
++                setDeteccaoDemo(d.demo === true);
++                const novo = d.live && d.demo !== true
+                     ? { videoId: d.videoId, titulo: d.titulo, inicio: d.inicio ? Date.parse(d.inicio) : null }
+                     : null;
+                 const chave = novo ? novo.videoId ?? 'live' : null;
+@@ -353,6 +356,7 @@ export default function CanalTopo({ agoraInicial, demoLive = false }) {
+                         </div>
+ 
+                         <div className={s.heroInfo}>
++                            {deteccaoDemo && <p className={s.demoNota} role="status">Demonstração: detecção automática de live desligada</p>}
+                             {canalDemo && <p className={s.demoTag}>Demonstração — vídeos de exemplo</p>}
+                             <p className={s.kicker}>
+                                 {live ? (
