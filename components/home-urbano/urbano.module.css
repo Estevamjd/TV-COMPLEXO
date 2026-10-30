@@ -167,6 +167,7 @@
 }
 .demoNota {
     display: inline-block; margin: 16px 0 0; padding: 6px 10px; border: 2px dashed var(--ink);
+    max-width: calc(100% - 128px); /* mantém a borda fora do carimbo rotacionado no celular */
     font: 700 16px/1.3 var(--f-mono);
 }
 
@@ -331,6 +332,7 @@
     .heroInfo { padding-top: 20px; }
     .kicker { padding-right: 0; }
     .demoTag { max-width: none; }
+    .demoNota { max-width: none; }
     .heroTitulo { font-size: 34px; }
     .heroSub { font-size: 18px; }
 
