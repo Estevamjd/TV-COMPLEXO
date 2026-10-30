@@ -52,3 +52,8 @@ Conclusão: o "806 / nada commitado" do resumo é verdade **para as 02:09**. Dep
 
 ## Sanitização
 E-mails e IP de rede interna trocados por `[REDACTED-*]` nos textos. Não havia tokens, cookies, cabeçalhos Authorization, parâmetros de bypass/share nem IDs de conta/time. Os PNG/WEBP não foram editados: eles podem mostrar o e-mail público de contato que aparece no próprio site. O gitleaks rodou na pasta: sem achados.
+
+## Ressalvas adicionais (30/10, sem rerun)
+
+- **`lighthouse/final-4028b42/f_videos.json` tem `runWarnings`:** "The page loaded too slowly to finish within the time limit. Results may be incomplete." Por isso o **99 em `/videos` NÃO é uma medição completa**. O Lighthouse não foi rodado de novo.
+- **808 continua só relatado:** não existe stdout do Vitest (`npx vitest run`) para 806 nem para 808.
