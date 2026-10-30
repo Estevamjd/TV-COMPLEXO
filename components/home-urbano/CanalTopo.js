@@ -109,6 +109,7 @@ export default function CanalTopo({ agoraInicial, demoLive = false }) {
     // vídeo da live em exibição (null = canal 24h): troca de live A para live B também conta
     const liveAtual = useRef(demoLive ? 'demo' : null);
     const iframeRef = useRef(null);
+    const [deteccaoDemo, setDeteccaoDemo] = useState(false);
 
     // relógio: avança o progresso e passa para o próximo vídeo na hora certa
     useEffect(() => {
@@ -147,11 +148,13 @@ export default function CanalTopo({ agoraInicial, demoLive = false }) {
         async function checar() {
             if (document.visibilityState === 'hidden') return;
             try {
-                const r = await fetch('/api/live');
+                const r = await fetch('/api/live', { cache: 'no-store' });
                 if (!r.ok) return;
                 const d = await r.json();
-                if (!ativo) return;
-                const novo = d.live
+                if (!ativo || (d.live !== true && d.live !== false)) return;
+                if (d.live && (typeof d.videoId !== 'string' || !d.videoId || typeof d.titulo !== 'string')) return;
+                setDeteccaoDemo(d.demo === true);
+                const novo = d.live && d.demo !== true
                     ? { videoId: d.videoId, titulo: d.titulo, inicio: d.inicio ? Date.parse(d.inicio) : null }
                     : null;
                 const chave = novo ? novo.videoId ?? 'live' : null;
@@ -353,6 +356,7 @@ export default function CanalTopo({ agoraInicial, demoLive = false }) {
                         </div>
 
                         <div className={s.heroInfo}>
+                            {deteccaoDemo && <p className={s.demoNota} role="status">Demonstração: detecção automática de live desligada</p>}
                             {canalDemo && <p className={s.demoTag}>Demonstração — vídeos de exemplo</p>}
                             <p className={s.kicker}>
                                 {live ? (
