@@ -1,0 +1,20 @@
+Fiz a correção: a Início e as páginas internas agora usam o mesmo componente de barra no topo. Vitest, `tsc` e o build sem `DATABASE_URL` passam. Nada foi commitado nem staged.
+
+**O que mudou**
+- **`components/BarraNavegacao.js` (novo):** é a barra única, com o logo, os links de `NavPrincipal` e o botão destacado "Enviar denúncia" (`/denuncias/enviar`). Ele aparece só a partir de 1024px; no celular, "Denunciar" continua na barra de baixo.
+- **`components/Header.js`:** agora só envolve a `BarraNavegacao`.
+- **`components/home-urbano/CanalTopo.js`:** trocar a barra própria pela `<BarraNavegacao />` foi a única alteração. A lógica da live e do player não foi mexida.
+- **Mudança visível:** o botão "Instalar app" saiu do topo da Início para a composição ficar igual à das páginas internas. A seção de instalação (`#instalar`) continua na página. As classes `soCel`/`soDesk` em `urbano.module.css` ficaram sem uso e não as removi.
+- **`__tests__/barra-navegacao.test.js` (novo):** renderiza a Início (`/`) e o `Header` (`/videos`) e confere três coisas:
+  - o HTML da barra é idêntico nas duas, tirando a marcação da página atual;
+  - os links vêm na ordem certa: logo, Início, Vídeos, Mapa, Notícias, Sobre e "Enviar denúncia" com as classes de botão destacado;
+  - cada página marca só ela mesma como atual (`/` na Início, `/denuncias/enviar` no formulário).
+
+  Com o `CanalTopo` antigo, o teste de composição falha, então ele pega o problema que a revisão apontou.
+
+**Números**
+- `npx vitest run`: 15 arquivos, **808/808 testes passando**.
+- `npx tsc --noEmit`: **0 erros**.
+- `next build` sem `DATABASE_URL`: **concluído**, com todas as rotas geradas.
+
+`components/BarraNavegacao.js` e `__tests__/barra-navegacao.test.js` ainda não estão staged; o resto ficou como alteração não staged em cima do que já estava staged.

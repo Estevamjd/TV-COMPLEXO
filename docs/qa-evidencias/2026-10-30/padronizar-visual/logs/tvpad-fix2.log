@@ -1,0 +1,21 @@
+`/denuncias` subiu de **67 para 100 em Performance**, com A11y em 100. O `/` ficou igual ao relatório anterior.
+
+| Lighthouse mobile | Perf | A11y | LCP | CLS |
+|---|---|---|---|---|
+| `/denuncias` antes | 67 | — | 7.4s | 0.199 |
+| `/denuncias` agora | **100** | **100** | **0.9s** | **0** |
+| `/` antes | 97 | 100 | 0.9s | 0.115 |
+| `/` agora | 97 | 100 | 0.9s | 0.115 |
+
+Best Practices e SEO estão em 100 nas duas páginas. O CLS de 0.115 no `/` já existia antes e não mexi nele.
+
+**O que mudou:**
+- **Altura reservada** (`app/denuncias/MapWrapper.js`): enquanto o mapa carrega, aparece uma caixa no lugar dele com a mesma classe `.map-container`, então tem a mesma altura `clamp`. Ela já vem no HTML do servidor, e a lista de denúncias não é mais empurrada. A cor de fundo da caixa está em `.map-placeholder` no `app/globals.css`.
+- **Salto do `.leaflet-top`** (`components/MapView.js`): o CSS do Leaflet vinha do unpkg e só chegava depois de o mapa já estar na tela. Agora é importado do pacote local (`import 'leaflet/dist/leaflet.css'`) e chega junto com o código do mapa. Isso também tira a página do unpkg.
+- **LCP**: a maior parte do problema era que o maior elemento da tela era um tile do OpenStreetMap, então o LCP esperava o servidor de tiles. Agora cada tile é desenhado num `<canvas>`, que não entra na conta do LCP. A imagem e o filtro cinza são os mesmos, então o visual não muda. Com isso o LCP passou a ser o parágrafo de texto do cabeçalho, que é estático.
+
+Não mexi no resto do mapa: a roda do mouse continua sem zoom, a rolagem não fica presa e o botão "Mexer no mapa" continua no toque. O `HeroMap` usa o mesmo `MapView`, então também recebe essas mudanças.
+
+**Verificação:** `npm run build` passou e o servidor está rodando de novo na porta 3123 sem `DATABASE_URL`. `npx vitest run` passou (808 testes) e `npx tsc --noEmit` não deu erros.
+
+Os novos relatórios estão em `/tmp/tvpad-lh/n_denuncias.json` e `n_home.json`. Não fiz commit nem `git add`: as edições estão no working tree, fora do que já estava staged.

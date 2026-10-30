@@ -1,0 +1,16 @@
+inicio-390 {'url': '/', 'barra': 64, 'paddingBottom': 64, 'rodapeFimY': 1959, 'barraTopoY': 780, 'atual': ['/@topo', '/@barra'], 'emoji': False, 'exemplo': False, 'overflowX': False}
+videos-390 {'url': '/videos', 'barra': 64, 'paddingBottom': 64, 'rodapeFimY': 1158, 'barraTopoY': 780, 'atual': ['/videos@topo', '/videos@barra'], 'emoji': False, 'exemplo': False, 'overflowX': False}
+noticias-390 {'url': '/noticias', 'barra': 64, 'paddingBottom': 64, 'rodapeFimY': 1045, 'barraTopoY': 780, 'atual': ['/noticias@topo', '/noticias@barra'], 'emoji': False, 'exemplo': False, 'overflowX': False}
+denuncias-390 {'url': '/denuncias', 'barra': 64, 'paddingBottom': 64, 'rodapeFimY': 1764, 'barraTopoY': 780, 'atual': ['/denuncias@topo', '/denuncias@barra'], 'emoji': False, 'exemplo': False, 'overflowX': False}
+denuncias-enviar-390 {'url': '/denuncias/enviar', 'barra': 64, 'paddingBottom': 64, 'rodapeFimY': 2104, 'barraTopoY': 780, 'atual': ['/denuncias/enviar@topo', '/denuncias/enviar@barra'], 'emoji': False, 'exemplo': False, 'overflowX': False}
+sobre-390 {'url': '/sobre', 'barra': 64, 'paddingBottom': 64, 'rodapeFimY': 3879, 'barraTopoY': 780, 'atual': ['/sobre@topo', '/sobre@barra'], 'emoji': False, 'exemplo': False, 'overflowX': False}
+privacidade-390 {'url': '/privacidade', 'barra': 64, 'paddingBottom': 64, 'rodapeFimY': 3803, 'barraTopoY': 780, 'atual': [], 'emoji': False, 'exemplo': False, 'overflowX': False}
+mapa-390 {'url': '/denuncias', 'barra': 64, 'paddingBottom': 64, 'rodapeFimY': 1764, 'barraTopoY': 780, 'atual': ['/denuncias@topo', '/denuncias@barra'], 'emoji': False, 'exemplo': False, 'overflowX': False}
+inicio-1440 {'url': '/', 'barra': 0, 'paddingBottom': 0, 'rodapeFimY': 1435, 'barraTopoY': None, 'atual': ['/@topo', '/@barra'], 'emoji': False, 'exemplo': False, 'overflowX': False}
+videos-1440 {'url': '/videos', 'barra': 0, 'paddingBottom': 0, 'rodapeFimY': 936, 'barraTopoY': None, 'atual': ['/videos@topo', '/videos@barra'], 'emoji': False, 'exemplo': False, 'overflowX': False}
+noticias-1440 {'url': '/noticias', 'barra': 0, 'paddingBottom': 0, 'rodapeFimY': 762, 'barraTopoY': None, 'atual': ['/noticias@topo', '/noticias@barra'], 'emoji': False, 'exemplo': False, 'overflowX': False}
+denuncias-1440 {'url': '/denuncias', 'barra': 0, 'paddingBottom': 0, 'rodapeFimY': 1614, 'barraTopoY': None, 'atual': ['/denuncias@topo', '/denuncias@barra'], 'emoji': False, 'exemplo': False, 'overflowX': False}
+denuncias-enviar-1440 {'url': '/denuncias/enviar', 'barra': 0, 'paddingBottom': 0, 'rodapeFimY': 1817, 'barraTopoY': None, 'atual': ['/denuncias/enviar@topo', '/denuncias/enviar@barra'], 'emoji': False, 'exemplo': False, 'overflowX': False}
+sobre-1440 {'url': '/sobre', 'barra': 0, 'paddingBottom': 0, 'rodapeFimY': 2571, 'barraTopoY': None, 'atual': ['/sobre@topo', '/sobre@barra'], 'emoji': False, 'exemplo': False, 'overflowX': False}
+privacidade-1440 {'url': '/privacidade', 'barra': 0, 'paddingBottom': 0, 'rodapeFimY': 2520, 'barraTopoY': None, 'atual': [], 'emoji': False, 'exemplo': False, 'overflowX': False}
+mapa-1440 {'url': '/denuncias', 'barra': 0, 'paddingBottom': 0, 'rodapeFimY': 1614, 'barraTopoY': None, 'atual': ['/denuncias@topo', '/denuncias@barra'], 'emoji': False, 'exemplo': False, 'overflowX': False}
