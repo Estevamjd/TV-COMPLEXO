@@ -70,9 +70,10 @@ export default function VideosPage() {
                 {/* Busca */}
                 <form onSubmit={handleSearch} style={{ marginBottom: '1rem' }}>
                     <div className="search-box" style={{ maxWidth: '100%' }}>
-                        <span className="search-icon">🔍</span>
+                        <span className="search-icon" aria-hidden="true">🔍</span>
                         <input
                             type="text"
+                            aria-label="Buscar vídeos"
                             className="search-input"
                             placeholder="Buscar vídeos..."
                             value={busca}

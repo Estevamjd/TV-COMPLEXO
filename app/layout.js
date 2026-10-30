@@ -4,25 +4,19 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import BottomNav from '@/components/BottomNav';
 import OcultarNaHome from '@/components/OcultarNaHome';
-import { SITE_URL } from '@/lib/site-url';
+import { SITE_URL, SITE_NOME, DESCRICAO_PADRAO, OG_IMAGEM, urlAbsoluta } from '@/lib/site';
 
+// Padrão herdado (ex.: /admin). Cada página pública define título, descrição e canonical
+// próprios com metadataDaPagina (lib/site.ts). Sem `url` aqui: og:url é sempre o da página.
 export const metadata = {
   metadataBase: new URL(SITE_URL),
   title: 'TV Complexo — A Real da Favela',
-  description: 'A real da favela. Vídeos, denúncias e notícias direto das comunidades do Rio de Janeiro.',
+  description: DESCRICAO_PADRAO,
   openGraph: {
     title: 'TV Complexo — A Real da Favela',
-    description: 'A real da favela. Vídeos, denúncias e notícias direto das comunidades do Rio de Janeiro.',
-    url: '/',
-    siteName: 'TV Complexo',
-    images: [
-      {
-        url: '/og-tv-complexo.jpg',
-        width: 1200,
-        height: 630,
-        alt: 'TV Complexo Preview',
-      },
-    ],
+    description: DESCRICAO_PADRAO,
+    siteName: SITE_NOME,
+    images: [{ ...OG_IMAGEM, url: urlAbsoluta(OG_IMAGEM.url) }],
     locale: 'pt_BR',
     type: 'website',
   },

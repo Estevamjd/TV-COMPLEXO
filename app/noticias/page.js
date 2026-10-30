@@ -1,6 +1,13 @@
 import NewsCard from '@/components/NewsCard';
 import db from '@/lib/db';
 import { COLUNAS_NOTICIAS } from '@/lib/colunas-publicas';
+import { metadataDaPagina } from '@/lib/site';
+
+export const metadata = metadataDaPagina({
+    titulo: 'Notícias das comunidades | TV Complexo',
+    descricao: 'Reportagens, relatos e notícias do Complexo do Alemão e de outras favelas do Rio de Janeiro, apurados pela TV Complexo.',
+    caminho: '/noticias',
+});
 
 export const dynamic = 'force-dynamic';
 
