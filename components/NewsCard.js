@@ -8,11 +8,11 @@ export default function NewsCard({ noticia }) {
     });
 
     const categoryLabels = {
-        comunidade: '🏘️ Comunidade',
-        cultura: '🎨 Cultura',
-        noticias: '📰 Notícias',
-        eventos: '🎉 Eventos',
-        geral: '📋 Geral',
+        comunidade: 'Comunidade',
+        cultura: 'Cultura',
+        noticias: 'Notícias',
+        eventos: 'Eventos',
+        geral: 'Geral',
     };
 
     return (
@@ -22,13 +22,10 @@ export default function NewsCard({ noticia }) {
                     <div style={{
                         width: '100%',
                         height: '100%',
-                        background: 'linear-gradient(135deg, #1a0a0a 0%, #0a1a0a 100%)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                    }}>
-                        <span style={{ fontSize: '3rem', opacity: 0.3 }}>📰</span>
-                    </div>
+                        background: noticia.imagem && /^https:\/\//.test(noticia.imagem)
+                            ? `url(${noticia.imagem}) center/cover no-repeat`
+                            : 'repeating-linear-gradient(135deg, var(--ph-a) 0 14px, var(--ph-b) 14px 28px)',
+                    }} />
                 </div>
                 <div className="card-body">
                     <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
@@ -57,8 +54,8 @@ export default function NewsCard({ noticia }) {
                         overflow: 'hidden'
                     }}>{noticia.resumo}</p>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: '0.75rem', color: 'var(--color-gray-medium)' }}>📅 {date}</span>
-                        <span style={{ fontSize: '0.75rem', color: 'var(--color-gray-medium)' }}>✍️ {noticia.autor}</span>
+                        <span style={{ fontSize: '0.85rem', fontFamily: 'var(--f-mono)', fontWeight: 700 }}>{date}</span>
+                        <span style={{ fontSize: '0.85rem', color: 'var(--color-gray-medium)' }}>{noticia.autor}</span>
                     </div>
                 </div>
             </div>

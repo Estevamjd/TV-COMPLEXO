@@ -12,61 +12,54 @@ export const metadata = metadataDaPagina({
 
 export const dynamic = 'force-dynamic';
 
+const LEGENDA = [
+    { label: 'Falta de luz', color: '#f4a261' },
+    { label: 'Lixo acumulado', color: '#e76f51' },
+    { label: 'Risco de deslizamento', color: '#e63946' },
+    { label: 'Saneamento', color: '#2a9d8f' },
+    { label: 'Fios energizados', color: '#f9c74f' },
+    { label: 'Poste caído', color: '#999999' },
+    { label: 'Violência', color: '#c1121f' },
+    { label: 'Outros', color: '#666666' },
+];
+
 export default async function DenunciasPage() {
-    const denuncias = await listarDenunciasPublicas();
+    // Sem banco configurado (prévia/build local): mapa e lista vazios, sem tela de erro.
+    const denuncias = process.env.DATABASE_URL ? await listarDenunciasPublicas() : [];
 
     return (
         <div>
             <div className="page-header">
-                <h1><span aria-hidden="true">📢</span> <span className="text-red">Denúncias</span></h1>
-                <p>Problemas reportados pela comunidade. Veja o mapa e ajude a cobrar soluções.</p>
+                <h1>Mapa de denúncias</h1>
+                <p>Problemas reportados pela comunidade, revisados antes de ir ao ar. Veja no mapa e ajude a cobrar solução.</p>
+                <div className="flex-between" style={{ justifyContent: 'flex-start', marginTop: '20px' }}>
+                    <Link href="/denuncias/enviar" className="btn btn-primary">Enviar denúncia</Link>
+                </div>
             </div>
 
             <div className="container">
-                {/* Mapa */}
-                <div style={{ marginBottom: '3rem' }}>
-                    <h2 className="section-title"><span aria-hidden="true">🗺️</span> Mapa de Problemas</h2>
+                <section aria-labelledby="mapa-titulo" style={{ marginBottom: '48px' }}>
+                    <h2 id="mapa-titulo" className="section-title">Mapa de problemas</h2>
                     <MapWrapper denuncias={denuncias} />
-
-                    {/* Legenda */}
-                    <div role="list" aria-label="Legenda do mapa" style={{
-                        display: 'flex',
-                        gap: '1rem',
-                        flexWrap: 'wrap',
-                        marginTop: '1rem',
-                        padding: '1rem',
-                        background: 'var(--color-black-light)',
-                        borderRadius: 'var(--radius-md)',
-                        border: '1px solid var(--color-dark-gray)',
-                    }}>
-                        {[
-                            { label: 'Falta de Luz', color: '#f4a261' },
-                            { label: 'Lixo Acumulado', color: '#e76f51' },
-                            { label: 'Risco Deslizamento', color: '#e63946' },
-                            { label: 'Saneamento', color: '#2a9d8f' },
-                            { label: 'Fios Energizados', color: '#f9c74f' },
-                            { label: 'Poste Caído', color: '#999999' },
-                            { label: 'Violência', color: '#c1121f' },
-                            { label: 'Outros', color: '#666666' },
-                        ].map(item => (
-                            <div role="listitem" key={item.label} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem' }}>
-                                <div style={{ width: 12, height: 12, borderRadius: '50%', background: item.color }}></div>
+                    <div role="list" aria-label="Legenda do mapa" className="legenda-mapa">
+                        {LEGENDA.map(item => (
+                            <div role="listitem" key={item.label}>
+                                <span aria-hidden="true" style={{ background: item.color }} />
                                 {item.label}
                             </div>
                         ))}
                     </div>
-                </div>
+                </section>
 
-                {/* Lista de Denúncias */}
-                <div>
-                    <div className="flex-between" style={{ marginBottom: '1.5rem' }}>
-                        <h2 className="section-title" style={{ marginBottom: 0 }}><span aria-hidden="true">📋</span> Denúncias da Comunidade</h2>
-                        <Link href="/denuncias/enviar" className="btn btn-primary btn-sm"><span aria-hidden="true">📢</span> Enviar Denúncia</Link>
-                    </div>
+                <section aria-labelledby="lista-titulo" style={{ marginBottom: '48px' }}>
+                    <h2 id="lista-titulo" className="section-title">Denúncias da comunidade</h2>
                     {denuncias.length === 0 ? (
                         <div className="empty-state">
-                            <h3>Nenhuma denúncia registrada</h3>
-                            <p>Seja o primeiro a denunciar um problema na sua comunidade.</p>
+                            <h3>Nenhuma denúncia publicada ainda</h3>
+                            <p>Viu um problema no seu bairro? Mande a primeira. Por padrão sai anônimo.</p>
+                            <div className="botoes-vazio">
+                                <Link href="/denuncias/enviar" className="btn btn-primary">Enviar denúncia</Link>
+                            </div>
                         </div>
                     ) : (
                         <div className="grid-2">
@@ -75,7 +68,7 @@ export default async function DenunciasPage() {
                             ))}
                         </div>
                     )}
-                </div>
+                </section>
             </div>
         </div>
     );

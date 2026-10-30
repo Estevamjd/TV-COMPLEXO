@@ -13,6 +13,12 @@ const nextConfig = {
   },
   compress: true,
   productionBrowserSourceMaps: false,
+  async redirects() {
+    return [
+      // O mapa fica em /denuncias; /mapa é o endereço curto (antes dava 404).
+      { source: '/mapa', destination: '/denuncias', permanent: true },
+    ];
+  },
   async headers() {
     return [
       {

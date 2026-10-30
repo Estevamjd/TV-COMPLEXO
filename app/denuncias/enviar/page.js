@@ -160,18 +160,16 @@ export default function EnviarDenunciaPage() {
             <div>
                 <div className="page-header" style={{ minHeight: '60vh' }}>
                     <div style={{
-                        background: 'rgba(42,157,143,0.1)',
-                        border: '2px solid var(--color-green)',
-                        borderRadius: 'var(--radius-lg)',
-                        padding: '3rem',
-                        maxWidth: '600px',
-                        margin: '0 auto',
-                        textAlign: 'center',
+                        background: 'var(--white)',
+                        border: 'var(--border)',
+                        boxShadow: '6px 6px 0 var(--green)',
+                        padding: 'clamp(1.5rem, 5vw, 3rem)',
+                        maxWidth: '640px',
                     }}>
-                        <h1 style={{ fontSize: '2rem', color: 'var(--color-green)', marginBottom: '1rem' }}>
+                        <h1 style={{ marginBottom: '1rem' }}>
                             Denúncia recebida
                         </h1>
-                        <p role="status" style={{ color: 'var(--color-gray-light)', fontSize: '1.1rem', lineHeight: 1.7 }}>
+                        <p role="status" style={{ fontSize: '1.1rem', lineHeight: 1.7 }}>
                             Recebida. Vai ao ar depois da revisão.
                         </p>
                         <button
@@ -190,24 +188,24 @@ export default function EnviarDenunciaPage() {
     return (
         <div>
             <div className="page-header">
-                <h1><span className="text-red">Enviar Denúncia</span></h1>
+                <h1>Enviar denúncia</h1>
                 <p>Relate problemas da sua comunidade. Por padrão, sua denúncia é publicada como anônima.</p>
             </div>
 
-            <div className="container" style={{ maxWidth: '700px' }}>
+            <div className="container" style={{ maxWidth: 'calc(760px + 2 * var(--gutter))', marginBottom: '48px' }}>
                 <div style={{
-                    background: 'var(--color-black-light)',
-                    borderRadius: 'var(--radius-lg)',
-                    padding: '2rem',
-                    border: '1px solid var(--color-dark-gray)',
+                    background: 'var(--white)',
+                    padding: 'clamp(1.25rem, 4vw, 2rem)',
+                    border: 'var(--border)',
+                    boxShadow: '6px 6px 0 var(--ink)',
                 }}>
                     {serverError && (
                         <div style={{
-                            background: 'rgba(239,68,68,0.15)',
-                            border: '1px solid #ef4444',
-                            borderRadius: 'var(--radius-md)',
+                            background: 'var(--white)',
+                            border: '3px solid #B3261E',
                             padding: '1rem',
-                            color: '#ef4444',
+                            color: '#B3261E',
+                            fontWeight: 700,
                             marginBottom: '1.5rem',
                             fontSize: '0.9rem'
                         }}>
@@ -230,7 +228,7 @@ export default function EnviarDenunciaPage() {
                             <p id="denuncia-nome-ajuda" className="form-help">
                                 Opcional. Se preencher, só o primeiro nome pode aparecer.
                             </p>
-                            {errors.nome && <span style={{ color: '#ef4444', fontSize: '0.8rem' }}>{errors.nome.message}</span>}
+                            {errors.nome && <span style={{ color: '#B3261E', fontSize: '0.9rem', fontWeight: 700 }}>{errors.nome.message}</span>}
                         </div>
 
                         <div className="form-group">
@@ -264,7 +262,7 @@ export default function EnviarDenunciaPage() {
                                 ))}
                                 <option value={COMUNIDADE_OUTRA}>Outra</option>
                             </select>
-                            {errors.comunidade && <span style={{ color: '#ef4444', fontSize: '0.8rem' }}>{errors.comunidade.message}</span>}
+                            {errors.comunidade && <span style={{ color: '#B3261E', fontSize: '0.9rem', fontWeight: 700 }}>{errors.comunidade.message}</span>}
                         </div>
 
                         {watchComunidade === COMUNIDADE_OUTRA && (
@@ -280,7 +278,7 @@ export default function EnviarDenunciaPage() {
                                         maxLength: { value: COMUNIDADE_MAX_LENGTH, message: `Máximo ${COMUNIDADE_MAX_LENGTH} caracteres` },
                                     })}
                                 />
-                                {errors.comunidade_outra && <span style={{ color: '#ef4444', fontSize: '0.8rem' }}>{errors.comunidade_outra.message}</span>}
+                                {errors.comunidade_outra && <span style={{ color: '#B3261E', fontSize: '0.9rem', fontWeight: 700 }}>{errors.comunidade_outra.message}</span>}
                             </div>
                         )}
 
@@ -296,7 +294,7 @@ export default function EnviarDenunciaPage() {
                                     maxLength: { value: 500, message: 'Máximo 500 caracteres' },
                                 })}
                             />
-                            {errors.local_problema && <span style={{ color: '#ef4444', fontSize: '0.8rem' }}>{errors.local_problema.message}</span>}
+                            {errors.local_problema && <span style={{ color: '#B3261E', fontSize: '0.9rem', fontWeight: 700 }}>{errors.local_problema.message}</span>}
                         </div>
 
                         {/* Geolocalização */}
@@ -305,12 +303,7 @@ export default function EnviarDenunciaPage() {
                             <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
                                 <button
                                     type="button"
-                                    className="btn btn-sm"
-                                    style={{
-                                        background: 'var(--color-dark-gray)',
-                                        color: 'white',
-                                        border: '1px solid rgba(255,255,255,0.1)',
-                                    }}
+                                    className="btn btn-secondary btn-sm"
                                     onClick={handleGetLocation}
                                     aria-describedby="denuncia-geo-label"
                                     disabled={geoStatus === 'loading'}
@@ -345,7 +338,7 @@ export default function EnviarDenunciaPage() {
                                     <option key={t.value} value={t.value}>{t.label}</option>
                                 ))}
                             </select>
-                            {errors.tipo && <span style={{ color: '#ef4444', fontSize: '0.8rem' }}>{errors.tipo.message}</span>}
+                            {errors.tipo && <span style={{ color: '#B3261E', fontSize: '0.9rem', fontWeight: 700 }}>{errors.tipo.message}</span>}
                         </div>
 
                         <div className="form-group">
@@ -364,7 +357,7 @@ export default function EnviarDenunciaPage() {
                                     maxLength: { value: 5000, message: 'Máximo 5000 caracteres' },
                                 })}
                             />
-                            {errors.descricao && <span style={{ color: '#ef4444', fontSize: '0.8rem' }}>{errors.descricao.message}</span>}
+                            {errors.descricao && <span style={{ color: '#B3261E', fontSize: '0.9rem', fontWeight: 700 }}>{errors.descricao.message}</span>}
                         </div>
 
                         {/* Upload de Mídia */}
@@ -377,8 +370,8 @@ export default function EnviarDenunciaPage() {
                                 textAlign: 'center',
                                 cursor: 'pointer',
                                 transition: 'all 0.3s ease',
-                                background: selectedFile ? 'rgba(56,189,248,0.05)' : 'transparent',
-                                borderColor: selectedFile ? 'var(--color-red)' : 'var(--color-dark-gray)',
+                                background: selectedFile ? 'var(--paper)' : 'var(--white)',
+                                borderColor: 'var(--ink)',
                             }}
                                 onClick={() => !selectedFile && fileInputRef.current?.click()}
                             >
@@ -415,7 +408,7 @@ export default function EnviarDenunciaPage() {
                                                 }}
                                             />
                                         ) : (
-                                            <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>🎥</div>
+                                            <p style={{ fontFamily: 'var(--f-mono)', fontWeight: 700, marginBottom: '0.5rem' }}>Vídeo selecionado</p>
                                         )}
                                         <p style={{ color: 'var(--color-white)', fontSize: '0.9rem', marginBottom: '0.25rem', fontWeight: 600 }}>
                                             {selectedFile.name}
@@ -425,12 +418,7 @@ export default function EnviarDenunciaPage() {
                                         </p>
                                         <button
                                             type="button"
-                                            className="btn btn-sm"
-                                            style={{
-                                                background: 'rgba(239,68,68,0.2)',
-                                                color: '#ef4444',
-                                                border: '1px solid rgba(239,68,68,0.3)',
-                                            }}
+                                            className="btn btn-secondary btn-sm"
                                             onClick={(e) => { e.stopPropagation(); removeFile(); }}
                                         >
                                             Remover Arquivo
@@ -441,13 +429,12 @@ export default function EnviarDenunciaPage() {
                         </div>
 
                         <div style={{
-                            background: 'rgba(56,189,248,0.08)',
-                            border: '1px solid rgba(56,189,248,0.25)',
-                            borderRadius: 'var(--radius-md)',
+                            borderLeft: '6px solid var(--pink)',
+                            background: 'var(--paper)',
                             padding: '1rem',
                             marginBottom: '1.5rem',
-                            fontSize: '0.85rem',
-                            color: 'var(--color-yellow)',
+                            fontSize: '0.95rem',
+                            fontWeight: 600,
                         }}>
                             Sua denúncia passa pela revisão da equipe antes de ir ao ar. Não escreva nome,
                             telefone ou problema de saúde de outra pessoa.{' '}
@@ -460,7 +447,7 @@ export default function EnviarDenunciaPage() {
                             style={{ width: '100%' }}
                             disabled={isSubmitting}
                         >
-                            {uploading ? 'Enviando arquivo...' : isSubmitting ? 'Enviando...' : 'Enviar Denúncia'}
+                            {uploading ? 'Enviando arquivo...' : isSubmitting ? 'Enviando...' : 'Enviar denúncia'}
                         </button>
                     </form>
                 </div>

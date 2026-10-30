@@ -60,14 +60,14 @@ export default async function NoticiaPage({ params }) {
     });
 
     return (
-        <div style={{ paddingTop: '20px' }}>
-            <div className="container" style={{ maxWidth: '800px', margin: '0 auto' }}>
+        <div style={{ paddingTop: '28px' }}>
+            <div className="container" style={{ maxWidth: 'calc(800px + 2 * var(--gutter))', margin: '0 auto' }}>
 
                 {/* Breadcrumb */}
                 <nav style={{ marginBottom: '2rem', fontSize: '0.9rem', color: 'var(--color-gray-medium)' }}>
-                    <Link href="/" style={{ color: 'var(--color-gray-light)', textDecoration: 'none' }}>Início</Link>
+                    <Link href="/" style={{ color: 'var(--ink)', textDecoration: 'underline' }}>Início</Link>
                     {' → '}
-                    <Link href="/noticias" style={{ color: 'var(--color-gray-light)', textDecoration: 'none' }}>Notícias</Link>
+                    <Link href="/noticias" style={{ color: 'var(--ink)', textDecoration: 'underline' }}>Notícias</Link>
                     {' → '}
                     <span style={{ color: 'var(--color-white)' }}>{noticia.titulo}</span>
                 </nav>
@@ -81,9 +81,9 @@ export default async function NoticiaPage({ params }) {
                     {/* Título */}
                     <h1 style={{
                         fontFamily: 'var(--font-display)',
-                        fontSize: 'clamp(1.8rem, 4vw, 2.8rem)',
+                        fontSize: 'clamp(2rem, 6vw, 3.5rem)',
                         textTransform: 'uppercase',
-                        lineHeight: 1.2,
+                        lineHeight: 1.05,
                         marginBottom: '1rem',
                     }}>
                         {noticia.titulo}
@@ -101,8 +101,8 @@ export default async function NoticiaPage({ params }) {
                         paddingBottom: '1.5rem',
                         borderBottom: '1px solid var(--color-dark-gray)',
                     }}>
-                        <span>✍️ {noticia.autor || 'TV Complexo'}</span>
-                        <span>📅 {date}</span>
+                        <span>{noticia.autor || 'TV Complexo'}</span>
+                        <span style={{ fontFamily: 'var(--f-mono)', fontWeight: 700 }}>{date}</span>
                     </div>
                 </ScrollReveal>
 
@@ -121,10 +121,12 @@ export default async function NoticiaPage({ params }) {
                 {noticia.resumo && (
                     <p style={{
                         fontSize: '1.15rem',
-                        color: 'var(--color-yellow)',
+                        color: 'var(--ink)',
+                        borderLeft: '6px solid var(--yellow)',
+                        paddingLeft: '1rem',
                         lineHeight: 1.7,
                         marginBottom: '2rem',
-                        fontWeight: 500,
+                        fontWeight: 600,
                     }}>
                         {noticia.resumo}
                     </p>
@@ -136,7 +138,7 @@ export default async function NoticiaPage({ params }) {
                     style={{
                         fontSize: '1.05rem',
                         lineHeight: 1.8,
-                        color: 'var(--color-gray-light)',
+                        color: 'var(--ink)',
                         marginBottom: '3rem',
                     }}
                     dangerouslySetInnerHTML={{ __html: conteudoSeguro }}
