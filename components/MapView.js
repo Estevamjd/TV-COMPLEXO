@@ -129,7 +129,7 @@ export default function MapView({ denuncias = [] }) {
             const marker = L.marker([lat, lng], { icon })
                 .addTo(map)
                 .bindPopup(`
-                    <div style="font-family: Inter, sans-serif; min-width: 200px;">
+                    <div style="font-family: var(--font-primary); min-width: 200px;">
                         <strong style="color: ${color};">${safeTipo}</strong><br/>
                         <span style="font-size: 0.85em;">📍 ${safeComunidade} — ${safeLocal}</span><br/>
                         <p style="font-size: 0.85em; margin: 0.5rem 0;">${safeDescricao}${descricao.length > 100 ? '...' : ''}</p>

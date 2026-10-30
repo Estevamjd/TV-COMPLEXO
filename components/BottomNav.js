@@ -16,6 +16,8 @@ export default function BottomNav() {
 
     // Não mostrar no admin
     if (pathname.startsWith('/admin')) return null;
+    // A home (estilo Urbano) tem navegação própria no topo e no rodapé.
+    if (pathname === '/') return null;
 
     return (
         <nav className="bottom-nav">

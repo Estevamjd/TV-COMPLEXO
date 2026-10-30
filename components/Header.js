@@ -9,6 +9,9 @@ export default function Header() {
     const [isOpen, setIsOpen] = useState(false);
     const pathname = usePathname();
 
+    // A home (estilo Urbano) tem cabeçalho próprio dentro do topo.
+    if (pathname === '/') return null;
+
     const links = [
         { href: '/', label: 'Início' },
         { href: '/videos', label: 'Vídeos' },

@@ -1,0 +1,13 @@
+{
+  "_leia": "Canal 24h: playlist de vídeos PRÓPRIOS do @tvcomplexofc. A posição é (agora - epoch) mod duração total, então todo mundo vê o mesmo vídeo no mesmo segundo. Para pôr no ar: troque youtubeId (11 caracteres), titulo e duracaoSeg pelos dados reais e mude placeholder para false. Enquanto placeholder for true, o topo mostra a etiqueta 'DEMONSTRAÇÃO — vídeos de exemplo' e o quadro 'foto do canal em breve' em vez do player.",
+  "canal": "@tvcomplexofc",
+  "epoch": "2026-01-05T00:00:00-03:00",
+  "videos": [
+    { "youtubeId": "EXEMPLO0001", "titulo": "Vídeo do canal 1 (exemplo)", "duracaoSeg": 1320, "placeholder": true },
+    { "youtubeId": "EXEMPLO0002", "titulo": "Vídeo do canal 2 (exemplo)", "duracaoSeg": 960, "placeholder": true },
+    { "youtubeId": "EXEMPLO0003", "titulo": "Vídeo do canal 3 (exemplo)", "duracaoSeg": 1500, "placeholder": true },
+    { "youtubeId": "EXEMPLO0004", "titulo": "Vídeo do canal 4 (exemplo)", "duracaoSeg": 780, "placeholder": true },
+    { "youtubeId": "EXEMPLO0005", "titulo": "Vídeo do canal 5 (exemplo)", "duracaoSeg": 1140, "placeholder": true },
+    { "youtubeId": "EXEMPLO0006", "titulo": "Vídeo do canal 6 (exemplo)", "duracaoSeg": 1680, "placeholder": true }
+  ]
+}
