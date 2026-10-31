@@ -22,7 +22,30 @@ export function toEmbedUrl(url: string): string | null {
     return null;
 }
 
-export type Platform = 'youtube' | 'instagram' | 'tiktok' | 'facebook' | 'vimeo' | 'manual';
+/**
+ * ID (11 caracteres) de um vídeo do YouTube a partir da URL: watch?v=, youtu.be/,
+ * /embed/ (inclusive youtube-nocookie) e /shorts/. Qualquer outra URL: null.
+ */
+export function idYoutubeDaUrl(url: string | null | undefined): string | null {
+    if (!url) return null;
+    let u: URL;
+    try {
+        u = new URL(url.trim());
+    } catch {
+        return null;
+    }
+    if (u.protocol !== 'https:' && u.protocol !== 'http:') return null;
+    const host = u.hostname.replace(/^(www|m)\./, '');
+    let id: string | null = null;
+    if (host === 'youtu.be') id = u.pathname.split('/')[1] ?? null;
+    else if (host === 'youtube.com' || host === 'youtube-nocookie.com') {
+        if (u.pathname === '/watch') id = u.searchParams.get('v');
+        else id = u.pathname.match(/^\/(?:embed|shorts)\/([^/]+)/)?.[1] ?? null;
+    }
+    return id && /^[A-Za-z0-9_-]{11}$/.test(id) ? id : null;
+}
+
+export type Platform ='youtube' | 'instagram' | 'tiktok' | 'facebook' | 'vimeo' | 'manual';
 
 /**
  * Detecta a plataforma a partir da URL.

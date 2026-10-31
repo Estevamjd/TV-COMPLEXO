@@ -30,6 +30,13 @@ describe('Início sem dados (sem DATABASE_URL)', () => {
         expect(html).not.toMatch(padrao);
     });
 
+    it('topo usa o vídeo de reserva do canal (pôster no HTML do servidor, iframe só depois da hidratação)', () => {
+        const topo = html.slice(html.indexOf('id="topo"'), html.indexOf('</section>', html.indexOf('id="topo"')));
+        expect(topo).toContain('https://i.ytimg.com/vi/hTBno4SXUgI/hqdefault.jpg');
+        expect(topo).not.toContain('<iframe');
+        expect(topo).not.toMatch(/detecção automática/i);
+    });
+
     it('esconde as seções sem conteúdo (vídeos, notícias, grade)', () => {
         expect(html).not.toContain('id="videos-titulo"');
         expect(html).not.toContain('id="noticias-titulo"');

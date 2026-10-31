@@ -19,7 +19,7 @@ import CanalTopo from '@/components/home-urbano/CanalTopo';
 
 afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); hooks.estados = []; hooks.efeitos = []; hooks.cursor = 0; });
 
-it.each([true, false, undefined])('renderiza o aviso somente com demo:true (demo=%s)', async demo => {
+it.each([true, false, undefined])('nunca mostra o aviso de demonstração da detecção (demo=%s)', async demo => {
     vi.useFakeTimers();
     vi.stubGlobal('document', { visibilityState: 'visible', addEventListener: vi.fn(), removeEventListener: vi.fn() });
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ live: false, demo }))));
@@ -29,9 +29,8 @@ it.each([true, false, undefined])('renderiza o aviso somente com demo:true (demo
     await vi.advanceTimersByTimeAsync(0);
     hooks.cursor = 0;
     const html = renderToStaticMarkup(CanalTopo(props));
-    const aviso = 'Demonstração: detecção automática de live desligada';
-    if (demo === true) expect(html).toMatch(new RegExp(`<p[^>]*role="status"[^>]*>${aviso}</p>`));
-    else expect(html).not.toContain(aviso);
+    expect(html).not.toContain('Demonstração: detecção automática de live desligada');
+    expect(html).not.toMatch(/detecção automática/i);
     limpar();
 });
 

@@ -2,7 +2,7 @@ import Link from 'next/link';
 import db from '@/lib/db';
 import { COLUNAS_NOTICIAS, COLUNAS_VIDEOS } from '@/lib/colunas-publicas';
 import { DIAS, programasDoDia } from '@/lib/grade';
-import { toEmbedUrl } from '@/lib/video-utils';
+import { destaqueDoTopo } from '@/lib/video-reserva';
 import CanalTopo from '@/components/home-urbano/CanalTopo';
 import Fileira from '@/components/home-urbano/Fileira';
 import GradeSemana from '@/components/home-urbano/GradeSemana';
@@ -46,13 +46,6 @@ function thumbDoVideo(v) {
     return null;
 }
 
-/** ID do YouTube do vídeo cadastrado (external_id ou URL), para tocar no topo; null se não for do YouTube. */
-function idYoutube(v) {
-    if (v.external_id && /^[A-Za-z0-9_-]{11}$/.test(v.external_id) && v.plataforma === 'youtube') return v.external_id;
-    const m = toEmbedUrl(v.url_video ?? '')?.match(/youtube\.com\/embed\/([A-Za-z0-9_-]{11})/);
-    return m ? m[1] : null;
-}
-
 export default async function HomePage({ searchParams }) {
     const params = await searchParams;
     const demoLive = params?.demo === 'live';
@@ -66,9 +59,9 @@ export default async function HomePage({ searchParams }) {
     // Mesma fonte de /videos (tabela videos). Sem vídeo (ou sem banco), a seção some:
     // nada de vídeo de exemplo na Início.
     const videos = videosDb.map(v => ({ chave: v.id, titulo: v.titulo, href: `/videos/${v.id}`, thumb: thumbDoVideo(v) }));
-    // Vídeo mais recente do YouTube: entra no topo enquanto a playlist do canal 24h não tem vídeo real.
-    const recente = videosDb.map(v => ({ v, id: idYoutube(v) })).find(x => x.id);
-    const destaque = recente ? { youtubeId: recente.id, titulo: recente.v.titulo } : null;
+    // Vídeo mais recente do banco: entra no topo (enquanto a playlist do canal 24h não tem vídeo real)
+    // só se for do YouTube; senão (Instagram, sem banco) o topo cai no vídeo de reserva.
+    const destaque = destaqueDoTopo(videosDb);
     // Grade sem nenhum programa cadastrado: a seção some (nada de "em breve" em todos os dias).
     const temGrade = DIAS.some(d => programasDoDia(d.chave).length > 0);
 
