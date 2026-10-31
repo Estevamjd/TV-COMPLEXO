@@ -1,0 +1,32 @@
+sts__/seo.test.js:94:        expect(urls).toContain(`${SITE_URL}/noticias/n1`);
+./__tests__/seo.test.js:95:        expect(urls.every(u => u.startsWith(SITE_URL))).toBe(true);
+./__tests__/seo.test.js:113:    it('Organization da home é NewsMediaOrganization em SITE_URL', () => {
+./__tests__/seo.test.js:117:        expect(org.url).toBe(SITE_URL);
+./__tests__/seo.test.js:118:        expect(org.logo).toBe(`${SITE_URL}/logo.png`);
+./__tests__/seo.test.js:134:            url: `${SITE_URL}/videos/abc`,
+./app/layout.js:7:import { SITE_URL, SITE_NOME, DESCRICAO_PADRAO, OG_IMAGEM, urlAbsoluta } from '@/lib/site';
+./app/layout.js:12:  metadataBase: new URL(SITE_URL),
+./app/robots.js:1:import { SITE_URL as BASE_URL } from '@/lib/site';
+./app/sitemap.js:3:import { SITE_URL as BASE_URL } from '@/lib/site';
+
+codex
+Encontrei um bloqueador:
+
+- **[P1] Sitemap pode permanecer sem vídeos em produção** — [app/sitemap.js:19](/tmp/tvseo/app/sitemap.js:19). Sem `DATABASE_URL` no build, retorna apenas páginas fixas e fica pré-renderizado sem revalidação. Confirmei no artefato existente: `.next/server/app/sitemap.xml.body` contém somente sete URLs e o manifesto registra `initialRevalidateSeconds: false`. Disponibilizar o banco no runtime não atualiza esse XML; novos vídeos também não entram automaticamente. Definir execução dinâmica ou revalidação e validar o sitemap servido pelo build. O teste com banco mockado chama a função diretamente e não cobre esse comportamento.
+
+Nos demais pontos revisados: domínio centralizado e independente das envs da Vercel; rótulos associados corretamente; JSON-LD serializado com escape de `<`, impedindo fechamento de `script` por conteúdo malicioso. Não identifiquei alterações na lógica da live, segurança ou banco.
+
+Revisão somente leitura; não executei novamente build/testes nem acessei produção.
+
+VEREDITO: REQUEST_CHANGES
+tokens used
+26,169
+Encontrei um bloqueador:
+
+- **[P1] Sitemap pode permanecer sem vídeos em produção** — [app/sitemap.js:19](/tmp/tvseo/app/sitemap.js:19). Sem `DATABASE_URL` no build, retorna apenas páginas fixas e fica pré-renderizado sem revalidação. Confirmei no artefato existente: `.next/server/app/sitemap.xml.body` contém somente sete URLs e o manifesto registra `initialRevalidateSeconds: false`. Disponibilizar o banco no runtime não atualiza esse XML; novos vídeos também não entram automaticamente. Definir execução dinâmica ou revalidação e validar o sitemap servido pelo build. O teste com banco mockado chama a função diretamente e não cobre esse comportamento.
+
+Nos demais pontos revisados: domínio centralizado e independente das envs da Vercel; rótulos associados corretamente; JSON-LD serializado com escape de `<`, impedindo fechamento de `script` por conteúdo malicioso. Não identifiquei alterações na lógica da live, segurança ou banco.
+
+Revisão somente leitura; não executei novamente build/testes nem acessei produção.
+
+VEREDITO: REQUEST_CHANGES

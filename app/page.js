@@ -10,12 +10,16 @@ import GradeSemana from '@/components/home-urbano/GradeSemana';
 import InstalarApp from '@/components/home-urbano/InstalarApp';
 import { fontesUrbano } from '@/components/home-urbano/fontes';
 import s from '@/components/home-urbano/urbano.module.css';
+import { metadataDaPagina } from '@/lib/site';
+import { jsonLdOrganizacao, serializarJsonLd } from '@/lib/json-ld';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = {
-    alternates: { canonical: '/' },
-};
+export const metadata = metadataDaPagina({
+    titulo: 'TV Complexo — A Real da Favela | Canal 24h do Complexo do Alemão',
+    descricao: 'TV comunitária do Complexo do Alemão (RJ): canal 24h, vídeos, notícias e denúncias feitas por quem vive nas favelas do Rio de Janeiro.',
+    caminho: '/',
+});
 
 const CANAL_URL = 'https://www.youtube.com/@tvcomplexofc';
 const MOLDURAS = ['var(--pink)', 'var(--blue)', 'var(--yellow)', 'var(--green)'];
@@ -67,6 +71,7 @@ export default async function HomePage({ searchParams }) {
 
     return (
         <div className={`${s.root} ${fontesUrbano}`}>
+            <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializarJsonLd(jsonLdOrganizacao()) }} />
             <a href="#conteudo" className={s.pular}>Pular para o conteúdo</a>
 
             <CanalTopo agoraInicial={agora} demoLive={demoLive} />

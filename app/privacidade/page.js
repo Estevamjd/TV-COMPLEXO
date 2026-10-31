@@ -1,14 +1,11 @@
 import Link from 'next/link';
+import { metadataDaPagina } from '@/lib/site';
 
-export const metadata = {
-    title: 'Privacidade | TV Complexo',
-    description: 'O que a TV Complexo guarda quando você manda uma denúncia ou se inscreve, para que serve, por quanto tempo e como pedir para corrigir ou apagar.',
-    alternates: { canonical: '/privacidade' },
-    openGraph: {
-        url: '/privacidade',
-        title: 'Privacidade | TV Complexo',
-    },
-};
+export const metadata = metadataDaPagina({
+    titulo: 'Privacidade | TV Complexo',
+    descricao: 'O que a TV Complexo guarda quando você manda uma denúncia ou se inscreve, para que serve, por quanto tempo e como pedir para corrigir ou apagar.',
+    caminho: '/privacidade',
+});
 
 export default function PrivacidadePage() {
     const ultimaAtualizacao = '28/10/2026';

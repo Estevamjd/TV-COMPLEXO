@@ -3,6 +3,8 @@ import { COLUNAS_VIDEOS } from '@/lib/colunas-publicas';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { toEmbedUrl } from '@/lib/video-utils';
+import { metadataDaPagina, resumir } from '@/lib/site';
+import { jsonLdVideo, serializarJsonLd } from '@/lib/json-ld';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,8 +12,14 @@ export async function generateMetadata({ params }) {
     const { id } = await params;
     const { rows } = await db.query(`SELECT ${COLUNAS_VIDEOS} FROM videos WHERE id = $1`, [id]);
     const video = rows[0];
-    if (!video) return { title: 'Vídeo não encontrado' };
-    return { title: `${video.titulo} | TV Complexo` };
+    if (!video) return { title: 'Vídeo não encontrado | TV Complexo' };
+    return metadataDaPagina({
+        titulo: `${video.titulo} | TV Complexo`,
+        descricao: resumir(video.descricao) || `Assista "${video.titulo}" na TV Complexo, a TV comunitária das favelas do Rio de Janeiro.`,
+        caminho: `/videos/${video.id}`,
+        imagem: video.thumbnail && /^https:\/\//.test(video.thumbnail) ? video.thumbnail : undefined,
+        tipo: 'video.other',
+    });
 }
 
 export default async function VideoPage({ params }) {
@@ -32,6 +40,7 @@ export default async function VideoPage({ params }) {
 
     return (
         <main className="page-content">
+            <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializarJsonLd(jsonLdVideo(video)) }} />
             <div className="container" style={{ maxWidth: '900px', marginTop: '40px', marginBottom: '60px' }}>
                 <Link href="/videos" className="btn btn-secondary btn-sm" style={{ marginBottom: '1.5rem', display: 'inline-flex' }}>
                     ← Voltar para Vídeos

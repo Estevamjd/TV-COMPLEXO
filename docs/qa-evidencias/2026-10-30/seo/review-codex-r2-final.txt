@@ -1,0 +1,36 @@
+ey": "next-action"
+        },
+        {
+          "type": "header",
+          "key": "content-type",
+          "value": "multipart/form-data;.*"
+        }
+      ],
+      "initialRevalidateSeconds": 3600,
+      "initialExpireSeconds": 31536000,
+      "srcRoute": "/sitemap.xml",
+      "dataRoute": null,
+      "allowHeader": [
+        "host",
+        "x-matched-path",
+        "x-prerender-revalidate",
+        "x-prerender-revalidate-if-generated",
+        "x-next-revalidated-tags",
+
+codex
+Revisei o diff completo contra `d8424c0`, incluindo as exclusões. Não encontrei problemas que bloqueiem a aprovação.
+
+O bloqueio da r1 foi resolvido: `revalidate = 3600`, teste correspondente e `initialRevalidateSeconds: 3600` no manifest. SITE_URL centralizada, títulos/descrições, labels e escape do JSON-LD estão coerentes.
+
+Sem mudanças na live, configuração de ambiente, segurança ou banco. Revisão somente leitura; não reexecutei os 784 testes informados.
+
+VEREDITO: APPROVE
+tokens used
+22,326
+Revisei o diff completo contra `d8424c0`, incluindo as exclusões. Não encontrei problemas que bloqueiem a aprovação.
+
+O bloqueio da r1 foi resolvido: `revalidate = 3600`, teste correspondente e `initialRevalidateSeconds: 3600` no manifest. SITE_URL centralizada, títulos/descrições, labels e escape do JSON-LD estão coerentes.
+
+Sem mudanças na live, configuração de ambiente, segurança ou banco. Revisão somente leitura; não reexecutei os 784 testes informados.
+
+VEREDITO: APPROVE

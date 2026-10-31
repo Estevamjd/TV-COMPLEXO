@@ -1,3 +1,11 @@
+import { metadataDaPagina } from '@/lib/site';
+
+export const metadata = metadataDaPagina({
+    titulo: 'Sobre a TV Complexo | Mídia comunitária do Rio',
+    descricao: 'Conheça a missão, os valores e a história da TV Complexo, plataforma de comunicação comunitária feita por moradores das favelas do Rio.',
+    caminho: '/sobre',
+});
+
 export default function SobrePage() {
     return (
         <div>

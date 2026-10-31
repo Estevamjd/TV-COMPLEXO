@@ -2,6 +2,13 @@ import { listarDenunciasPublicas } from '@/lib/denuncias';
 import ReportCard from '@/components/ReportCard';
 import MapWrapper from './MapWrapper';
 import Link from 'next/link';
+import { metadataDaPagina } from '@/lib/site';
+
+export const metadata = metadataDaPagina({
+    titulo: 'Denúncias da comunidade e mapa de problemas | TV Complexo',
+    descricao: 'Mapa e lista de problemas denunciados por moradores das favelas do Rio: falta de luz, lixo, saneamento, risco de deslizamento e mais.',
+    caminho: '/denuncias',
+});
 
 export const dynamic = 'force-dynamic';
 

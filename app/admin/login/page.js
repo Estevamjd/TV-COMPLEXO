@@ -86,9 +86,11 @@ export default function AdminLoginPage() {
 
                 <form onSubmit={handleSubmit(onSubmit)}>
                     <div className="form-group">
-                        <label className="form-label">Usuário</label>
+                        <label className="form-label" htmlFor="admin-usuario">Usuário</label>
                         <input
+                            id="admin-usuario"
                             type="text"
+                            autoComplete="username"
                             className="form-input"
                             placeholder="admin"
                             {...register('username', { required: 'Usuário é obrigatório' })}
@@ -98,8 +100,8 @@ export default function AdminLoginPage() {
                         )}
                     </div>
                     <div className="form-group">
-                        <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between' }}>
-                            Senha
+                        <div className="form-label" style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <label htmlFor="admin-senha">Senha</label>
                             <button
                                 type="button"
                                 tabIndex={-1}
@@ -108,8 +110,10 @@ export default function AdminLoginPage() {
                             >
                                 {showPassword ? 'Ocultar' : 'Ver Senha'}
                             </button>
-                        </label>
+                        </div>
                         <input
+                            id="admin-senha"
+                            autoComplete="current-password"
                             type={showPassword ? "text" : "password"}
                             className="form-input"
                             placeholder="••••••••"

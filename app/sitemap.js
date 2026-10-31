@@ -1,6 +1,10 @@
 import db from '@/lib/db';
 
-import { SITE_URL as BASE_URL } from '@/lib/site-url';
+import { SITE_URL as BASE_URL } from '@/lib/site';
+
+// Regenera no runtime (ISR) a cada 1h: o build pode rodar sem banco e só
+// gerar as páginas fixas; em produção a revalidação inclui vídeos/notícias novos.
+export const revalidate = 3600;
 
 export default async function sitemap() {
     const staticPages = [
@@ -14,6 +18,9 @@ export default async function sitemap() {
     ];
 
     let dynamicPages = [];
+
+    // Sem DATABASE_URL (build, prévia sem banco): só as páginas fixas.
+    if (!process.env.DATABASE_URL) return staticPages;
 
     try {
         const { rows: videos } = await db.query('SELECT id, created_at FROM videos ORDER BY created_at DESC LIMIT 200');
