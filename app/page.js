@@ -7,6 +7,8 @@ import CanalTopo from '@/components/home-urbano/CanalTopo';
 import Fileira from '@/components/home-urbano/Fileira';
 import GradeSemana from '@/components/home-urbano/GradeSemana';
 import InstalarApp from '@/components/home-urbano/InstalarApp';
+import ReelsInstagram from '@/components/ReelsInstagram';
+import { REELS_DESTAQUE } from '@/lib/instagramReels';
 import s from '@/components/home-urbano/urbano.module.css';
 import { metadataDaPagina } from '@/lib/site';
 import { jsonLdOrganizacao, serializarJsonLd } from '@/lib/json-ld';
@@ -78,6 +80,11 @@ export default async function HomePage({ searchParams }) {
             <CanalTopo agoraInicial={agora} demoLive={demoLive} destaque={destaque} temGrade={temGrade} />
 
             <div id="conteudo">
+                {/* REELS DO INSTAGRAM (lista fixa em lib/instagramReels.js; não depende do banco) */}
+                <div className={s.wrap}>
+                    <ReelsInstagram limite={REELS_DESTAQUE} verTudo />
+                </div>
+
                 {/* ÚLTIMOS VÍDEOS */}
                 {videos.length > 0 && (
                     <section className={s.secao} aria-labelledby="videos-titulo">

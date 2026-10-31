@@ -1,0 +1,51 @@
+/* Reels do Instagram (embed oficial): moldura de cartaz do estilo urbano, vertical. */
+.secao { padding: 48px 0 8px; }
+.topo { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; }
+.titulo {
+    font-family: var(--f-display); font-weight: 400; text-transform: uppercase;
+    line-height: 1; letter-spacing: .3px; font-size: clamp(44px, 9vw, 96px); margin: 0; color: var(--ink);
+}
+.verTudo {
+    font: 700 16px var(--f-mono); color: var(--ink); text-decoration: underline; text-underline-offset: 4px;
+    padding: 12px 0; white-space: nowrap;
+}
+
+.grade {
+    list-style: none; margin: 16px 0 0; padding: 0;
+    display: grid; gap: 24px; justify-content: center;
+    grid-template-columns: minmax(0, 400px);
+}
+@media (min-width: 720px) { .grade { grid-template-columns: repeat(2, minmax(0, 400px)); } }
+@media (min-width: 1100px) { .grade { grid-template-columns: repeat(3, minmax(0, 400px)); } }
+
+.item { min-width: 0; }
+.reel {
+    background: var(--paper); border: var(--border); box-shadow: 5px 5px 0 var(--pink);
+    padding: 8px;
+}
+.item:nth-child(3n + 2) .reel { box-shadow: 5px 5px 0 var(--blue); }
+.item:nth-child(3n + 3) .reel { box-shadow: 5px 5px 0 var(--yellow); }
+
+/* mesma altura antes e depois de montar o iframe: nada de pulo na rolagem */
+.quadro { display: block; width: 100%; height: 680px; border: 0; background: var(--white); }
+@media (max-width: 420px) { .quadro { height: 640px; } }
+
+.reserva {
+    position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
+    background: repeating-linear-gradient(135deg, var(--ph-a) 0 14px, var(--ph-b) 14px 28px);
+}
+.reservaSelo {
+    background: var(--ink); color: var(--yellow); padding: 4px 10px; transform: rotate(-3deg);
+    font: 400 32px/1 var(--f-display); text-transform: uppercase;
+}
+.reservaLink {
+    display: inline-flex; align-items: center; min-height: 48px; padding: 11px 16px;
+    background: var(--paper); color: var(--ink); border: var(--border);
+    font: 16px/1.1 var(--f-heading); text-decoration: none;
+}
+.reservaLink:hover { box-shadow: 4px 4px 0 var(--ink); }
+
+.srOnly {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
