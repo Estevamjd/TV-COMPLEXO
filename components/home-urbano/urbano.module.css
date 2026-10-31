@@ -70,6 +70,8 @@
 .btnOutline:hover { transform: translate(-2px, -2px); box-shadow: 4px 4px 0 var(--ink); }
 .btnAmarelo { background: var(--yellow); color: var(--ink) !important; box-shadow: 5px 5px 0 var(--ink); }
 .btnAmarelo:hover { box-shadow: 7px 7px 0 var(--ink); }
+.btnSom[aria-pressed="true"] { background: var(--pink); color: var(--ink) !important; box-shadow: 5px 5px 0 var(--ink); }
+.btnSom[aria-pressed="true"]:hover { box-shadow: 7px 7px 0 var(--ink); }
 .botoes { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; }
 
 /* ===== Topo (24h / ao vivo) ===== */
