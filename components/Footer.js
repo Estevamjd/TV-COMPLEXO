@@ -1,54 +1,34 @@
 import Link from 'next/link';
-import { FaFacebook, FaInstagram, FaTiktok, FaYoutube } from 'react-icons/fa';
+import Image from 'next/image';
 import PrivacyLink from '@/components/PrivacyLink';
+import s from '@/components/home-urbano/urbano.module.css';
 
+const CANAL_URL = 'https://www.youtube.com/@tvcomplexofc';
+
+/** Rodapé único do site (Início e páginas internas), no desenho urbano. */
 export default function Footer() {
     return (
-        <footer className="footer">
-            <div className="container">
-                <div className="footer-grid">
-                    <div className="footer-col">
-                        <h3>TV Complexo</h3>
-                        <p style={{ color: 'var(--color-gray-light)', fontSize: '0.9rem', lineHeight: '1.6' }}>
-                            A real da favela. Mídia independente direto das comunidades do Rio de Janeiro.
-                        </p>
-                    </div>
-                    <div className="footer-col">
-                        <h3>Navegação</h3>
-                        <Link href="/">Início</Link>
-                        <Link href="/videos">Vídeos</Link>
-                        <Link href="/noticias">Notícias</Link>
-                        <Link href="/denuncias">Denúncias</Link>
-                        <Link href="/sobre">Sobre Nós</Link>
-                        <PrivacyLink className="">Privacidade</PrivacyLink>
-                    </div>
-                    <div className="footer-col">
-                        <h3>Comunidades</h3>
-                        <a href="#">Complexo do Alemão</a>
-                        <a href="#">Rocinha</a>
-                        <a href="#">Cidade de Deus</a>
-                        <a href="#">Maré</a>
-                        <a href="#">Vidigal</a>
-                    </div>
-                    <div className="footer-col" style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                        <h3 style={{ marginBottom: '0.5rem' }}>Contato</h3>
-                        <a href="https://wa.me/5521966030258" target="_blank" rel="noopener noreferrer">📞 (21) 96603-0258</a>
-                        <a href="mailto:tvcomplexofc@gmail.com">✉️ tvcomplexofc@gmail.com</a>
-                    </div>
-                    <div className="footer-col" style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                        <h3 style={{ marginBottom: '0.5rem' }}>Redes Sociais</h3>
-                        <a href="https://www.instagram.com/tvcomplexo?igsh=czJ3ZGhvZG85bWxm" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><FaInstagram /> Instagram</a>
-                        <a href="https://www.facebook.com/share/18JkYR2cBS/?mibextid=wwXIfr" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><FaFacebook /> Facebook</a>
-                        <a href="https://www.tiktok.com/@tvcomplexo?_r=1&_t=ZS-94S51Uw009v" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><FaTiktok /> TikTok</a>
-                        <a href="http://www.youtube.com/@tvcomplexofc" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><FaYoutube /> YouTube</a>
-                    </div>
-                </div>
-                <div className="footer-bottom">
-                    <p>© {new Date().getFullYear()} TV Complexo — A Real da Favela. Todos os direitos reservados.</p>
-                    <p style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: 'var(--color-gray-dark)' }}>
-                        Site desenvolvido por <strong>Estevam Juliano</strong>
-                    </p>
-                </div>
+        <footer id="rodape" className={s.rodape}>
+            <div className={`${s.wrap} ${s.rodapeInner}`}>
+                <Link href="/" className={s.logoPlate} aria-label="TV Complexo, início">
+                    <Image src="/logo-header-cropped.png" alt="TV Complexo" width={292} height={59} />
+                </Link>
+                <nav aria-label="Rodapé">
+                    <ul className={s.rodapeLinks}>
+                        <li><Link href="/videos">Vídeos</Link></li>
+                        <li><Link href="/noticias">Notícias</Link></li>
+                        <li><Link href="/denuncias">Mapa de denúncias</Link></li>
+                        <li><Link href="/sobre">Sobre</Link></li>
+                        <li><a href={CANAL_URL} target="_blank" rel="noopener noreferrer">YouTube</a></li>
+                        <li><a href="https://www.instagram.com/tvcomplexo" target="_blank" rel="noopener noreferrer">Instagram</a></li>
+                        <li><a href="https://www.tiktok.com/@tvcomplexo" target="_blank" rel="noopener noreferrer">TikTok</a></li>
+                        <li><a href="https://www.facebook.com/share/18JkYR2cBS/" target="_blank" rel="noopener noreferrer">Facebook</a></li>
+                    </ul>
+                </nav>
+                <p className={s.rodapeLinha}>
+                    Responsável: Estevam Juliano · <PrivacyLink className="">Privacidade</PrivacyLink> ·{' '}
+                    <a href="https://wa.me/5521966030258" target="_blank" rel="noopener noreferrer">WhatsApp (21) 96603-0258</a>
+                </p>
             </div>
         </footer>
     );

@@ -1,6 +1,8 @@
 'use client';
 import { suavizarPlaceholders } from '@/lib/exibicao';
 import { useEffect, useRef, useState } from 'react';
+// CSS do Leaflet junto do chunk do mapa: os controles já nascem posicionados (sem salto).
+import 'leaflet/dist/leaflet.css';
 
 const tipoColors = {
     falta_de_luz: '#f4a261',
@@ -37,6 +39,9 @@ export default function MapView({ denuncias = [] }) {
     const markersRef = useRef([]);
     const leafletRef = useRef(null);
     const [mapReady, setMapReady] = useState(false);
+    // Celular/tablet: o mapa começa travado (o dedo rola a página) e destrava num botão.
+    const [toque, setToque] = useState(false);
+    const [destravado, setDestravado] = useState(false);
 
     // Initialize map once
     useEffect(() => {
@@ -48,32 +53,55 @@ export default function MapView({ denuncias = [] }) {
             const L = (await import('leaflet')).default;
             leafletRef.current = L;
 
-            if (!document.querySelector('link[href*="leaflet"]')) {
-                const link = document.createElement('link');
-                link.rel = 'stylesheet';
-                link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-                document.head.appendChild(link);
-            }
-
-            if (!document.getElementById('tvc-dark-tiles-style')) {
+            if (!document.getElementById('tvc-tiles-style')) {
                 const style = document.createElement('style');
-                style.id = 'tvc-dark-tiles-style';
-                style.textContent = '.tvc-dark-tiles{filter:invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);}';
+                style.id = 'tvc-tiles-style';
+                style.textContent = '.tvc-tiles{filter:grayscale(100%) contrast(105%);}';
                 document.head.appendChild(style);
             }
 
             if (cancelled || !mapRef.current) return;
 
-            const map = L.map(mapRef.current).setView([-22.86, -43.265], 13);
+            const ehToque = window.matchMedia('(pointer: coarse)').matches;
+            // Roda do mouse não dá zoom (rolar a página passa por cima do mapa);
+            // no toque, arrastar e pinçar só depois de destravar.
+            const map = L.map(mapRef.current, {
+                scrollWheelZoom: false,
+                dragging: !ehToque,
+                touchZoom: !ehToque,
+                tap: false,
+            }).setView([-22.86, -43.265], 13);
             mapInstanceRef.current = map;
+            setToque(ehToque);
 
             // Tiles do OpenStreetMap (gratuitos, sem chave de API). Os tiles da CARTO
             // passaram a exigir chave e exibiam "API KEY REQUIRED".
-            // O visual escuro vem do filtro CSS em .tvc-dark-tiles (abaixo).
-            L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            // Tiles em cinza (filtro CSS em .tvc-tiles, acima) para os marcadores coloridos se destacarem.
+            // Cada tile é desenhado num <canvas> (mesma imagem, mesmo visual): <img> de tile
+            // virava o LCP da página e o LCP ficava esperando o servidor de tiles.
+            const CanvasTiles = L.TileLayer.extend({
+                createTile(coords, done) {
+                    const tile = document.createElement('canvas');
+                    const size = this.getTileSize();
+                    tile.width = size.x;
+                    tile.height = size.y;
+                    const img = new Image();
+                    img.decoding = 'async';
+                    img.onload = () => {
+                        tile.getContext('2d').drawImage(img, 0, 0, size.x, size.y);
+                        done(null, tile);
+                    };
+                    img.onerror = (e) => done(e, tile);
+                    img.src = this.getTileUrl(coords);
+                    return tile;
+                },
+                // O abort do TileLayer mexe em img.src/complete; com canvas, o GridLayer já poda os tiles.
+                _abortLoading() {},
+            });
+            new CanvasTiles('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
                 maxZoom: 19,
-                className: 'tvc-dark-tiles',
+                className: 'tvc-tiles',
             }).addTo(map);
 
             setMapReady(true);
@@ -89,6 +117,15 @@ export default function MapView({ denuncias = [] }) {
             }
         };
     }, []);
+
+    // Trava/destrava os gestos no toque (sem as classes leaflet-touch-*, o dedo rola a página)
+    useEffect(() => {
+        const map = mapInstanceRef.current;
+        if (!map || !toque) return;
+        const acao = destravado ? 'enable' : 'disable';
+        map.dragging[acao]();
+        map.touchZoom[acao]();
+    }, [toque, destravado, mapReady]);
 
     // Update markers when map is ready OR denuncias change
     useEffect(() => {
@@ -129,11 +166,11 @@ export default function MapView({ denuncias = [] }) {
             const marker = L.marker([lat, lng], { icon })
                 .addTo(map)
                 .bindPopup(`
-                    <div style="font-family: var(--font-primary); min-width: 200px;">
-                        <strong style="color: ${color};">${safeTipo}</strong><br/>
-                        <span style="font-size: 0.85em;">📍 ${safeComunidade} — ${safeLocal}</span><br/>
+                    <div style="font-family: var(--f-body); min-width: 200px; color: #111;">
+                        <strong style="font-family: var(--f-heading); font-weight: 400;">${safeTipo}</strong><br/>
+                        <span style="font-size: 0.85em;">${safeComunidade} — ${safeLocal}</span><br/>
                         <p style="font-size: 0.85em; margin: 0.5rem 0;">${safeDescricao}${descricao.length > 100 ? '...' : ''}</p>
-                        <span style="font-size: 0.75em; color: #555;">👤 ${safeNome}</span>
+                        <span style="font-size: 0.8em; font-family: var(--f-mono);">${safeNome}</span>
                     </div>
                 `);
 
@@ -141,5 +178,14 @@ export default function MapView({ denuncias = [] }) {
         });
     }, [mapReady, denuncias]);
 
-    return <div ref={mapRef} className="map-container" role="region" aria-label="Mapa dos problemas reportados" />;
+    return (
+        <div className="mapa-caixa">
+            <div ref={mapRef} className="map-container" role="region" aria-label="Mapa dos problemas reportados" />
+            {toque && (
+                <button type="button" className="mapa-trava" aria-pressed={destravado} onClick={() => setDestravado(v => !v)}>
+                    {destravado ? 'Travar o mapa' : 'Mexer no mapa'}
+                </button>
+            )}
+        </div>
+    );
 }

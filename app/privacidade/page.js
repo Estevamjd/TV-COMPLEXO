@@ -13,7 +13,7 @@ export default function PrivacidadePage() {
     return (
         <div>
             <div className="page-header">
-                <h1>Privacidade na <span className="text-red">TV Complexo</span></h1>
+                <h1>Privacidade na TV Complexo</h1>
             </div>
 
             <article className="container privacy-page">

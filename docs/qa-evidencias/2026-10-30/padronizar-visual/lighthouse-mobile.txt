@@ -1,0 +1,7 @@
+/ performance:97 accessibility:100 best-practices:100 seo:100
+/denuncias performance:100 accessibility:100 best-practices:100 seo:100
+/denuncias/enviar performance:100 accessibility:100 best-practices:100 seo:100
+/noticias performance:100 accessibility:98 best-practices:100 seo:100
+/privacidade performance:100 accessibility:100 best-practices:100 seo:100
+/sobre performance:99 accessibility:100 best-practices:100 seo:100
+/videos performance:99 accessibility:98 best-practices:96 seo:100

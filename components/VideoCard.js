@@ -29,15 +29,8 @@ const platformClass = {
     manual: 'platform-manual',
 };
 
-// Gradientes por plataforma quando não há thumbnail
-const platformGradients = {
-    instagram: 'linear-gradient(135deg, #833ab4 0%, #fd1d1d 50%, #fcb045 100%)',
-    facebook: 'linear-gradient(135deg, #1877f2 0%, #0a5dc2 100%)',
-    tiktok: 'linear-gradient(135deg, #010101 0%, #69c9d0 50%, #ee1d52 100%)',
-    youtube: 'linear-gradient(135deg, #ff0000 0%, #900 100%)',
-    vimeo: 'linear-gradient(135deg, #1ab7ea 0%, #0d6eac 100%)',
-    manual: 'linear-gradient(135deg, var(--color-dark) 0%, #1a0a0a 100%)',
-};
+// Sem thumbnail: listras do estilo urbano (mesmo "lugar reservado" da Início), sem bloco colorido gigante
+const SEM_CAPA = 'repeating-linear-gradient(135deg, var(--ph-a) 0 14px, var(--ph-b) 14px 28px)';
 
 export default function VideoCard({ video, onClick }) {
     const router = useRouter();
@@ -75,7 +68,7 @@ export default function VideoCard({ video, onClick }) {
                     height: '100%',
                     background: hasThumbnail
                         ? `url(${video.thumbnail}) center/cover no-repeat`
-                        : platformGradients[video.plataforma] || platformGradients.manual,
+                        : SEM_CAPA,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -103,20 +96,9 @@ export default function VideoCard({ video, onClick }) {
                             <FaPlay style={{ color: 'white' }} />
                         ) : (
                             <>
-                                <span style={{ color: 'white', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }}>
+                                <span style={{ color: 'var(--ink)', fontSize: '2rem' }}>
                                     {platformIcons[video.plataforma] || <FaPlay />}
                                 </span>
-                                {!hasThumbnail && (
-                                    <span style={{
-                                        fontSize: '0.7rem',
-                                        color: 'rgba(255,255,255,0.8)',
-                                        fontWeight: 600,
-                                        textTransform: 'uppercase',
-                                        letterSpacing: '0.05em',
-                                    }}>
-                                        {platformLabels[video.plataforma] || 'Vídeo'}
-                                    </span>
-                                )}
                             </>
                         )}
                     </div>
@@ -127,7 +109,7 @@ export default function VideoCard({ video, onClick }) {
                             top: '0.75rem',
                             left: '0.75rem',
                             zIndex: 1
-                        }}>⭐ Destaque</span>
+                        }}>Destaque</span>
                     ) : null}
 
                     <div className={`platform-icon ${platformClass[video.plataforma] || 'platform-manual'}`} style={{
@@ -169,7 +151,7 @@ export default function VideoCard({ video, onClick }) {
                 }}>{video.descricao}</p>
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto' }}>
-                    <span style={{ fontSize: '0.8rem', color: 'var(--color-gray-medium)' }}>📅 {date}</span>
+                    <span style={{ fontSize: '0.85rem', fontFamily: 'var(--f-mono)', fontWeight: 700 }}>{date}</span>
                 </div>
 
                 {isSocialLink && (
@@ -183,9 +165,8 @@ export default function VideoCard({ video, onClick }) {
                             alignItems: 'center',
                             justifyContent: 'center',
                             gap: '8px',
-                            background: 'var(--color-dark-gray)',
-                            color: 'white',
-                            border: '1px solid rgba(255,255,255,0.1)'
+                            background: 'var(--ink)',
+                            color: 'var(--yellow)',
                         }}
                     >
                         {platformIcons[video.plataforma]}

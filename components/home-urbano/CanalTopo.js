@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { posicaoCanal, podeEmbutir, horaBrasilia } from '@/lib/canal24h';
+import BarraNavegacao from '@/components/BarraNavegacao';
 import s from './urbano.module.css';
 
 const CANAL_URL = 'https://www.youtube.com/@tvcomplexofc';
@@ -75,33 +76,24 @@ function alvo24h(agoraMs) {
     return p && podeEmbutir(p.atual) ? { id: p.atual.youtubeId, start: p.offsetSeg } : null;
 }
 
-const NAV = [
-    { href: '#topo', label: 'Ao vivo' },
-    { href: '/videos', label: 'Vídeos' },
-    { href: '/noticias', label: 'Notícias' },
-    { href: '#grade', label: 'Grade' },
-    { href: '/denuncias', label: 'Denúncias' },
-];
-
 function IconePlay() {
     return <svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4l13 8-13 8z" /></svg>;
-}
-function IconeBaixar() {
-    return <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true"><path d="M12 3v12m-5-5l5 5 5-5M5 21h14" /></svg>;
 }
 
 /**
  * Topo da home: canal 24h (playlist própria sincronizada pelo relógio) e,
  * quando a rota /api/live detecta live, troca sozinho para AO VIVO.
- * A tela nunca fica vazia: sem vídeo real configurado, mostra o quadro reservado.
+ * Enquanto a playlist do canal 24h não tem vídeo real, o topo mostra o vídeo mais recente
+ * cadastrado (destaque, mesma fonte de /videos); sem nenhum, só o logo e o link do YouTube.
+ * temGrade = false esconde o botão "Ver a grade" (a seção some na Início).
  */
-export default function CanalTopo({ agoraInicial, demoLive = false }) {
+export default function CanalTopo({ agoraInicial, demoLive = false, destaque = null, temGrade = true }) {
     const [agoraCanal] = useState(() => criarRelogio(agoraInicial));
     const [agora, setAgora] = useState(agoraInicial);
     const [live, setLive] = useState(
         demoLive ? { demo: true, videoId: null, titulo: 'Live de demonstração (exemplo)', inicio: agoraInicial - 25 * 60_000 } : null,
     );
-    const [tocando, setTocando] = useState(null); // { id, start } quando a pessoa aperta play
+    const [tocando, setTocando] = useState(null); // { id, start } quando a pessoa aperta play (avulso: vídeo em destaque, fora do relógio)
     const [aviso, setAviso] = useState('');
     const [copiado, setCopiado] = useState(false);
     const [faixaParada, setFaixaParada] = useState(false);
@@ -117,7 +109,7 @@ export default function CanalTopo({ agoraInicial, demoLive = false }) {
             const agoraMs = agoraCanal();
             setAgora(agoraMs);
             setTocando(atual => {
-                if (!atual || atual.live) return atual;
+                if (!atual || atual.live || atual.avulso) return atual;
                 const p = posicaoCanal(agoraMs);
                 return p && p.atual.youtubeId !== atual.id ? alvo24h(agoraMs) : atual;
             });
@@ -182,7 +174,7 @@ export default function CanalTopo({ agoraInicial, demoLive = false }) {
 
     // canal 24h tocando: confere a posição pela IFrame API e corrige desvio
     // (depois de pausa/buffering/seek) e o fim do vídeo/ciclo (inclusive playlist de um vídeo só)
-    const tocandoId = tocando && !tocando.live ? tocando.id : null;
+    const tocandoId = tocando && !tocando.live && !tocando.avulso ? tocando.id : null;
     const tocandoStart = tocando?.start;
     useEffect(() => {
         if (!tocandoId) return;
@@ -250,6 +242,9 @@ export default function CanalTopo({ agoraInicial, demoLive = false }) {
     const pos = posicaoCanal(agora);
     const atual = pos?.atual ?? null;
     const embutivel24h = podeEmbutir(atual);
+    // playlist do canal 24h ainda sem vídeo real (lib/canal24h.json): o topo usa o destaque
+    const semCanal = !embutivel24h;
+    const avulso = !live && semCanal && destaque ? destaque : null;
     const progresso = pos ? Math.min(100, ((agora - pos.inicioMs) / (pos.fimMs - pos.inicioMs)) * 100) : 0;
 
     function assistir() {
@@ -257,7 +252,7 @@ export default function CanalTopo({ agoraInicial, demoLive = false }) {
         else if (!live && embutivel24h) {
             carregarApiYT();
             setTocando({ id: atual.youtubeId, start: pos.offsetSeg });
-        }
+        } else if (avulso) setTocando({ avulso: true, id: avulso.youtubeId, start: 0 });
     }
 
     async function compartilhar() {
@@ -273,18 +268,20 @@ export default function CanalTopo({ agoraInicial, demoLive = false }) {
         }
     }
 
-    const podeTocarAqui = live ? !!live.videoId : embutivel24h;
-    // playlist ainda com vídeos de exemplo (lib/canal24h.json): deixa claro que é demonstração
-    const canalDemo = !live && !!atual && !embutivel24h;
+    const podeTocarAqui = live ? !!live.videoId : embutivel24h || !!avulso;
     const linkExterno = live ? `${CANAL_URL}/live` : CANAL_URL;
-    const tituloAtual = live ? live.titulo : atual?.titulo ?? 'Canal 24h da TV Complexo';
-    const rotuloPlay = live ? 'Assistir ao vivo' : 'Assistir agora';
+    const tituloAtual = live ? live.titulo
+        : avulso ? avulso.titulo
+        : semCanal ? 'Canal da TV Complexo'
+        : atual?.titulo ?? 'Canal 24h da TV Complexo';
+    const rotuloPlay = live ? 'Assistir ao vivo' : avulso || !semCanal ? 'Assistir agora' : 'Assistir no YouTube';
+    const posterId = live ? live.videoId : avulso ? avulso.youtubeId : atual?.youtubeId;
 
     let iframeSrc = null;
     if (tocando) {
         const q = new URLSearchParams({ autoplay: '1', playsinline: '1', rel: '0' });
         if (tocando.start) q.set('start', String(tocando.start));
-        if (!tocando.live) {
+        if (!tocando.live && !tocando.avulso) {
             q.set('enablejsapi', '1');
             q.set('origin', window.location.origin);
         }
@@ -295,20 +292,8 @@ export default function CanalTopo({ agoraInicial, demoLive = false }) {
         <>
             <section id="topo" className={s.topo} data-state={estado} aria-labelledby="topo-titulo">
                 <div className={s.wrap}>
-                    <header className={s.barra}>
-                        <Link href="/" className={s.logoPlate} aria-label="TV Complexo, início">
-                            <Image src="/logo-header-cropped.png" alt="TV Complexo" width={292} height={59} priority />
-                        </Link>
-                        <nav aria-label="Principal" className={s.nav}>
-                            <ul>
-                                {NAV.map(item => (
-                                    <li key={item.href}><a href={item.href}>{item.label}</a></li>
-                                ))}
-                            </ul>
-                        </nav>
-                        <a href="#instalar" className={s.btnOutline}>
-                            <IconeBaixar /> <span className={s.soCel}>App</span><span className={s.soDesk}>Instalar app</span>
-                        </a>
+                    <header>
+                        <BarraNavegacao />
                     </header>
 
                     <div className={s.heroGrid}>
@@ -331,17 +316,17 @@ export default function CanalTopo({ agoraInicial, demoLive = false }) {
                                     ) : podeTocarAqui ? (
                                         <button type="button" className={s.posterBtn} onClick={assistir} aria-label={`${rotuloPlay}: ${tituloAtual}`}>
                                             {/* eslint-disable-next-line @next/next/no-img-element */}
-                                            <img src={`https://i.ytimg.com/vi/${live ? live.videoId : atual.youtubeId}/hqdefault.jpg`} alt="" />
+                                            <img src={`https://i.ytimg.com/vi/${posterId}/hqdefault.jpg`} alt="" />
                                             <span className={s.playDiamante} aria-hidden="true"><IconePlay /></span>
                                         </button>
                                     ) : (
-                                        <a href={linkExterno} target="_blank" rel="noopener noreferrer" className={`${s.posterBtn} ${s.ph}`}
-                                            aria-label={`${rotuloPlay} no YouTube do @tvcomplexofc (abre em nova aba)`}>
-                                            <span className={s.phTag} aria-hidden="true">foto do canal em breve</span>
+                                        <a href={linkExterno} target="_blank" rel="noopener noreferrer" className={`${s.posterBtn} ${s.posterLogo}`}
+                                            aria-label={`${live ? 'Assistir ao vivo' : 'Assistir'} no YouTube do @tvcomplexofc (abre em nova aba)`}>
+                                            <Image src="/logo-header-cropped.png" alt="" width={292} height={59} />
                                             <span className={s.playDiamante} aria-hidden="true"><IconePlay /></span>
                                         </a>
                                     )}
-                                    {!live && !iframeSrc && (
+                                    {!live && !semCanal && !iframeSrc && (
                                         <span className={s.progresso} style={{ width: `${progresso}%` }} aria-hidden="true" />
                                     )}
                                 </div>
@@ -357,11 +342,11 @@ export default function CanalTopo({ agoraInicial, demoLive = false }) {
 
                         <div className={s.heroInfo}>
                             {deteccaoDemo && <p className={s.demoNota} role="status">Demonstração: detecção automática de live desligada</p>}
-                            {canalDemo && <p className={s.demoTag}>Demonstração — vídeos de exemplo</p>}
                             <p className={s.kicker}>
                                 {live ? (
                                     <><span className={s.badgeLive}>AO VIVO</span>{live.inicio ? ` desde ${horaBrasilia(live.inicio)}` : ' agora'}</>
-                                ) : pos ? (
+                                ) : avulso ? 'Vídeo mais recente'
+                                : pos && !semCanal ? (
                                     <>Canal 24h · agora {horaBrasilia(pos.inicioMs)}–{horaBrasilia(pos.fimMs)}</>
                                 ) : 'Canal 24h'}
                             </p>
@@ -369,7 +354,7 @@ export default function CanalTopo({ agoraInicial, demoLive = false }) {
                             <p className={s.heroSub}>
                                 {live
                                     ? 'O canal 24h saiu do ar sozinho e volta quando a live acabar.'
-                                    : canalDemo ? 'Player ainda não configurado: o botão abre o YouTube do @tvcomplexofc.'
+                                    : semCanal ? 'Do canal @tvcomplexofc no YouTube.'
                                     : pos ? `A seguir: ${pos.proximo.titulo}` : 'Vídeos do @tvcomplexofc sem parar.'}
                             </p>
                             <div className={s.botoes}>
@@ -384,8 +369,10 @@ export default function CanalTopo({ agoraInicial, demoLive = false }) {
                                     <button type="button" className={s.btnOutline} onClick={compartilhar}>
                                         {copiado ? 'Link copiado' : 'Compartilhar'}
                                     </button>
-                                ) : (
+                                ) : temGrade ? (
                                     <a className={s.btnOutline} href="#grade">Ver a grade</a>
+                                ) : (
+                                    <Link className={s.btnOutline} href="/videos">Todos os vídeos</Link>
                                 )}
                             </div>
                             {live?.demo && <p className={s.demoNota}>Modo demonstração (?demo=live): só visual, sem live de verdade.</p>}

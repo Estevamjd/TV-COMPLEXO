@@ -39,7 +39,7 @@ export default async function VideoPage({ params }) {
     const isSocialLink = video.plataforma !== 'manual';
 
     return (
-        <main className="page-content">
+        <div className="page-content">
             <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializarJsonLd(jsonLdVideo(video)) }} />
             <div className="container" style={{ maxWidth: '900px', marginTop: '40px', marginBottom: '60px' }}>
                 <Link href="/videos" className="btn btn-secondary btn-sm" style={{ marginBottom: '1.5rem', display: 'inline-flex' }}>
@@ -48,10 +48,10 @@ export default async function VideoPage({ params }) {
 
                 <div
                     style={{
-                        background: 'var(--color-dark-gray)',
-                        borderRadius: '16px',
+                        background: 'var(--ink)',
                         overflow: 'hidden',
-                        border: '1px solid rgba(255,255,255,0.05)'
+                        border: 'var(--border)',
+                        boxShadow: '6px 6px 0 var(--pink)'
                     }}
                 >
                     {embedUrl ? (
@@ -75,7 +75,7 @@ export default async function VideoPage({ params }) {
                         <div style={{
                             width: '100%',
                             aspectRatio: '16/9',
-                            background: video.thumbnail ? `url(${video.thumbnail}) center/cover no-repeat` : 'linear-gradient(135deg, var(--color-dark) 0%, #1a0a0a 100%)',
+                            background: video.thumbnail ? `url(${video.thumbnail}) center/cover no-repeat` : 'var(--ink)',
                             display: 'flex',
                             flexDirection: 'column',
                             alignItems: 'center',
@@ -85,21 +85,18 @@ export default async function VideoPage({ params }) {
                             position: 'relative'
                         }}>
                             <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.7)' }}></div>
-                            <div style={{ position: 'relative', zIndex: 1 }}>
-                                <span style={{ fontSize: '3rem', marginBottom: '1rem', display: 'block' }}>
-                                    {video.plataforma === 'instagram' ? '📷' : video.plataforma === 'tiktok' ? '🎵' : '📘'}
-                                </span>
-                                <h3 style={{ marginBottom: '1rem', fontSize: '1.5rem' }}>
+                            <div style={{ position: 'relative', zIndex: 1, color: '#FFFFFF' }}>
+                                <h3 style={{ marginBottom: '1rem', fontSize: '1.5rem', fontFamily: 'var(--f-heading)', fontWeight: 400 }}>
                                     Vídeo Original {video.plataforma.charAt(0).toUpperCase() + video.plataforma.slice(1)}
                                 </h3>
-                                <p style={{ color: 'var(--color-gray-light)', marginBottom: '1.5rem', maxWidth: '400px', margin: '0 auto 1.5rem', lineHeight: '1.5' }}>
+                                <p style={{ color: '#E8E3D6', marginBottom: '1.5rem', maxWidth: '400px', margin: '0 auto 1.5rem', lineHeight: '1.5' }}>
                                     Este conteúdo foi importado da nossa rede social. Abra diretamente na plataforma para a melhor experiência.
                                 </p>
                                 <a
                                     href={video.url_video}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="btn btn-primary btn-lg"
+                                    className="btn btn-yellow btn-lg"
                                 >
                                     Assistir no {video.plataforma.charAt(0).toUpperCase() + video.plataforma.slice(1)} ↗
                                 </a>
@@ -110,7 +107,7 @@ export default async function VideoPage({ params }) {
 
                 <div style={{ marginTop: '2rem' }}>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center', marginBottom: '1rem' }}>
-                        {video.destaque ? <span className="badge badge-yellow">⭐ Destaque</span> : null}
+                        {video.destaque ? <span className="badge badge-yellow">Destaque</span> : null}
                         <span className={`platform-icon platform-${video.plataforma}`}>
                             {video.plataforma.toUpperCase()}
                         </span>
@@ -118,9 +115,10 @@ export default async function VideoPage({ params }) {
                     </div>
 
                     <h1 style={{
-                        fontSize: 'clamp(1.5rem, 4vw, 2.5rem)',
+                        fontSize: 'clamp(2rem, 6vw, 3.5rem)',
+                        textTransform: 'uppercase',
                         marginBottom: '1rem',
-                        lineHeight: 1.2
+                        lineHeight: 1.05
                     }}>
                         {video.titulo}
                     </h1>
@@ -137,11 +135,10 @@ export default async function VideoPage({ params }) {
                     {isSocialLink && (
                         <div style={{
                             padding: '1.5rem',
-                            background: 'rgba(255,255,255,0.03)',
-                            borderRadius: '12px',
-                            border: '1px dashed rgba(255,255,255,0.1)'
+                            background: 'var(--white)',
+                            border: '2px dashed var(--ink)'
                         }}>
-                            <h3 style={{ marginBottom: '1rem', fontSize: '1.1rem' }}>🔗 Conteúdo Original</h3>
+                            <h3 style={{ marginBottom: '1rem', fontSize: '1.1rem', fontFamily: 'var(--f-heading)', fontWeight: 400 }}>Conteúdo original</h3>
                             <p style={{ color: 'var(--color-gray-medium)', marginBottom: '1rem', fontSize: '0.95rem' }}>
                                 Este vídeo foi importado automaticamente de uma rede social. Apoie o criador visualizando o post original:
                             </p>
@@ -158,6 +155,6 @@ export default async function VideoPage({ params }) {
                     )}
                 </div>
             </div>
-        </main>
+        </div>
     );
 }

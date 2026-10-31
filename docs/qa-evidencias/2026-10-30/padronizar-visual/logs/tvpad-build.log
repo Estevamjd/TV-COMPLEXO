@@ -1,0 +1,49 @@
+▲ Next.js 16.1.6 (Turbopack)
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 1980.5ms
+  Running TypeScript ...
+  Collecting page data using 7 workers ...
+  Generating static pages using 7 workers (0/22) ...
+  Generating static pages using 7 workers (5/22) 
+  Generating static pages using 7 workers (10/22) 
+  Generating static pages using 7 workers (16/22) 
+✓ Generating static pages using 7 workers (22/22) in 221.7ms
+  Finalizing page optimization ...
+
+Route (app)                Revalidate  Expire
+┌ ƒ /
+├ ○ /_not-found
+├ ƒ /admin
+├ ○ /admin/denuncias
+├ ○ /admin/login
+├ ○ /admin/noticias
+├ ○ /admin/videos
+├ ƒ /api/auth
+├ ƒ /api/comentarios
+├ ƒ /api/cron/youtube
+├ ƒ /api/denuncias
+├ ƒ /api/hora
+├ ƒ /api/live
+├ ƒ /api/noticias
+├ ƒ /api/upload
+├ ƒ /api/videos
+├ ƒ /api/webhooks/social
+├ ƒ /denuncias
+├ ○ /denuncias/enviar
+├ ○ /manifest.webmanifest
+├ ƒ /noticias
+├ ƒ /noticias/[id]
+├ ○ /privacidade
+├ ○ /robots.txt
+├ ○ /sitemap.xml                   1h      1y
+├ ○ /sobre
+├ ○ /videos
+└ ƒ /videos/[id]
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

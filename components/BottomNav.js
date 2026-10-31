@@ -1,38 +1,33 @@
 'use client';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { FaHome, FaPlay, FaBullhorn, FaNewspaper, FaInfoCircle } from 'react-icons/fa';
+import { FaHome, FaPlay, FaMapMarkedAlt, FaBullhorn, FaNewspaper, FaInfoCircle } from 'react-icons/fa';
+import { NAV_ITENS, itemAtivo } from '@/lib/navegacao';
 
-const navItems = [
-    { href: '/', label: 'Início', icon: FaHome },
-    { href: '/videos', label: 'Vídeos', icon: FaPlay },
-    { href: '/denuncias/enviar', label: 'Denúncia', icon: FaBullhorn, isCta: true },
-    { href: '/noticias', label: 'Notícias', icon: FaNewspaper },
-    { href: '/sobre', label: 'Sobre', icon: FaInfoCircle },
-];
+const ICONES = { inicio: FaHome, videos: FaPlay, mapa: FaMapMarkedAlt, denunciar: FaBullhorn, noticias: FaNewspaper, sobre: FaInfoCircle };
 
+/** Barra fixa de baixo, em todas as telas públicas (inclusive a Início) até 1023px. */
 export default function BottomNav() {
-    const pathname = usePathname();
+    const pathname = usePathname() ?? '';
 
     // Não mostrar no admin
     if (pathname.startsWith('/admin')) return null;
-    // A home (estilo Urbano) tem navegação própria no topo e no rodapé.
-    if (pathname === '/') return null;
+
+    const ativo = itemAtivo(pathname);
 
     return (
-        <nav className="bottom-nav">
-            {navItems.map(item => {
-                const Icon = item.icon;
-                const isActive = pathname === item.href ||
-                    (item.href !== '/' && pathname.startsWith(item.href));
-
+        <nav className="bottom-nav" aria-label="Navegação principal">
+            {NAV_ITENS.map(item => {
+                const Icon = ICONES[item.icone];
+                const atual = item.href === ativo;
                 return (
                     <Link
                         key={item.href}
                         href={item.href}
-                        className={`bottom-nav-item ${isActive ? 'active' : ''} ${item.isCta ? 'cta' : ''}`}
+                        aria-current={atual ? 'page' : undefined}
+                        className={`bottom-nav-item ${atual ? 'active' : ''} ${item.cta ? 'cta' : ''}`}
                     >
-                        <span className={`bottom-nav-icon ${item.isCta ? 'cta-icon' : ''}`}>
+                        <span className={`bottom-nav-icon ${item.cta ? 'cta-icon' : ''}`} aria-hidden="true">
                             <Icon />
                         </span>
                         <span className="bottom-nav-label">{item.label}</span>

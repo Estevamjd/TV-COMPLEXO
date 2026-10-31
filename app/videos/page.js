@@ -6,11 +6,11 @@ import ShareButtons from '@/components/ShareButtons';
 import { toEmbedUrl } from '@/lib/video-utils';
 
 const filters = [
-    { value: 'todos', label: '📺 Todos' },
-    { value: 'noticias', label: '📰 Notícias' },
-    { value: 'cultura', label: '🎨 Cultura' },
-    { value: 'comunidade', label: '🏘️ Comunidade' },
-    { value: 'eventos', label: '🎉 Eventos' },
+    { value: 'todos', label: 'Todos' },
+    { value: 'noticias', label: 'Notícias' },
+    { value: 'cultura', label: 'Cultura' },
+    { value: 'comunidade', label: 'Comunidade' },
+    { value: 'eventos', label: 'Eventos' },
 ];
 
 export default function VideosPage() {
@@ -46,10 +46,10 @@ export default function VideosPage() {
         if (busca) params.append('busca', busca);
         params.append('limit', '50');
 
-        const res = await fetch(`/api/videos?${params}`);
-        const data = await res.json();
+        // erro da API (ex.: banco fora) = lista vazia, não tela quebrada
+        const data = await fetch(`/api/videos?${params}`).then(r => (r.ok ? r.json() : [])).catch(() => []);
 
-        setVideos(data);
+        setVideos(Array.isArray(data) ? data : []);
         setLoading(false);
         setIsFetching(false);
     };
@@ -60,9 +60,9 @@ export default function VideosPage() {
     };
 
     return (
-        <div style={{ paddingTop: '20px' }}>
+        <div>
             <div className="page-header">
-                <h1>📺 <span className="text-red">Vídeos</span></h1>
+                <h1>Vídeos</h1>
                 <p>Assista a todos os vídeos da TV Complexo. Notícias, cultura e a realidade das comunidades.</p>
             </div>
 
@@ -70,7 +70,9 @@ export default function VideosPage() {
                 {/* Busca */}
                 <form onSubmit={handleSearch} style={{ marginBottom: '1rem' }}>
                     <div className="search-box" style={{ maxWidth: '100%' }}>
-                        <span className="search-icon" aria-hidden="true">🔍</span>
+                        <span className="search-icon" aria-hidden="true">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6"><circle cx="10.5" cy="10.5" r="6.5" /><path d="M15.5 15.5L21 21" /></svg>
+                        </span>
                         <input
                             type="text"
                             aria-label="Buscar vídeos"
@@ -93,8 +95,11 @@ export default function VideosPage() {
                     </div>
                 ) : videos.length === 0 ? (
                     <div className="empty-state">
-                        <h3>Nenhum vídeo encontrado</h3>
-                        <p>Tente outro filtro ou termo de busca.</p>
+                        <h3>Nenhum vídeo por aqui</h3>
+                        <p>Tente outro filtro ou outra busca. Os vídeos mais novos também saem no YouTube do @tvcomplexofc.</p>
+                        <div className="botoes-vazio">
+                            <a href="https://www.youtube.com/@tvcomplexofc" target="_blank" rel="noopener noreferrer" className="btn btn-primary">Abrir o YouTube</a>
+                        </div>
                     </div>
                 ) : (
                     <div className={`grid-3 fade-in transition-opacity ${isFetching ? 'opacity-50' : ''}`}>
@@ -131,7 +136,7 @@ export default function VideosPage() {
                                 maxWidth: '900px',
                                 width: '100%',
                                 overflow: 'hidden',
-                                border: '1px solid var(--color-dark-gray)',
+                                border: '3px solid var(--ink)',
                             }}
                             onClick={(e) => e.stopPropagation()}
                         >
@@ -164,9 +169,6 @@ export default function VideosPage() {
                                     }}>
                                         <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.7)' }} />
                                         <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', padding: '2rem' }}>
-                                            <span style={{ fontSize: '3rem', display: 'block', marginBottom: '1rem' }}>
-                                                {selectedVideo.plataforma === 'instagram' ? '📷' : selectedVideo.plataforma === 'tiktok' ? '🎵' : '▶️'}
-                                            </span>
                                             <a
                                                 href={selectedVideo.url_video}
                                                 target="_blank"
@@ -181,9 +183,9 @@ export default function VideosPage() {
                             })()}
                             <div style={{ padding: '1.5rem' }}>
                                 <h3 style={{
-                                    fontFamily: 'var(--font-display)',
-                                    fontSize: '1.8rem',
-                                    textTransform: 'uppercase',
+                                    fontFamily: 'var(--f-heading)',
+                                    fontSize: '1.4rem',
+                                    lineHeight: 1.2,
                                     marginBottom: '0.5rem'
                                 }}>{selectedVideo.titulo}</h3>
                                 <p style={{
@@ -193,7 +195,7 @@ export default function VideosPage() {
                                 }}>{selectedVideo.descricao}</p>
                                 <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap', marginBottom: '1rem' }}>
                                     <span className="badge badge-yellow">
-                                        📅 {new Date(selectedVideo.created_at).toLocaleDateString('pt-BR')}
+                                        {new Date(selectedVideo.created_at).toLocaleDateString('pt-BR')}
                                     </span>
                                     <span className={`platform-icon platform-${selectedVideo.plataforma}`}>
                                         {selectedVideo.plataforma}
@@ -205,7 +207,7 @@ export default function VideosPage() {
                                     style={{ marginTop: '1rem' }}
                                     onClick={() => setSelectedVideo(null)}
                                 >
-                                    ✕ Fechar
+                                    Fechar
                                 </button>
                             </div>
                         </div>

@@ -5,8 +5,8 @@ export default function manifest() {
         description: 'A Real da Favela — Vídeos, denúncias e notícias das comunidades do Rio de Janeiro',
         start_url: '/',
         display: 'standalone',
-        background_color: '#0a0a0a',
-        theme_color: '#ef4444',
+        background_color: '#FAF7F0',
+        theme_color: '#FFD60A',
         icons: [
             {
                 src: '/logo.png',

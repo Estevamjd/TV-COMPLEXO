@@ -7,7 +7,7 @@ export default defineConfig({
         name: 'jsx-in-js',
         enforce: 'pre',
         transform(code, id) {
-            if (/\/components\/.*\.js$/.test(id)) {
+            if (/\/(components|app)\/.*\.js$/.test(id)) {
                 return transformWithOxc(code, id, { lang: 'jsx', jsx: { runtime: 'automatic' } });
             }
         },

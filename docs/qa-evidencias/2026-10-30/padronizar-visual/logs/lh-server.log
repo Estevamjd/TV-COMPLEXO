@@ -1,0 +1,15 @@
+▲ Next.js 16.1.6
+- Local:         http://localhost:3123
+- Network:       http://[REDACTED-IP]:3123
+
+✓ Starting...
+✓ Ready in 116ms
+DB query error: 
+[videos GET] AggregateError: 
+    at async Object.o [as query] (.next/server/chunks/[root-of-the-server]__23986e90._.js:1:1355)
+    at async d (.next/server/chunks/[root-of-the-server]__74559ec6._.js:4:2682)
+    at async d (.next/server/chunks/[root-of-the-server]__74559ec6._.js:10:4141)
+    at async u (.next/server/chunks/[root-of-the-server]__74559ec6._.js:10:5182)
+    at async Module.N (.next/server/chunks/[root-of-the-server]__74559ec6._.js:10:6260) {
+  code: 'ECONNREFUSED'
+}

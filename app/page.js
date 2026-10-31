@@ -1,14 +1,12 @@
 import Link from 'next/link';
-import Image from 'next/image';
 import db from '@/lib/db';
 import { COLUNAS_NOTICIAS, COLUNAS_VIDEOS } from '@/lib/colunas-publicas';
-import { PLAYLIST, podeEmbutir } from '@/lib/canal24h';
-import PrivacyLink from '@/components/PrivacyLink';
+import { DIAS, programasDoDia } from '@/lib/grade';
+import { toEmbedUrl } from '@/lib/video-utils';
 import CanalTopo from '@/components/home-urbano/CanalTopo';
 import Fileira from '@/components/home-urbano/Fileira';
 import GradeSemana from '@/components/home-urbano/GradeSemana';
 import InstalarApp from '@/components/home-urbano/InstalarApp';
-import { fontesUrbano } from '@/components/home-urbano/fontes';
 import s from '@/components/home-urbano/urbano.module.css';
 import { metadataDaPagina } from '@/lib/site';
 import { jsonLdOrganizacao, serializarJsonLd } from '@/lib/json-ld';
@@ -21,7 +19,6 @@ export const metadata = metadataDaPagina({
     caminho: '/',
 });
 
-const CANAL_URL = 'https://www.youtube.com/@tvcomplexofc';
 const MOLDURAS = ['var(--pink)', 'var(--blue)', 'var(--yellow)', 'var(--green)'];
 const GIROS = [-2, 1.5, -1, 2, -1.5];
 const FITAS = [1, -6, -1, -7, 0];
@@ -47,6 +44,13 @@ function thumbDoVideo(v) {
     return null;
 }
 
+/** ID do YouTube do vídeo cadastrado (external_id ou URL), para tocar no topo; null se não for do YouTube. */
+function idYoutube(v) {
+    if (v.external_id && /^[A-Za-z0-9_-]{11}$/.test(v.external_id) && v.plataforma === 'youtube') return v.external_id;
+    const m = toEmbedUrl(v.url_video ?? '')?.match(/youtube\.com\/embed\/([A-Za-z0-9_-]{11})/);
+    return m ? m[1] : null;
+}
+
 export default async function HomePage({ searchParams }) {
     const params = await searchParams;
     const demoLive = params?.demo === 'live';
@@ -57,24 +61,21 @@ export default async function HomePage({ searchParams }) {
         lerDoBanco(`SELECT ${COLUNAS_NOTICIAS} FROM noticias WHERE publicada = 1 ORDER BY created_at DESC LIMIT 3`),
     ]);
 
-    // Sem vídeo no banco, a fileira mostra a playlist do canal 24h (mesma fonte do topo).
-    const videos = videosDb.length > 0
-        ? videosDb.map(v => ({ chave: v.id, titulo: v.titulo, href: `/videos/${v.id}`, externo: false, thumb: thumbDoVideo(v) }))
-        : PLAYLIST.map(v => ({
-            chave: v.youtubeId,
-            titulo: v.titulo,
-            href: podeEmbutir(v) ? `https://www.youtube.com/watch?v=${v.youtubeId}` : CANAL_URL,
-            externo: true,
-            thumb: podeEmbutir(v) ? `https://i.ytimg.com/vi/${v.youtubeId}/hqdefault.jpg` : null,
-        }));
-    const videosDemo = videosDb.length === 0 && PLAYLIST.some(v => !podeEmbutir(v));
+    // Mesma fonte de /videos (tabela videos). Sem vídeo (ou sem banco), a seção some:
+    // nada de vídeo de exemplo na Início.
+    const videos = videosDb.map(v => ({ chave: v.id, titulo: v.titulo, href: `/videos/${v.id}`, thumb: thumbDoVideo(v) }));
+    // Vídeo mais recente do YouTube: entra no topo enquanto a playlist do canal 24h não tem vídeo real.
+    const recente = videosDb.map(v => ({ v, id: idYoutube(v) })).find(x => x.id);
+    const destaque = recente ? { youtubeId: recente.id, titulo: recente.v.titulo } : null;
+    // Grade sem nenhum programa cadastrado: a seção some (nada de "em breve" em todos os dias).
+    const temGrade = DIAS.some(d => programasDoDia(d.chave).length > 0);
 
     return (
-        <div className={`${s.root} ${fontesUrbano}`}>
+        <div className={s.root}>
             <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializarJsonLd(jsonLdOrganizacao()) }} />
             <a href="#conteudo" className={s.pular}>Pular para o conteúdo</a>
 
-            <CanalTopo agoraInicial={agora} demoLive={demoLive} />
+            <CanalTopo agoraInicial={agora} demoLive={demoLive} destaque={destaque} temGrade={temGrade} />
 
             <div id="conteudo">
                 {/* ÚLTIMOS VÍDEOS */}
@@ -85,31 +86,24 @@ export default async function HomePage({ searchParams }) {
                                 <h2 id="videos-titulo" className={s.display}>Últimos<br />vídeos</h2>
                                 <Link href="/videos" className={s.verTudo}>ver tudo →</Link>
                             </div>
-                            {videosDemo && <p className={s.demoTag}>Demonstração — vídeos de exemplo</p>}
                             <Fileira rotulo="Últimos vídeos">
                                 {videos.map((v, i) => {
-                                    const linkProps = v.externo ? { target: '_blank', rel: 'noopener noreferrer' } : {};
                                     return (
                                         <li key={v.chave} className={s.videoItem}>
-                                            <a href={v.href} className={s.videoCard} {...linkProps}>
+                                            <Link href={v.href} className={s.videoCard}>
                                                 <span className={s.poster} style={{ '--moldura': MOLDURAS[i % 4], '--giro': `${GIROS[i % 5]}deg` }}>
                                                     <span className={s.duo} style={{ '--duo': MOLDURAS[i % 4] }}>
                                                         {v.thumb ? (
                                                             // eslint-disable-next-line @next/next/no-img-element
                                                             <img src={v.thumb} alt="" loading="lazy" decoding="async" />
                                                         ) : (
-                                                            <span className={`${s.ph} ${s.phFill}`}>
-                                                                <span className={s.phTag}>foto do canal em breve</span>
-                                                            </span>
+                                                            <span className={`${s.ph} ${s.phFill}`} />
                                                         )}
                                                     </span>
                                                     <span className={s.tape} style={{ left: '50%', top: -12, transform: `translateX(-50%) rotate(${FITAS[i % 5]}deg)` }} aria-hidden="true" />
                                                 </span>
-                                                <span className={s.videoTitulo}>
-                                                    {v.titulo}
-                                                    {v.externo && <span className={s.srOnly}> (abre o YouTube em nova aba)</span>}
-                                                </span>
-                                            </a>
+                                                <span className={s.videoTitulo}>{v.titulo}</span>
+                                            </Link>
                                         </li>
                                     );
                                 })}
@@ -140,13 +134,15 @@ export default async function HomePage({ searchParams }) {
                     </section>
                 )}
 
-                {/* GRADE DA SEMANA (arquivo lib/grade.json; vazio = em breve) */}
-                <section id="grade" className={s.secao} aria-labelledby="grade-titulo">
-                    <div className={s.wrap}>
-                        <h2 id="grade-titulo" className={s.display}>Grade</h2>
-                        <GradeSemana agoraInicial={agora} />
-                    </div>
-                </section>
+                {/* GRADE DA SEMANA (arquivo lib/grade.json; some enquanto não houver programa) */}
+                {temGrade && (
+                    <section id="grade" className={s.secao} aria-labelledby="grade-titulo">
+                        <div className={s.wrap}>
+                            <h2 id="grade-titulo" className={s.display}>Grade</h2>
+                            <GradeSemana agoraInicial={agora} />
+                        </div>
+                    </section>
+                )}
 
                 {/* CHAMADAS: DENÚNCIA + APP */}
                 <section className={s.secao} aria-label="Participe">
@@ -167,26 +163,6 @@ export default async function HomePage({ searchParams }) {
                     </div>
                 </section>
             </div>
-
-            <footer id="rodape" className={s.rodape}>
-                <div className={`${s.wrap} ${s.rodapeInner}`}>
-                    <Link href="/" className={s.logoPlate} aria-label="TV Complexo, início">
-                        <Image src="/logo-header-cropped.png" alt="TV Complexo" width={292} height={59} />
-                    </Link>
-                    <nav aria-label="Rodapé">
-                        <ul className={s.rodapeLinks}>
-                            <li><Link href="/videos">Vídeos</Link></li>
-                            <li><Link href="/noticias">Notícias</Link></li>
-                            <li><Link href="/denuncias">Denúncias</Link></li>
-                            <li><Link href="/sobre">Sobre</Link></li>
-                            <li><a href={CANAL_URL} target="_blank" rel="noopener noreferrer">YouTube</a></li>
-                        </ul>
-                    </nav>
-                    <p className={s.rodapeLinha}>
-                        Responsável: Estevam Juliano · <PrivacyLink className="">Privacidade</PrivacyLink> · <Link href="/admin">Painel admin</Link>
-                    </p>
-                </div>
-            </footer>
         </div>
     );
 }

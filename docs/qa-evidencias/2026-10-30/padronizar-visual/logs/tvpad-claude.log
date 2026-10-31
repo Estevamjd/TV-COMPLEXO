@@ -1,0 +1,21 @@
+Fiz todos os P0 e P1 e os P2 simples (#10 a #14), sem commit. Testes, `tsc` e build sem `DATABASE_URL` passam, e conferi com `next start` sem banco e Playwright a 390x844 e 1440. O resumo por item está em `/tmp/tvpad-resumo.md`, e os prints "depois" e as medidas estão em `/tmp/tvpad-prints/`.
+
+**O que mudou:**
+1. **Estilo urbano no site todo:** Vídeos (lista e detalhe), Notícias (lista e detalhe), Denúncias, Enviar denúncia, Sobre e Privacidade agora usam as cores, fontes, botões e cartões da Início, e cabeçalho e rodapé são os mesmos dela. Tirei os emojis dos títulos e cards. A Início não foi redesenhada. O painel admin continua no tema escuro antigo (`app/admin/admin-tema.css`, carregado só no admin).
+2. **Uma navegação só:** a mesma lista alimenta a barra de baixo (agora também na Início) e os links do cabeçalho: Início, Vídeos, Mapa (`/denuncias`), Denunciar (`/denuncias/enviar`), Notícias e Sobre. A tela atual fica destacada com `aria-current="page"`. `/mapa` redireciona para `/denuncias` (308, em `next.config.mjs`). Removi o botão "Menu": no celular a barra de baixo já tem tudo.
+3. **Início com dados reais:** "Últimos vídeos" usa a mesma tabela de `/videos` e some quando não há vídeo. Como a playlist do canal 24h ainda é de exemplo, o topo toca o vídeo mais recente do YouTube cadastrado. Sem nenhum, mostra só o logo e "Assistir no YouTube". A grade some enquanto não tiver programa. Também saiu o link "Painel admin" do rodapé público.
+4. **Espaço da barra:** no fim de toda página o espaço é igual à altura da barra (64px) mais a área segura do iPhone. Medi em todas as rotas a 390px.
+5. **Mapa sob o cabeçalho:** os botões +/− do mapa ficam sempre por baixo do cabeçalho. Conferido a 1440, rolando até o zoom passar atrás dele.
+6. **Mapa não prende a rolagem:** altura de até 420px no celular, sem zoom pela roda do mouse. No toque o mapa começa travado (o dedo rola a página) e o botão "Mexer no mapa" / "Travar o mapa" libera os gestos.
+7. **Notícias vazia:** continua no menu, agora com um estado vazio de verdade, com os botões "Ver os vídeos" e "Mandar pauta no WhatsApp".
+
+**Selo "Canal 24h":** apliquei a mesma correção CSS do ramo `fix/selo-aviso-demo`, porque aqui ela ainda não existia. A 390px o aviso e o selo não se sobrepõem mais.
+
+**Testes:** `npx vitest run` passa com 806 testes (eram 784). São 22 novos: 13 de navegação (`aria-current`), 1 do redirect `/mapa` e 8 da Início sem dados (sem textos de exemplo e sem consultar o banco). Nenhum teste escreve no banco.
+
+**Coisas que você precisa saber:**
+- **Aviso de demonstração:** "Demonstração: detecção automática de live desligada" continua aparecendo no topo, porque vem do modo demonstração da live, que você pediu para não mexer.
+- **Contatos da Sobre:** a página tinha contatos de exemplo ("(21) 99999-0000", "[REDACTED-EMAIL]"). Troquei pelos reais do rodapé antigo ([REDACTED-EMAIL] e WhatsApp (21) 96603-0258).
+- **Notícias e Denúncias sem banco:** sem `DATABASE_URL` elas mostram a página vazia em vez da tela de erro. Com banco configurado, um erro continua indo para a tela de erro.
+- **Correções de passagem:** `/videos` não quebra mais quando a API falha, e o detalhe do vídeo não tem mais um `<main>` dentro de outro.
+- **ESLint:** acusa 4 erros, os mesmos que já existiam no HEAD; nenhum é novo.

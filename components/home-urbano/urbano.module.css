@@ -94,6 +94,7 @@
     border-bottom: 4px solid transparent;
 }
 .nav a:hover { border-bottom-color: var(--ink); }
+.nav a[aria-current="page"] { border-bottom-color: var(--ink); }
 .soDesk { display: none; }
 
 .heroGrid {
@@ -129,6 +130,9 @@
     clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); transition: transform .12s;
 }
 .posterBtn:hover .playDiamante { transform: translate(-50%, -50%) scale(1.08); }
+/* sem vídeo para tocar aqui: placa preta com o logo, abre o YouTube */
+.posterLogo { background: var(--ink); }
+.posterBtn.posterLogo img { position: absolute; left: 16px; top: 16px; width: 38%; height: auto; object-fit: contain; }
 .progresso { position: absolute; left: 0; bottom: 0; height: 6px; background: var(--yellow); transition: width 1s linear; }
 
 .tape {
@@ -167,6 +171,7 @@
 }
 .demoNota {
     display: inline-block; margin: 16px 0 0; padding: 6px 10px; border: 2px dashed var(--ink);
+    max-width: calc(100% - 128px); /* mantém a borda fora do carimbo rotacionado no celular */
     font: 700 16px/1.3 var(--f-mono);
 }
 
@@ -294,7 +299,7 @@
 .rodape .logoPlate { justify-self: start; outline-offset: 3px; }
 .rodape :focus-visible { outline-color: var(--yellow); }
 .rodapeLinks { display: flex; flex-wrap: wrap; gap: 4px 20px; }
-.rodapeLinks a, .rodapeLinha a { display: inline-block; padding: 10px 0; }
+.rodapeLinks a, .rodapeLinha a { display: inline-flex; align-items: center; min-height: 44px; padding: 10px 0; }
 .rodapeLinks a { font: 16px var(--f-heading); text-decoration: none; }
 .rodapeLinks a:hover { text-decoration: underline; }
 .rodapeLinha { font: 700 16px/1.5 var(--f-mono); margin: 0; }
@@ -331,6 +336,7 @@
     .heroInfo { padding-top: 20px; }
     .kicker { padding-right: 0; }
     .demoTag { max-width: none; }
+    .demoNota { max-width: none; }
     .heroTitulo { font-size: 34px; }
     .heroSub { font-size: 18px; }
 
