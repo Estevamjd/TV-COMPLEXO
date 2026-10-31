@@ -37,6 +37,13 @@ describe('Início sem dados (sem DATABASE_URL)', () => {
         expect(html).not.toContain('href="#grade"');
     });
 
+    it('mostra o destaque de reels (lista fixa, sem banco) com 3 reels ainda sem iframe', () => {
+        const reels = html.slice(html.indexOf('id="reels"'), html.indexOf('</section>', html.indexOf('id="reels"')));
+        expect(reels).toContain('id="reels-titulo"');
+        expect((reels.match(/Ver no Instagram/g) ?? []).length).toBe(3);
+        expect(reels).not.toContain('<iframe');
+    });
+
     it('não tem link para o painel admin no público', () => {
         expect(html).not.toContain('href="/admin"');
     });

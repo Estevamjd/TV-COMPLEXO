@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import VideoCard from '@/components/VideoCard';
 import FilterBar from '@/components/FilterBar';
 import ShareButtons from '@/components/ShareButtons';
+import ReelsInstagram from '@/components/ReelsInstagram';
 import { toEmbedUrl } from '@/lib/video-utils';
 
 const filters = [
@@ -110,6 +111,9 @@ export default function VideosPage() {
                         ))}
                     </div>
                 )}
+
+                {/* Reels do Instagram @tvcomplexo (todos da lista, embed oficial) */}
+                <ReelsInstagram />
 
                 {/* Modal de Vídeo */}
                 {selectedVideo && (
