@@ -1,0 +1,9 @@
+# Achados antigos do master, conferidos em 01/11/2026: nenhum e segredo real.
+# reCAPTCHA v3 site key publica, embutida no HTML da pagina do YouTube (fixture de teste)
+ae61268d15b589f44aec2b6a619a18623ebea26e:__tests__/fixtures/youtube-real-offline-tvcomplexo.html:generic-api-key:4
+# reCAPTCHA v3 site key publica, embutida no HTML da pagina do YouTube (fixture de teste)
+ae61268d15b589f44aec2b6a619a18623ebea26e:__tests__/fixtures/youtube-real-live-lofigirl.html:generic-api-key:4
+# Marcador de exemplo do .env.example (texto "troque-...", nao e o segredo real)
+49beaab555d1a5eb6d17596e80170ec2652a73cb:.env.example:generic-api-key:24
+# Marcador de exemplo do .env.example (texto "troque-...", nao e o segredo real)
+49beaab555d1a5eb6d17596e80170ec2652a73cb:.env.example:generic-api-key:28
