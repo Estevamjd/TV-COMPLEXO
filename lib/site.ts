@@ -7,9 +7,11 @@
  */
 export const SITE_URL = 'https://tv-complexo.vercel.app';
 
-export const SITE_NOME = 'TV Complexo';
+export const SITE_NOME = 'TV Complexo das Favelas';
+/** O nome em duas linhas (direção A, empilhado): a quebra fica antes de "das Favelas". Nunca abreviar. */
+export const SITE_NOME_LINHAS = SITE_NOME.split(/ (?=das )/);
 export const DESCRICAO_PADRAO = 'A real da favela. Vídeos, denúncias e notícias direto das comunidades do Rio de Janeiro.';
-export const OG_IMAGEM = { url: '/og-tv-complexo.jpg', width: 1200, height: 630, alt: 'TV Complexo' };
+export const OG_IMAGEM = { url: '/og-tv-complexo-das-favelas.jpg', width: 1200, height: 630, alt: 'TV Complexo das Favelas' };
 
 /** URL absoluta a partir de um caminho ('/videos') ou de uma URL já absoluta. */
 export function urlAbsoluta(caminho = '/'): string {
@@ -43,6 +45,12 @@ export function metadataDaPagina({ titulo, descricao, caminho, imagem, tipo = 'w
             locale: 'pt_BR',
             type: tipo,
             images: [imagem ? { url: urlAbsoluta(imagem) } : { ...OG_IMAGEM, url: urlAbsoluta(OG_IMAGEM.url) }],
+        },
+        twitter: {
+            card: 'summary_large_image',
+            title: titulo,
+            description: descricao,
+            images: [imagem ? urlAbsoluta(imagem) : urlAbsoluta(OG_IMAGEM.url)],
         },
     };
 }

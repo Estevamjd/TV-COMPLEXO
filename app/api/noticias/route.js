@@ -50,7 +50,7 @@ export async function POST(request) {
         await db.query(`
       INSERT INTO noticias (id, titulo, resumo, conteudo, imagem, categoria, autor)
       VALUES ($1, $2, $3, $4, $5, $6, $7)
-    `, [id, titulo, resumo || '', conteudo, imagem || '', categoria || 'geral', autor || 'TV Complexo']);
+    `, [id, titulo, resumo || '', conteudo, imagem || '', categoria || 'geral', autor || 'TV Complexo das Favelas']);
 
         auditLog('create', 'noticia', id, null, { titulo, categoria });
         return NextResponse.json({ id, message: 'Notícia criada com sucesso' }, { status: 201 });

@@ -3,6 +3,11 @@ import { renderToStaticMarkup } from 'react-dom/server';
 
 // Sem banco: a Início não pode consultar nada nem mostrar texto de exemplo.
 delete process.env.DATABASE_URL;
+// Sem chave do YouTube, sem simulação e sem rede: a página /live e o RSS falham = sem live,
+// e o topo cai no vídeo de reserva.
+delete process.env.YOUTUBE_API_KEY;
+delete process.env.LIVE_MOCK_VIDEO_ID;
+vi.stubGlobal('fetch', vi.fn(async () => { throw new TypeError('sem rede no teste'); }));
 vi.mock('next/navigation', () => ({ usePathname: () => '/' }));
 vi.mock('@/lib/db', () => ({ default: { query: vi.fn(() => { throw new Error('não deveria consultar o banco'); }) } }));
 
@@ -11,7 +16,7 @@ const { default: db } = await import('@/lib/db');
 
 let html = '';
 beforeAll(async () => {
-    html = renderToStaticMarkup(await HomePage({ searchParams: Promise.resolve({}) }));
+    html = renderToStaticMarkup(await HomePage());
 });
 
 describe('Início sem dados (sem DATABASE_URL)', () => {
@@ -30,11 +35,12 @@ describe('Início sem dados (sem DATABASE_URL)', () => {
         expect(html).not.toMatch(padrao);
     });
 
-    it('topo usa o vídeo de reserva do canal (pôster no HTML do servidor, iframe só depois da hidratação)', () => {
+    it('sem live e sem banco, o topo usa o vídeo de reserva (pôster no HTML do servidor, iframe só depois da hidratação)', () => {
         const topo = html.slice(html.indexOf('id="topo"'), html.indexOf('</section>', html.indexOf('id="topo"')));
+        expect(topo).toContain('id="topo-titulo"');
         expect(topo).toContain('https://i.ytimg.com/vi/hTBno4SXUgI/hqdefault.jpg');
         expect(topo).not.toContain('<iframe');
-        expect(topo).not.toMatch(/detecção automática/i);
+        expect(html).not.toMatch(/AO VIVO|Assistir no YouTube/);
     });
 
     it('esconde as seções sem conteúdo (vídeos, notícias, grade)', () => {

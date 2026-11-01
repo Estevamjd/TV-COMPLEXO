@@ -5,8 +5,8 @@ import { COLUNAS_NOTICIAS } from '@/lib/colunas-publicas';
 import { metadataDaPagina } from '@/lib/site';
 
 export const metadata = metadataDaPagina({
-    titulo: 'Notícias das comunidades | TV Complexo',
-    descricao: 'Reportagens, relatos e notícias do Complexo do Alemão e de outras favelas do Rio de Janeiro, apurados pela TV Complexo.',
+    titulo: 'Notícias das comunidades | TV Complexo das Favelas',
+    descricao: 'Reportagens, relatos e notícias do Complexo do Alemão e de outras favelas do Rio de Janeiro, apurados pela TV Complexo das Favelas.',
     caminho: '/noticias',
 });
 
@@ -30,7 +30,7 @@ export default async function NoticiasPage() {
                     <div className="empty-state">
                         <h3>Ainda não tem notícia publicada</h3>
                         <p>
-                            Enquanto isso, as reportagens da TV Complexo estão nos vídeos. Tem uma pauta do seu bairro?
+                            Enquanto isso, as reportagens da TV Complexo das Favelas estão nos vídeos. Tem uma pauta do seu bairro?
                             Manda pra gente no WhatsApp.
                         </p>
                         <div className="botoes-vazio">

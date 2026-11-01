@@ -32,7 +32,7 @@ async function initDB() {
         conteudo TEXT NOT NULL,
         imagem TEXT,
         categoria TEXT DEFAULT 'geral',
-        autor TEXT DEFAULT 'TV Complexo',
+        autor TEXT DEFAULT 'TV Complexo das Favelas',
         publicada INTEGER DEFAULT 1,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );

@@ -6,6 +6,7 @@ import sanitizeHtml from 'sanitize-html';
 import CommentSection from './CommentSection';
 import ShareButtons from '@/components/ShareButtons';
 import ScrollReveal from '@/components/ScrollReveal';
+import { SITE_NOME, OG_IMAGEM } from '@/lib/site';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,13 +16,13 @@ export async function generateMetadata({ params }) {
     const noticia = rows[0];
 
     if (!noticia) {
-        return { title: 'Notícia não encontrada | TV Complexo' };
+        return { title: 'Notícia não encontrada | TV Complexo das Favelas' };
     }
 
     const descricao = noticia.resumo || noticia.conteudo.substring(0, 155).replace(/<[^>]*>/g, '');
 
     return {
-        title: `${noticia.titulo} | TV Complexo`,
+        title: `${noticia.titulo} | TV Complexo das Favelas`,
         description: descricao,
         alternates: { canonical: `/noticias/${id}` },
         openGraph: {
@@ -29,7 +30,8 @@ export async function generateMetadata({ params }) {
             title: noticia.titulo,
             description: descricao,
             type: 'article',
-            images: noticia.imagem ? [noticia.imagem] : ['/og-tv-complexo.jpg'],
+            siteName: SITE_NOME,
+            images: noticia.imagem ? [noticia.imagem] : [OG_IMAGEM.url],
         },
     };
 }
@@ -101,7 +103,7 @@ export default async function NoticiaPage({ params }) {
                         paddingBottom: '1.5rem',
                         borderBottom: '1px solid var(--color-dark-gray)',
                     }}>
-                        <span>{noticia.autor || 'TV Complexo'}</span>
+                        <span>{noticia.autor || 'TV Complexo das Favelas'}</span>
                         <span style={{ fontFamily: 'var(--f-mono)', fontWeight: 700 }}>{date}</span>
                     </div>
                 </ScrollReveal>

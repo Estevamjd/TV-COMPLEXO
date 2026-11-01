@@ -10,17 +10,23 @@ import { SITE_URL, SITE_NOME, DESCRICAO_PADRAO, OG_IMAGEM, urlAbsoluta } from '@
 // próprios com metadataDaPagina (lib/site.ts). Sem `url` aqui: og:url é sempre o da página.
 export const metadata = {
   metadataBase: new URL(SITE_URL),
-  title: 'TV Complexo — A Real da Favela',
+  title: 'TV Complexo das Favelas — A Real da Favela',
   description: DESCRICAO_PADRAO,
   openGraph: {
-    title: 'TV Complexo — A Real da Favela',
+    title: 'TV Complexo das Favelas — A Real da Favela',
     description: DESCRICAO_PADRAO,
     siteName: SITE_NOME,
     images: [{ ...OG_IMAGEM, url: urlAbsoluta(OG_IMAGEM.url) }],
     locale: 'pt_BR',
     type: 'website',
   },
-  keywords: 'tv complexo, favela, comunidade, denúncias, complexo do alemão, rio de janeiro, mídia comunitária',
+  twitter: {
+    card: 'summary_large_image',
+    title: 'TV Complexo das Favelas — A Real da Favela',
+    description: DESCRICAO_PADRAO,
+    images: [urlAbsoluta(OG_IMAGEM.url)],
+  },
+  keywords: 'tv complexo das favelas, favela, comunidade, denúncias, complexo do alemão, rio de janeiro, mídia comunitária',
 };
 
 // Fontes do estilo urbano (components/home-urbano/fontes.js) valem para o site todo; só a Anton

@@ -2,8 +2,8 @@ import Link from 'next/link';
 import { metadataDaPagina } from '@/lib/site';
 
 export const metadata = metadataDaPagina({
-    titulo: 'Sobre a TV Complexo | Mídia comunitária do Rio',
-    descricao: 'Conheça a missão, os valores e a história da TV Complexo, plataforma de comunicação comunitária feita por moradores das favelas do Rio.',
+    titulo: 'Sobre a TV Complexo das Favelas | Mídia comunitária do Rio',
+    descricao: 'Conheça a missão, os valores e a história da TV Complexo das Favelas, plataforma de comunicação comunitária feita por moradores das favelas do Rio.',
     caminho: '/sobre',
 });
 
@@ -29,7 +29,7 @@ export default function SobrePage() {
     return (
         <div>
             <div className="page-header">
-                <h1>Sobre a TV Complexo</h1>
+                <h1>Sobre a TV Complexo das Favelas</h1>
                 <p>Conheça a missão, os valores e a história da nossa plataforma comunitária.</p>
             </div>
 
@@ -38,7 +38,7 @@ export default function SobrePage() {
                     <div className="mission-card">
                         <h2 className="section-title">Nossa missão</h2>
                         <p style={{ fontSize: '1.15rem', lineHeight: 1.7, margin: 0 }}>
-                            A TV Complexo é uma plataforma digital comunitária onde moradores podem mostrar
+                            A TV Complexo das Favelas é uma plataforma digital comunitária onde moradores podem mostrar
                             a realidade das favelas, denunciar problemas e compartilhar histórias que raramente
                             aparecem na mídia tradicional. Nosso objetivo é <strong>fortalecer a comunicação
                                 comunitária</strong> e ajudar a pressionar autoridades a resolver problemas locais.

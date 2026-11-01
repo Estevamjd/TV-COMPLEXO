@@ -13,7 +13,7 @@ const { NAV_ITENS } = await import('@/lib/navegacao');
 
 /** Trecho da barra do topo: da placa do logo até o botão "Enviar denúncia". */
 function barra(html) {
-    const ini = html.lastIndexOf('<div', html.indexOf('aria-label="TV Complexo, início"'));
+    const ini = html.lastIndexOf('<div', html.indexOf('aria-label="TV Complexo das Favelas, início"'));
     const fim = html.indexOf('Enviar denúncia</a>', ini) + 'Enviar denúncia</a>'.length;
     expect(ini).toBeGreaterThanOrEqual(0);
     expect(fim).toBeGreaterThan(ini + 'Enviar denúncia</a>'.length);
@@ -31,7 +31,7 @@ function composicao(trecho) {
 }
 
 const esperado = [
-    { href: '/', texto: '' }, // placa do logo
+    { href: '/', texto: 'das Favelas' }, // placa do logo + fita "das Favelas"
     ...NAV_ITENS.filter(i => !i.cta).map(i => ({ href: i.href, texto: i.label })),
     { href: '/denuncias/enviar', texto: 'Enviar denúncia' },
 ];
@@ -61,5 +61,19 @@ describe('barra do topo igual na Início e nas páginas internas', () => {
         expect(atuais(barra(renderToStaticMarkup(await HomePage({ searchParams: Promise.resolve({}) }))))).toEqual(['/']);
         caminho = '/denuncias/enviar';
         expect(atuais(barra(renderToStaticMarkup(createElement(Header))))).toEqual(['/denuncias/enviar']);
+    });
+
+    it('topo opção 2 (Adesivo): logo e "das Favelas" numa peça só, com o nome completo', async () => {
+        caminho = '/';
+        const home = barra(renderToStaticMarkup(await HomePage({ searchParams: Promise.resolve({}) })));
+        caminho = '/videos';
+        const interna = barra(renderToStaticMarkup(createElement(Header)));
+        for (const trecho of [home, interna]) {
+            const marca = trecho.match(/<a[^>]*aria-label="TV Complexo das Favelas, início"[^>]*>([\s\S]*?)<\/a>/);
+            expect(marca[0]).toMatch(/class="[^"]*(^|_)adesivo(_|\s|")/);
+            expect(marca[1]).toContain('src="/_next/image?url=%2Flogo-header-cropped.png'); // logo não muda
+            expect(marca[1]).toContain('alt="TV Complexo das Favelas"');
+            expect(marca[1].replace(/<[^>]+>/g, '')).toBe('das Favelas'); // nunca abreviado
+        }
     });
 });

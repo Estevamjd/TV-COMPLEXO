@@ -1,6 +1,8 @@
 export default function manifest() {
     return {
-        name: 'TV Complexo',
+        name: 'TV Complexo das Favelas',
+        // Rótulo embaixo do ícone na tela inicial: Android e iOS cortam por volta de 12 caracteres,
+        // e o nome completo (23 caracteres) sairia cortado. Única abreviação permitida (docs/pr-notas.md).
         short_name: 'TV Complexo',
         description: 'A Real da Favela — Vídeos, denúncias e notícias das comunidades do Rio de Janeiro',
         start_url: '/',

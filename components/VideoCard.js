@@ -8,7 +8,7 @@ const platformLabels = {
     tiktok: 'TikTok',
     youtube: 'YouTube',
     vimeo: 'Vimeo',
-    manual: 'TV Complexo',
+    manual: 'TV Complexo das Favelas',
 };
 
 const platformIcons = {

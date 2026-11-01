@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns:yt="http://www.youtube.com/xml/schemas/2015" xmlns:media="http://search.yahoo.com/mrss/" xmlns="http://www.w3.org/2005/Atom">
+ <link rel="self" href="http://www.youtube.com/feeds/videos.xml?channel_id=UC63_rDkhmAv1bMm55PsyzOw"/>
+ <yt:channelId>UC63_rDkhmAv1bMm55PsyzOw</yt:channelId>
+ <title>TV Complexo das Favelas</title>
+ <entry>
+  <id>yt:video:rssRecente1</id>
+  <yt:videoId>rssRecente1</yt:videoId>
+  <yt:channelId>UC63_rDkhmAv1bMm55PsyzOw</yt:channelId>
+  <title>Mutirão na Grota &amp; feira de domingo</title>
+  <published>2026-10-31T20:00:00+00:00</published>
+ </entry>
+ <entry>
+  <id>yt:video:rssAntigo01</id>
+  <yt:videoId>rssAntigo01</yt:videoId>
+  <title>Vídeo antigo</title>
+ </entry>
+</feed>

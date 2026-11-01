@@ -64,7 +64,7 @@ export default function VideosPage() {
         <div>
             <div className="page-header">
                 <h1>Vídeos</h1>
-                <p>Assista a todos os vídeos da TV Complexo. Notícias, cultura e a realidade das comunidades.</p>
+                <p>Assista a todos os vídeos da TV Complexo das Favelas. Notícias, cultura e a realidade das comunidades.</p>
             </div>
 
             <div className="container">
