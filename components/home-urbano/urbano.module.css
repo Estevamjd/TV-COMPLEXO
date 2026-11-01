@@ -3,7 +3,7 @@
 .root {
     --paper: #FAF7F0; --ink: #111111; --white: #FFFFFF; --muted: #55524A;
     --yellow: #FFD60A; --pink: #FF3D8B; --pink-ink: #C4106A; --blue: #2B3BFF; --blue-on-ink: #7C87FF;
-    --green: #19C37D; --live: #E3170A;
+    --green: #19C37D; --live: #E3170A; --live-ink: #C8140A;
     --tape-c: rgba(255, 246, 200, .8); --ph-a: #E7E1D3; --ph-b: #DDD6C5;
     --f-display: var(--font-anton), Impact, sans-serif;
     --f-heading: var(--font-archivo-black), 'Arial Black', sans-serif;
@@ -74,13 +74,13 @@
 .btnSom[aria-pressed="true"]:hover { box-shadow: 7px 7px 0 var(--ink); }
 .botoes { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; }
 
-/* ===== Topo (barra; ao vivo quando há live no YouTube) ===== */
+/* ===== Topo (vídeo mais recente; ao vivo quando há live no YouTube) ===== */
 .topo {
     --hero-bg: var(--yellow); --stamp-color: var(--blue);
     background: var(--hero-bg); position: relative; padding-bottom: 30px;
     transition: background-color .4s;
 }
-.topo[data-state="live"] { --hero-bg: var(--pink); --stamp-color: var(--live); }
+.topo[data-state="live"] { --hero-bg: var(--pink); --stamp-color: var(--live-ink); }
 
 .barra { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 0; }
 .logoPlate {
@@ -170,21 +170,47 @@
 .playerMoldura {
     position: relative; transform: rotate(-1.5deg);
     background: var(--ink); padding: 8px; box-shadow: 6px 6px 0 var(--pink);
+    animation: entrar .4s ease-out;
 }
 .topo[data-state="live"] .playerMoldura { box-shadow: 6px 6px 0 var(--ink); }
+@keyframes entrar { from { opacity: 0; } }
 .playerTela { position: relative; aspect-ratio: 16 / 9; background: #222; overflow: hidden; }
 .playerTela iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+/* pôster do vídeo em destaque até a hidratação (o player entra sozinho logo depois) */
+.posterBtn { position: absolute; inset: 0; display: block; background: #222; }
+.posterBtn img { width: 100%; height: 100%; object-fit: cover; }
+.playDiamante {
+    position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+    width: 64px; height: 64px; display: flex; align-items: center; justify-content: center;
+    background: var(--yellow); color: var(--ink); font-size: 24px;
+    clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+}
+/* botão de som só com ícone, no canto de cima à esquerda do vídeo (longe da barra de controles
+   e do botão de tela cheia do YouTube, que ficam embaixo). 44 px de toque; amarelo sobre tinta 13,38:1 */
+.somPlayer {
+    position: absolute; left: 10px; top: 10px; z-index: 1;
+    width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;
+    padding: 0; border: 2px solid var(--yellow); background: var(--ink); color: var(--yellow);
+    font-size: 22px; cursor: pointer; box-shadow: 3px 3px 0 var(--pink); transition: transform .12s, box-shadow .12s;
+}
+.somPlayer:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--pink); }
+.somPlayer[aria-pressed="true"] { background: var(--pink); color: var(--ink); border-color: var(--ink); box-shadow: 3px 3px 0 var(--ink); }
+.somPlayer:focus-visible { outline: 3px solid var(--yellow); outline-offset: 3px; box-shadow: 0 0 0 3px var(--ink); }
 
 .tape {
     position: absolute; width: 86px; height: 26px; background: var(--tape-c);
     box-shadow: 0 1px 2px rgba(0, 0, 0, .15); pointer-events: none;
 }
 
-/* carimbo no canto de cima do player: embaixo dele ficam "Ligar o som" e "Assistir no YouTube" */
+/* carimbo no canto de cima à direita do player (com e sem live): não cobre a barra de controles
+   nem o botão de tela cheia do YouTube, que ficam embaixo */
+/* R15-1: fundo opaco (papel) para o contraste não depender do que fica atrás (rosa ou vídeo).
+   Ao vivo: --live-ink #C8140A sobre #FAF7F0 = 5,51:1 (era #E3170A sobre ~#FAF4EC = 4,37:1).
+   Sem live: azul #2B3BFF sobre #FAF7F0 = 6,19:1. */
 .stamp {
     position: absolute; right: -4px; top: -30px; z-index: 2; pointer-events: none;
     width: 108px; aspect-ratio: 1; border-radius: 50%; border: 4px solid currentColor;
-    color: var(--stamp-color); background: rgba(250, 247, 240, .92);
+    color: var(--stamp-color); background: var(--paper);
     display: flex; align-items: center; justify-content: center; text-align: center;
     font: 22px/1 var(--f-display); text-transform: uppercase; transform: rotate(-12deg);
 }
@@ -202,6 +228,7 @@
     font: 700 16px/1 var(--f-mono); padding: 5px 8px; margin-right: 4px;
 }
 .heroTitulo { font: 26px/1.1 var(--f-heading); margin: 8px 0 0; }
+.heroSub { font-size: 16px; font-weight: 600; margin: 8px 0 0; }
 
 /* faixa inclinada */
 .ticker {
@@ -371,6 +398,10 @@
     .playerMoldura { padding: 10px; box-shadow: 8px 8px 0 var(--pink); }
     .topo[data-state="live"] .playerMoldura { box-shadow: 8px 8px 0 var(--ink); }
     .stamp { width: 150px; right: -26px; top: -4px; font-size: 30px; }
+    .topo[data-state="normal"] .heroGrid { grid-template-areas: "grito player" "info player"; }
+    .playDiamante { width: 88px; height: 88px; font-size: 32px; }
+    .somPlayer { width: 48px; height: 48px; font-size: 24px; left: 14px; top: 14px; }
+    .heroSub { font-size: 18px; }
     .stamp small { font-size: 18px; }
     .heroInfo { padding-top: 20px; }
     .heroTitulo { font-size: 34px; }
@@ -405,5 +436,5 @@
 @media (prefers-reduced-motion: reduce) {
     .tickerControle { display: none; }
     .tickerTrack, .topo[data-state="live"] .stamp, .playerMoldura { animation: none; }
-    .btn, .btnOutline, .poster, .topo, .progresso, .playDiamante, .adesivo { transition: none; }
+    .btn, .btnOutline, .poster, .topo, .playDiamante, .adesivo, .somPlayer { transition: none; }
 }

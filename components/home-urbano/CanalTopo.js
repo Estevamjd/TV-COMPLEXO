@@ -1,31 +1,65 @@
 'use client';
-import { useRef, useState } from 'react';
+import { useRef, useState, useSyncExternalStore } from 'react';
+import Link from 'next/link';
 import BarraNavegacao from '@/components/BarraNavegacao';
+import { VIDEO_RESERVA } from '@/lib/video-reserva';
 import s from './urbano.module.css';
 
 const ORIGEM_PLAYER = 'https://www.youtube-nocookie.com';
+const ORIGEM_YOUTUBE = 'https://www.youtube.com';
 // o player só aceita comandos depois de pronto: reenvia algumas vezes após o load do iframe
 const REENVIO_COMANDO_MS = [0, 600, 1500, 3000];
 
+function parametrosEmbed() {
+    return new URLSearchParams({ autoplay: '1', mute: '1', playsinline: '1', rel: '0', enablejsapi: '1', fs: '1' });
+}
+
 /**
- * URL do embed da live. Começa sozinho e sem som (autoplay=1&mute=1: único jeito que os
- * navegadores deixam tocar sem clique) e com enablejsapi=1 para o botão de som mandar
- * mute/unMute por postMessage sem recarregar. Sem origin: a URL é a mesma no servidor e
- * no navegador, então o iframe já vem no HTML e começa a tocar antes da hidratação.
+ * URL do embed. Começa sozinho e sem som (autoplay=1&mute=1: único jeito que os
+ * navegadores deixam tocar sem clique), com enablejsapi=1 para o botão de som mandar
+ * mute/unMute por postMessage sem recarregar e fs=1 para o botão de tela cheia do player.
+ * Sem origin: a URL é a mesma no servidor e no navegador. Vídeo fora da live repete em
+ * loop (loop=1 exige playlist=<mesmo id>); a live não usa loop.
  */
-export function urlEmbed(id) {
-    const q = new URLSearchParams({ autoplay: '1', mute: '1', playsinline: '1', rel: '0', enablejsapi: '1' });
+export function urlEmbed(id, { loop = false } = {}) {
+    const q = parametrosEmbed();
+    if (loop) {
+        q.set('loop', '1');
+        q.set('playlist', id);
+    }
     return `${ORIGEM_PLAYER}/embed/${id}?${q}`;
 }
 
-/** Link da live no YouTube (o vídeo exato que está tocando aqui). */
+/**
+ * Live detectada sem chave (página /live): o player é o embed oficial da transmissão do canal,
+ * embed/live_stream?channel=<UC…>, com os mesmos parâmetros (autoplay mudo, fs=1, jsapi).
+ */
+export function urlEmbedLiveDoCanal(canal) {
+    const q = parametrosEmbed();
+    q.set('channel', canal);
+    return `${ORIGEM_YOUTUBE}/embed/live_stream?${q}`;
+}
+
+/** Embed da live: por canal quando veio da página /live; pelo vídeo quando veio da API ou da simulação. */
+export function urlEmbedDaLive(live) {
+    return live.fonte === 'pagina' && live.canal ? urlEmbedLiveDoCanal(live.canal) : urlEmbed(live.videoId);
+}
+
+/** Link no YouTube do vídeo exato que está tocando aqui (live ou vídeo em destaque). */
 export function urlYoutube(id) {
     return `https://www.youtube.com/watch?v=${id}`;
 }
 
-/** Comando da IFrame API do YouTube por postMessage (mesmo formato que a API usa). */
+/** Comando da IFrame API do YouTube por postMessage (mesmo formato que a API usa), na origem do iframe. */
 function comandoPlayer(iframe, func) {
-    iframe?.contentWindow?.postMessage(JSON.stringify({ event: 'command', func, args: [] }), ORIGEM_PLAYER);
+    if (!iframe?.src) return;
+    iframe.contentWindow?.postMessage(JSON.stringify({ event: 'command', func, args: [] }), new URL(iframe.src).origin);
+}
+
+// false no HTML do servidor, true depois da hidratação (sem setState em efeito)
+const semInscricao = () => () => {};
+function useHidratado() {
+    return useSyncExternalStore(semInscricao, () => true, () => false);
 }
 
 /** "18:40" no horário de Brasília. */
@@ -49,19 +83,29 @@ function IconeSom({ ligado }) {
 
 /**
  * Topo da home. A live vem pronta do servidor (lib/live.ts, cache de 60 s):
- * - sem live (live = null): só a barra de navegação e a faixa. Nenhum player, nenhum
- *   pedido extra no navegador.
- * - com live: player no ar em autoplay mudo, selo AO VIVO, botão grande "Ligar o som"
- *   e "Assistir no YouTube" logo abaixo do player.
+ * - sem live (live = null, inclusive sem chave ou com falha da API): "Liga a TV!" com o
+ *   vídeo mais recente do canal (destaque) ou, sem ele, o vídeo de reserva. O HTML do
+ *   servidor traz o pôster; depois da hidratação o player toca sozinho, mudo e em loop.
+ * - com live: "Tá no ar!", player da live já no HTML do servidor em autoplay mudo e selo AO VIVO.
+ *   Live detectada sem chave (página /live): embed/live_stream do canal; com chave: embed do vídeo.
+ * Nos dois: botão de som (só ícone) sobre o vídeo, "Assistir agora" abre o vídeo exato no
+ * YouTube em nova aba, e o player tem tela cheia.
  */
-export default function CanalTopo({ live = null }) {
+export default function CanalTopo({ live = null, destaque = null }) {
     const [aviso, setAviso] = useState('');
     const [copiado, setCopiado] = useState(false);
     const [faixaParada, setFaixaParada] = useState(false);
     const [som, setSom] = useState(false); // começa sempre mudo (exigência de autoplay dos navegadores)
     const somRef = useRef(false);
     const iframeRef = useRef(null);
+    const hidratado = useHidratado();
     const estado = live ? 'live' : 'normal';
+
+    const avulso = live ? null : destaque ?? VIDEO_RESERVA;
+    const videoId = live ? live.videoId : avulso.youtubeId;
+    const titulo = live ? live.titulo : avulso.titulo;
+    // live: iframe já no HTML do servidor; vídeo avulso: pôster no servidor, iframe depois da hidratação
+    const iframeSrc = live ? urlEmbedDaLive(live) : hidratado ? urlEmbed(videoId, { loop: true }) : null;
 
     function alternarSom() {
         const ligar = !som;
@@ -78,7 +122,7 @@ export default function CanalTopo({ live = null }) {
         for (const ms of REENVIO_COMANDO_MS) {
             setTimeout(() => {
                 if (iframeRef.current !== iframe) return;
-                iframe.contentWindow?.postMessage(JSON.stringify({ event: 'listening' }), ORIGEM_PLAYER);
+                iframe.contentWindow?.postMessage(JSON.stringify({ event: 'listening' }), new URL(iframe.src).origin);
                 if (somRef.current) comandoPlayer(iframe, 'unMute');
             }, ms);
         }
@@ -97,6 +141,12 @@ export default function CanalTopo({ live = null }) {
         }
     }
 
+    const assistirAgora = (
+        <a className={`${s.btn}${live ? ` ${s.btnGrande}` : ''}`} href={urlYoutube(videoId)} target="_blank" rel="noopener noreferrer">
+            <IconePlay /> Assistir agora<span className={s.srOnly}> (abre o YouTube em nova aba)</span>
+        </a>
+    );
+
     return (
         <>
             <section id="topo" className={s.topo} data-state={estado} aria-labelledby="topo-titulo">
@@ -105,56 +155,77 @@ export default function CanalTopo({ live = null }) {
                         <BarraNavegacao />
                     </header>
 
-                    {live ? (
-                        <div className={s.heroGrid}>
-                            <h1 id="topo-titulo" className={s.grito}>Tá<br />no ar!</h1>
+                    <div className={s.heroGrid}>
+                        <h1 id="topo-titulo" className={s.grito}>
+                            {live ? <>Tá<br />no ar!</> : <>Liga<br />a TV!</>}
+                        </h1>
 
-                            <div className={s.playerArea}>
-                                <div className={s.playerMoldura}>
-                                    <div className={s.playerTela}>
-                                        <iframe
-                                            ref={iframeRef}
-                                            src={urlEmbed(live.videoId)}
-                                            title={`Player do YouTube, ao vivo: ${live.titulo}`}
-                                            allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
-                                            allowFullScreen
-                                            onLoad={aoCarregarPlayer}
-                                        />
-                                    </div>
-                                    <span className={s.tape} style={{ left: -14, top: -8, transform: 'rotate(-28deg)' }} aria-hidden="true" />
-                                    <span className={s.tape} style={{ right: -14, top: -8, transform: 'rotate(24deg)' }} aria-hidden="true" />
+                        <div className={s.playerArea}>
+                            <div className={s.playerMoldura} key={estado}>
+                                <div className={s.playerTela}>
+                                    {iframeSrc ? (
+                                        <>
+                                            <iframe
+                                                key={iframeSrc}
+                                                ref={iframeRef}
+                                                src={iframeSrc}
+                                                title={`Player do YouTube${live ? ', ao vivo' : ''}: ${titulo}`}
+                                                allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+                                                allowFullScreen
+                                                onLoad={aoCarregarPlayer}
+                                            />
+                                            <button type="button" className={s.somPlayer} onClick={alternarSom}
+                                                aria-pressed={som} aria-label={som ? 'Desligar o som' : 'Ligar o som'}>
+                                                <IconeSom ligado={som} />
+                                            </button>
+                                        </>
+                                    ) : (
+                                        // pôster até a hidratação (o player entra sozinho logo depois)
+                                        <span className={s.posterBtn} aria-hidden="true">
+                                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                                            <img src={`https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`} alt="" />
+                                            <span className={s.playDiamante}><IconePlay /></span>
+                                        </span>
+                                    )}
                                 </div>
-                                <div className={s.stamp} aria-hidden="true"><span>No ar<br /><small>ao vivo</small></span></div>
                             </div>
-
-                            <div className={`${s.botoes} ${s.acoesLive}`}>
-                                <button type="button" className={`${s.btn} ${s.btnSom} ${s.btnGrande}`} onClick={alternarSom} aria-pressed={som}>
-                                    <IconeSom ligado={som} /> {som ? 'Desligar o som' : 'Ligar o som'}
-                                </button>
-                                <a className={s.btnOutline} href={urlYoutube(live.videoId)} target="_blank" rel="noopener noreferrer">
-                                    <IconePlay /> Assistir no YouTube<span className={s.srOnly}> (abre em nova aba)</span>
-                                </a>
-                            </div>
-
-                            <div className={s.heroInfo}>
-                                <p className={s.kicker}>
-                                    <span className={s.badgeLive}>AO VIVO</span>{live.inicio ? ` desde ${horaBrasilia(live.inicio)}` : ' agora'}
-                                </p>
-                                <h2 className={s.heroTitulo}>{live.titulo}</h2>
-                                <div className={s.botoes}>
-                                    <button type="button" className={s.btnOutline} onClick={compartilhar}>
-                                        {copiado ? 'Link copiado' : 'Compartilhar'}
-                                    </button>
-                                </div>
+                            <div className={s.stamp} aria-hidden="true">
+                                {live
+                                    ? <span>No ar<br /><small>ao vivo</small></span>
+                                    : <span>Na<br />tela<br /><small>da favela</small></span>}
                             </div>
                         </div>
-                    ) : (
-                        <h1 id="topo-titulo" className={s.srOnly}>TV Complexo das Favelas: a real da favela</h1>
-                    )}
+
+                        {live ? (
+                            <>
+                                <div className={`${s.botoes} ${s.acoesLive}`}>{assistirAgora}</div>
+                                <div className={s.heroInfo}>
+                                    <p className={s.kicker}>
+                                        <span className={s.badgeLive}>AO VIVO</span>{live.inicio ? ` desde ${horaBrasilia(live.inicio)}` : ' agora'}
+                                    </p>
+                                    <h2 className={s.heroTitulo}>{live.titulo}</h2>
+                                    <div className={s.botoes}>
+                                        <button type="button" className={s.btnOutline} onClick={compartilhar}>
+                                            {copiado ? 'Link copiado' : 'Compartilhar'}
+                                        </button>
+                                    </div>
+                                </div>
+                            </>
+                        ) : (
+                            <div className={s.heroInfo}>
+                                <p className={s.kicker}>{avulso.reserva ? 'Vídeo em destaque' : 'Vídeo mais recente'}</p>
+                                <h2 className={s.heroTitulo}>{avulso.titulo}</h2>
+                                <p className={s.heroSub}>Do canal @tvcomplexofc no YouTube.</p>
+                                <div className={s.botoes}>
+                                    {assistirAgora}
+                                    <Link className={s.btnOutline} href="/videos">Todos os vídeos</Link>
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 </div>
                 <p className={s.srOnly} aria-live="polite">{aviso}</p>
             </section>
-
             <div className={s.ticker} data-state={estado} data-parada={faixaParada || undefined} aria-hidden="true">
                 <div className={s.tickerTrack}>
                     {[0, 1].map(i => (

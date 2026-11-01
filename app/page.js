@@ -3,6 +3,8 @@ import db from '@/lib/db';
 import { COLUNAS_NOTICIAS, COLUNAS_VIDEOS } from '@/lib/colunas-publicas';
 import { DIAS, programasDoDia } from '@/lib/grade';
 import { statusDaLive } from '@/lib/live';
+import { videoMaisRecenteDoCanal } from '@/lib/rss-canal';
+import { destaqueDoTopo } from '@/lib/video-reserva';
 import CanalTopo from '@/components/home-urbano/CanalTopo';
 import Fileira from '@/components/home-urbano/Fileira';
 import GradeSemana from '@/components/home-urbano/GradeSemana';
@@ -49,16 +51,21 @@ function thumbDoVideo(v) {
 export default async function HomePage() {
     const agora = relogio();
 
-    // Live do YouTube (só servidor, cache de 60 s, nunca lança erro): sem live, o topo fica sem player.
-    const [videosDb, noticias, live] = await Promise.all([
+    // Live do YouTube (só servidor, cache de 60 s compartilhado com /api/live, nunca lança erro).
+    // Sem live (inclusive sem chave, falha ou dúvida), o topo toca o vídeo mais recente do canal (RSS).
+    const [videosDb, noticias, live, rss] = await Promise.all([
         lerDoBanco(`SELECT ${COLUNAS_VIDEOS} FROM videos ORDER BY created_at DESC LIMIT 8`),
         lerDoBanco(`SELECT ${COLUNAS_NOTICIAS} FROM noticias WHERE publicada = 1 ORDER BY created_at DESC LIMIT 3`),
         statusDaLive(),
+        videoMaisRecenteDoCanal(),
     ]);
 
     // Mesma fonte de /videos (tabela videos). Sem vídeo (ou sem banco), a seção some:
     // nada de vídeo de exemplo na Início.
     const videos = videosDb.map(v => ({ chave: v.id, titulo: v.titulo, href: `/videos/${v.id}`, thumb: thumbDoVideo(v) }));
+    // Topo sem live: o vídeo mais recente do canal pelo RSS. Se o RSS falhar, o comportamento
+    // anterior: o mais recente do banco (só se for do YouTube) ou, sem ele, o vídeo de reserva.
+    const destaque = rss ?? destaqueDoTopo(videosDb);
     // Grade sem nenhum programa cadastrado: a seção some (nada de "em breve" em todos os dias).
     const temGrade = DIAS.some(d => programasDoDia(d.chave).length > 0);
 
@@ -67,7 +74,7 @@ export default async function HomePage() {
             <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializarJsonLd(jsonLdOrganizacao()) }} />
             <a href="#conteudo" className={s.pular}>Pular para o conteúdo</a>
 
-            <CanalTopo live={live.live ? live : null} />
+            <CanalTopo live={live.live ? live : null} destaque={destaque} />
 
             <div id="conteudo">
                 {/* REELS DO INSTAGRAM (lista fixa em lib/instagramReels.js; não depende do banco) */}

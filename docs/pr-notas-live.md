@@ -1,12 +1,12 @@
 # PR (rascunho): tira o Canal 24h, põe a live automática na Início e troca o topo (Adesivo)
 
-Branch `feat/live-e-topo`, criada a partir de `feat/nome-complexo-das-favelas` (`461fb49`, PR #14). Missão `tv-complexo-live-e-topo`, **itens 1, 2 e 3** do `01-frontend-claudecode.md`.
+Branch `feat/live-e-topo`, criada a partir de `feat/nome-complexo-das-favelas` (`461fb49`, PR #14). Missão `tv-complexo-live-e-topo`, **itens 1, 2 e 3** do `01-frontend-claudecode.md`, mais a **rodada pós-QA (A a J)**, que ainda não foi commitada (ver a seção no fim).
 Ainda **não houve** commit, push, deploy nem merge. O banco (item 4b) não foi mexido. Skill usada: UI UX Pro Max.
 
 ## Item 1: Canal 24h removido
 
-- **Saíram:** `lib/canal24h.ts`, `lib/canal24h.json`, `lib/video-reserva.ts` (vídeo de reserva do topo, que só existia para o canal), a rota `app/api/hora` (relógio do canal) e os testes ligados a eles (`canal24h`, `video-reserva`, `canal-topo-autoplay` e `canal-topo-live`).
-- **Topo (`CanalTopo.js`):** acabaram o relógio, a sincronização com a IFrame API, o vídeo mais recente/reserva tocando em loop, o "Liga a TV!", o carimbo "Canal 24h sem parar", os textos "Canal 24h · agora…" e "A seguir…" e o botão "Ver a grade".
+- **Saíram:** `lib/canal24h.ts`, `lib/canal24h.json`, a rota `app/api/hora` (relógio do canal) e os testes ligados a eles (`canal24h`, `canal-topo-autoplay` e `canal-topo-live`). `lib/video-reserva.ts` também saiu no commit `5673642`, mas **voltou na rodada A–J** (é o último recurso do topo sem live).
+- **Topo (`CanalTopo.js`):** acabaram o relógio, a sincronização com a IFrame API, o carimbo "Canal 24h sem parar", os textos "Canal 24h · agora…" e "A seguir…" e o botão "Ver a grade". (O vídeo mais recente em loop e o "Liga a TV!" também tinham saído, e **voltaram na rodada A–J**.)
 - **Faixa animada:** antes dizia "CANAL 24H ● O FATO, VISTO DE PERTO"; agora diz "O FATO, VISTO DE PERTO ● A REAL DA FAVELA". O botão de pausar a faixa continua.
 - **Grade (`GradeSemana.js`):** "Agora: canal 24h" no dia de hoje virou "Em breve" (igual aos outros dias). "Agora" só aparece quando tem programa no ar.
 - **SEO da Início:** o título e a descrição não falam mais em "Canal 24h". Título: "TV Complexo das Favelas — A Real da Favela | TV comunitária do Complexo do Alemão".
@@ -19,6 +19,8 @@ Ainda **não houve** commit, push, deploy nem merge. O banco (item 4b) não foi 
 - `docs/qa-evidencias` e `docs/pr-notas.md` continuam citando o canal porque são histórico e não foram alterados.
 
 ## Item 2: live automática na Início
+
+> Esta seção descreve o commit `5673642` (só o caminho com chave). A rodada A–J, no fim, acrescentou a detecção **sem chave**, o RSS, o cache único e mudou o topo sem live. Onde as duas divergem, vale a rodada A–J.
 
 Segui o `stack-decision.md` da missão:
 
@@ -47,7 +49,7 @@ Segui o `stack-decision.md` da missão:
 
 1. **`LIVE_YOUTUBE_AUTO` mudou de sentido.** Antes era opt-in (`'1'` ligava) porque o `search.list` gastava muita cota. Com as chamadas de 1 unidade, a detecção **liga sozinha quando existe `YOUTUBE_API_KEY`**, e `LIVE_YOUTUBE_AUTO=0` vira o interruptor de emergência. Isso atende ao "detecção automática, sem mexer em código". **Antes do deploy, confira na Vercel** se `YOUTUBE_API_KEY` está configurada em Production/Preview. Sem ela, a Início nunca mostra live.
 2. **`?demo=live` saiu.** Era um modo visual aberto a qualquer visitante. No lugar entrou `LIVE_MOCK_VIDEO_ID`, que é uma variável de servidor.
-3. **Sem live, o topo não tem mais player.** Até o PR #14, o topo tocava o vídeo mais recente (ou a reserva) em loop, que era o "canal sem parar" visto na prática. Li "sem live = home igual à de hoje, sem bloco vazio, sem peso no carregamento" como a Início **sem o canal 24h**: barra, faixa e depois as seções de sempre (Reels, vídeos, notícias, grade, chamadas). O `h1` continua lá para leitor de tela ("TV Complexo das Favelas: a real da favela").
+3. ~~**Sem live, o topo não tem mais player.**~~ **Revertido na rodada A–J (item A):** sem live, o topo volta a tocar o vídeo mais recente. Até o PR #14, o topo tocava o vídeo mais recente (ou a reserva) em loop, que era o "canal sem parar" visto na prática. Li "sem live = home igual à de hoje, sem bloco vazio, sem peso no carregamento" como a Início **sem o canal 24h**: barra, faixa e depois as seções de sempre (Reels, vídeos, notícias, grade, chamadas). O `h1` continua lá para leitor de tela ("TV Complexo das Favelas: a real da favela").
 
 ## Item 3: topo novo, opção 2 "Adesivo" (escolha do Estevam)
 
@@ -97,10 +99,11 @@ LIVE_MOCK_VIDEO_ID=<id de 11 caracteres de um vídeo que esteja AO VIVO agora> n
 - Simula a live sem chamar a API. O título fica "Live de teste (simulação)" e `/api/live` responde `no-store`.
 - **Fica desligada** sem a variável, com um ID inválido e sempre que `VERCEL_ENV=production`. Não configure essa variável na Vercel.
 - Se o ID não for de uma live no ar, o player do YouTube mostra "Vídeo indisponível". Isso aconteceu nos meus prints de conferência, porque usei um ID antigo.
-- Para testar a detecção **de verdade** num canal de teste ao vivo: `YOUTUBE_API_KEY=… YOUTUBE_CHANNEL_ID=UC…(canal ao vivo) npm run dev`. Canal real fora do ar = Início sem player.
+- Para testar a detecção **de verdade** num canal de teste ao vivo, sem chave: `YOUTUBE_CHANNEL_ID=UC…(canal ao vivo) npm run dev`. Pela API (opcional): acrescente `YOUTUBE_API_KEY=…`. Canal real fora do ar = Início com o vídeo mais recente.
 
 ## Verificação
 
+- *(Números do commit `5673642`; os da rodada A–J estão no fim.)*
 - `npm test`: **16 arquivos, 803 testes passando** (802 dos itens 1 e 2 + 1 do item 3).
   - `__tests__/live.test.ts`, reescrito. **Com live:** acha a live e usa só `playlistItems` + `videos`. **Sem live:** uploads sem transmissão no ar dão `{live:false}`. Também cobre: nunca usa `search`; ignora live encerrada ou de outro canal; falhas 403, rede e resposta inválida viram sem live; funciona sem chave e com `AUTO=0`; usa o canal padrão; cache de 60 s com deduplicação; a simulação liga e é bloqueada em produção; ID de simulação inválido é ignorado; e os casos de `/api/live`.
   - `__tests__/home-live.test.js`, novo. Com live: o iframe vem com autoplay mudo e há AO VIVO, "Ligar o som" e "Assistir no YouTube" (com o link certo), nessa ordem, depois do player. Sem live: nada de player, selo ou bloco do herói, e o resto da Início igual. Também garante que nenhum texto do Canal 24h aparece na Início.
@@ -118,10 +121,88 @@ LIVE_MOCK_VIDEO_ID=<id de 11 caracteres de um vídeo que esteja AO VIVO agora> n
 - Só olho os 10 uploads mais recentes. Uma live agendada há muito tempo, com mais de 10 vídeos publicados depois dela, não seria vista. É raro, e dá para subir para 50 sem custo de cota.
 - Quem já está com a Início aberta não vê a live que começar depois (precisa recarregar). E quando a live acaba, o player mostra a tela de fim do próprio YouTube. Escolhi assim para não pesar quando não há live (ver a proposta 6).
 
+## Rodada pós-QA, itens A a J (NÃO commitada)
+
+Base: o `stack-decision.md` revisado (sem chave por enquanto; detecção pela página `/live`, decisão do Chief de 01/11 16:23) e os achados R15-1 e R15-2 do `QA.md`. Skill usada: UI UX Pro Max. Nada instalado. Sem commit, push, deploy ou merge.
+
+### A) Sem live, o topo volta a ser o da base `461fb49`
+- Sem live (inclusive sem chave, falha, timeout ou dúvida): "Liga a TV!", o vídeo mais recente tocando sozinho, mudo e em loop, com "Vídeo mais recente", o título e "Do canal @tvcomplexofc no YouTube.". Sem nenhum texto de 24h/sem parar/Canal 24h.
+- **De onde vem o vídeo:** do RSS público do canal (`https://www.youtube.com/feeds/videos.xml?channel_id=UC63_rDkhmAv1bMm55PsyzOw`), no servidor, em `lib/rss-canal.ts`. Primeira `<entry>` do feed, timeout de 2,5 s, cache de 10 min (falha fica só 1 min), consultas simultâneas deduplicadas.
+- **Se o RSS falhar:** o comportamento anterior, em `lib/video-reserva.ts` (restaurado): o mais recente do banco, se for do YouTube; senão, o vídeo de reserva (`hTBno4SXUgI`, "Vídeo em destaque").
+- O HTML do servidor traz o pôster; o iframe entra depois da hidratação (como na base). A live continua com o iframe já no HTML do servidor.
+
+### B) `?demo=live` continua removido; `LIVE_MOCK_VIDEO_ID` só para prévia/teste
+- Não há leitura de `searchParams` na Início. Teste: `/?demo=live` renderiza igual ao normal e não tem "demo" no HTML.
+- `LIVE_MOCK_VIDEO_ID` é **ignorada quando `VERCEL_ENV=production`**, com ou sem chave (testado nos dois caminhos). Com `VERCEL_ENV` vazio (local), `preview` ou `development`, simula a live. Documentado no README, no `.env.example` e no topo de `lib/live.ts`. **Não configure essa variável na Vercel.**
+
+### C) Som: botão pequeno, só ícone, dentro do player
+- `.somPlayer`: 44×44 px (48 no computador), canto de cima à esquerda do vídeo, longe da barra de controles e do botão de tela cheia do YouTube, que ficam embaixo.
+- `aria-label` "Ligar o som" / "Desligar o som" e `aria-pressed`; o SVG é `aria-hidden`. Aviso para leitor de tela ("Som ligado."), unMute/mute por postMessage sem recarregar o iframe, na origem do próprio iframe (nocookie ou youtube.com).
+- Cores: amarelo sobre tinta (13,38:1); ligado, tinta sobre rosa (5,66:1). Foco visível (contorno amarelo com anel de tinta).
+
+### D) "Assistir agora" é o botão principal
+- Abre o vídeo exato no YouTube (`watch?v=<id>`, da live ou do vídeo mais recente), `target="_blank"`, `rel="noopener noreferrer"` e texto para leitor de tela "(abre o YouTube em nova aba)". Na live é o botão grande (56 px). "Assistir no YouTube" e o "Ligar o som" com texto saíram.
+
+### E) Fitas decorativas do player removidas
+- Os dois `.tape` dos cantos do player saíram do JSX. A classe `.tape` continua no CSS porque é usada nos pôsteres da fileira de vídeos (`app/page.js`). O adesivo do topo continua.
+
+### F) Tela cheia
+- `allowFullScreen` e `allow="…; fullscreen"` no iframe, e `fs=1` em todos os embeds (vídeo, live da API e `live_stream`).
+
+### G) Live sem chave: `embed/live_stream`
+- Quando a live vem da página `/live`, o player é `https://www.youtube.com/embed/live_stream?channel=UC63_rDkhmAv1bMm55PsyzOw` com `autoplay=1&mute=1&playsinline=1&rel=0&enablejsapi=1&fs=1`. "Assistir agora" aponta para o `watch?v=` detectado.
+- Com chave (API) ou simulação, o player continua sendo `youtube-nocookie.com/embed/<id>`.
+- O status da live ganhou `fonte` (`api`, `pagina` ou `simulada`) e `canal`, também em `/api/live`.
+
+### H) Detecção sem chave pela página `/live`
+- `GET https://www.youtube.com/channel/<canal>/live` no servidor, User-Agent de Chrome estável no Windows, `Accept-Language: pt-BR`, `redirect: 'manual'`, timeout de 2,5 s, cache de 60 s.
+- **Live somente** com `<link rel="canonical" href="https://www.youtube.com/watch?v=ID">` **e** `"isLive":true`. Acrescentei uma terceira trava, mais restritiva: a página precisa citar `"channelId":"<o próprio canal>"`. Só pode tirar live, nunca criar.
+- **Sem live** se houver `"isUpcoming":true`, `upcomingEventData`, `LIVE_STREAM_OFFLINE`, `consent.youtube.com`/`consent.google.`, `/sorry/`, "unusual traffic"/"tráfego incomum", `id="captcha-form"` ou `class="g-recaptcha"` (formulário de desafio); se a resposta não for 200 (redirect, 429, 500…); se tiver sido redirecionada para fora de `www.youtube.com`; ou se faltar qualquer sinal. Nada tenta contornar consentimento ou bot.
+- **`isUpcoming`:** rejeito `"isUpcoming":true`, e não a simples presença da palavra, porque uma página de live pode trazer `"isUpcoming":false`. `upcomingEventData` e `LIVE_STREAM_OFFLINE` rejeitam por presença, como pedido.
+- Título vem de `<meta name="title">` e o horário de início de `"startTimestamp"` (se existir).
+- **Com `YOUTUBE_API_KEY`, a API tem precedência** e a página nunca é lida, nem quando a API falha (falha = sem live). `LIVE_YOUTUBE_AUTO=0` desliga os dois caminhos.
+- **Conferência no YouTube real** (01/11, canal fora do ar): `/live` respondeu 200 com canonical do canal (sem `watch?v=`) e sem `"isLive":true`, e `statusDaLive()` deu `{ live: false }`. O RSS respondeu com o vídeo mais recente. **Live real não foi testada** (o canal não estava ao vivo); as fixtures de live, agendada e consentimento são **sintéticas**, montadas no formato da página (`__tests__/fixtures/`).
+- **Achado com página real (01/11): a regra `/captcha/i` derrubava toda live.** A página `/live` normal do YouTube sempre traz `"RECAPTCHA_V3_SITEKEY"` e `.grecaptcha-badge` (reCAPTCHA invisível), então a live no ar do Lofi Girl (`UCSJ4gkVC6NrvII8umztf0Ow`) dava `{live:false}`. Corrigido: bloqueio só por sinal específico de desafio (lista acima), dúvida continua = sem live. Regressão com reduções fiéis das páginas reais em `__tests__/fixtures/youtube-real-live-lofigirl.html` (live, `0sfDth4lMLc`) e `youtube-real-offline-tvcomplexo.html` (sem live); conferido também nas páginas completas. O teste de regressão falha se `/captcha/i` voltar.
+
+### I) R15-1: contraste do carimbo "No ar / ao vivo"
+- Antes: `#E3170A` sobre o fundo semitransparente do carimbo, que no rosa vira ~`#FAF4EC`: **4,37:1** (22 px normal, mínimo 4,5). Sobre o vídeo escuro, o fundo .92 podia cair para ~`#E6E3DD` (3,73:1).
+- Agora: fundo do carimbo **opaco** (`--paper` `#FAF7F0`) e cor nova só para o carimbo ao vivo, `--live-ink: #C8140A`. **Razão: 5,51:1** (WCAG 2.x, luminância relativa: L(#C8140A) = 0,1356, L(#FAF7F0) = 0,9302, (0,9302+0,05)/(0,1356+0,05) = 5,51). Vale em qualquer largura, inclusive 390 px, porque o fundo não depende mais do que fica atrás.
+- Sem live, o carimbo azul `#2B3BFF` sobre `#FAF7F0` fica em 6,19:1. O vermelho `--live` da faixa e do selo AO VIVO (branco sobre `#E3170A`) não mudou.
+
+### J) R15-2: um cache só para a Início e `/api/live`
+- Causa: no Next, a Início e `/api/live` são bundles diferentes, e cada um tinha a sua cópia do cache em memória de `lib/live.ts`.
+- Correção: o cache (e a promessa pendente) agora fica em `globalThis[Symbol.for('tv-complexo.live')]`, compartilhado por todas as cópias do módulo no mesmo processo. O RSS usa o mesmo esquema.
+- Os `fetch` da API, da página e do RSS agora são `cache: 'no-store'`: o cache é só o nosso. A página `/live` tem ~1 MB e não caberia bem no data cache do Next. Isso também evita o problema do QA de uma resposta ruim ficar presa no data cache.
+- **Teste que prova:** `__tests__/live.test.ts`, "R15-2". Recarrega o módulo com `vi.resetModules()` (simula o segundo bundle) e chama a Início e o `GET` de `/api/live`. Resultado: **1** fetch da página sem chave e **2** com chave (playlistItems + videos), não o dobro. Conferi que o teste **falha** se o cache voltar a ser por módulo.
+- Teto: por instância, uma leitura da página `/live` por minuto (sem chave) ou 2 unidades/min (com chave). Várias instâncias serverless continuam somando, cada uma com o seu cache.
+
+### Arquivos desta rodada
+- `lib/live.ts`: caminho sem chave (página `/live`), `fonte`/`canal` no status, cache em `globalThis`, `no-store`.
+- `lib/rss-canal.ts` (novo): vídeo mais recente pelo RSS.
+- `lib/video-reserva.ts` (restaurado): mais recente do banco + reserva, quando o RSS falha.
+- `app/page.js`: busca o RSS junto com a live e o banco; `destaque = RSS ?? banco ?? reserva`.
+- `app/api/live/route.ts`: `no-store` só para a simulada (agora por `fonte`).
+- `components/home-urbano/CanalTopo.js`: topo sem live da base, som só ícone dentro do player, "Assistir agora", sem fitas, tela cheia, `embed/live_stream` para live sem chave.
+- `components/home-urbano/urbano.module.css`: `.somPlayer`, pôster, `--live-ink`, fundo opaco do carimbo.
+- `README.md`, `.env.example`: variáveis e o caminho sem chave.
+- Testes: `live.test.ts` (reescrito em parte: página `/live`, precedência da API, mock em produção, R15-2), `rss-canal.test.ts`, `home-sem-live.test.js`, `canal-topo-player.test.js`, `video-reserva.test.js` (novos), `home-live.test.js` e `home-sem-dados.test.js` (atualizados). Fixtures sintéticas em `__tests__/fixtures/`.
+
+### Verificação da rodada
+- `npm test`: **20 arquivos, 898 testes passando.** Cobre: sem live, sem chave, falha da API e falha/timeout/redirect da página = vídeo mais recente; página ao vivo (fixture) = live com `live_stream`; agendada, offline e consentimento = sem live; os dois sinais precisam concordar; precedência da API com chave; mock ignorado em produção; `?demo=live` sem efeito; C a F; cache único (R15-2); RSS e cair no banco/reserva.
+- `npm run build` (com `env -i`): passa. `tsc --noEmit`: passa.
+- `npm run lint`: **5 erros e 8 avisos, os mesmos da base**, nenhum nos arquivos desta rodada.
+- **Não rodei:** prints, axe e Lighthouse desta rodada (ficam para o QA, inclusive conferir o R15-1 no navegador em 390 px); live real; chave real.
+
+### Riscos novos
+- **A página `/live` não é oficial.** Se o YouTube mudar o HTML, o efeito é a Início deixar de mostrar a live (falha segura), nunca mostrar live falsa. O YouTube também pode passar a responder com consentimento ou bloqueio para IPs da Vercel; nesse caso, idem.
+- **Falso negativo possível:** se a página de uma live no ar trouxer `upcomingEventData` de outro vídeo (ex.: lista lateral), a live não é detectada. Foi aceito pela regra "qualquer dúvida = sem live".
+- **RSS:** uma live agendada ou um Short podem ser a primeira entrada do feed, e aí o topo sem live mostra esse item. Uma live agendada no player aparece como "aguardando". O RSS não diz o tipo do vídeo; se incomodar, dá para pular entradas com o mesmo ID de uma live agendada.
+- **`live_stream` × vídeo detectado:** o player toca a transmissão atual do canal e o "Assistir agora" aponta para o `watch?v=` lido na página. Se o canal trocar de transmissão dentro da janela de 60 s, os dois podem divergir por até um minuto.
+
 ## Cortes sugeridos (NÃO aplicados; dependem do OK do Estevam via Chief/Partner)
 
 1. **Tirar `/api/live`.** A Início consulta `lib/live.ts` direto no servidor, então a rota só serve para QA/curl. Tirar diminui a superfície pública.
-2. **Tirar `LIVE_YOUTUBE_AUTO`.** Ter ou não ter `YOUTUBE_API_KEY` já liga e desliga. Fica uma variável a menos para configurar errado.
+2. ~~**Tirar `LIVE_YOUTUBE_AUTO`.**~~ Não vale mais: sem chave a detecção pela página `/live` liga sozinha, e `LIVE_YOUTUBE_AUTO=0` é o único jeito de desligá-la sem deploy.
 3. **Tirar o botão "Compartilhar" da live.** Não está no BRIEF. Ficou porque já existia no estado ao vivo.
 4. **Tirar o carimbo "No ar ao vivo".** O selo AO VIVO já cumpre o critério, e no celular o carimbo cobre o canto do player.
 5. **Tirar a faixa animada e o botão "Pausar a faixa" quando não há live.** O topo fica mais limpo. Combina com a decisão do item 3 (topo novo).

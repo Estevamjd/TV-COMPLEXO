@@ -78,26 +78,30 @@ O site estará disponível em `http://localhost:3000`.
 | `ADMIN_PASSWORD` | Senha do administrador |
 | `ADMIN_EMAIL` | Email do administrador |
 | `YOUTUBE_CHANNEL_ID` | ID do canal do YouTube (importação automática e live). Sem ele, a live usa `UC63_rDkhmAv1bMm55PsyzOw` (@tvcomplexofc) |
-| `YOUTUBE_API_KEY` | Chave da YouTube Data API, **só servidor**, para detectar a live (opcional; sem ela a home nunca mostra live) |
-| `LIVE_YOUTUBE_AUTO` | `0` desliga a detecção da live (interruptor de emergência). Vazio = ligada quando há `YOUTUBE_API_KEY` |
-| `LIVE_MOCK_VIDEO_ID` | **Só teste local/prévia.** ID (11 caracteres) de um vídeo ao vivo para simular a live sem API. Ignorada com `VERCEL_ENV=production`. Nunca configurar em produção |
+| `YOUTUBE_API_KEY` | Chave da YouTube Data API, **só servidor** (opcional). Com ela, a detecção da live usa a API (tem precedência); sem ela, usa a página `/live` do canal |
+| `LIVE_YOUTUBE_AUTO` | `0` desliga a detecção da live (interruptor de emergência), com ou sem chave. Vazio = ligada |
+| `LIVE_MOCK_VIDEO_ID` | **Só prévia/teste.** ID (11 caracteres) de um vídeo ao vivo para simular a live sem chamar o YouTube. **Ignorada quando `VERCEL_ENV=production`.** Nunca configurar em produção |
 | `CRON_SECRET` | Secret para proteger o endpoint do cron |
 | `WEBHOOK_SECRET` | Secret para webhooks de redes sociais (opcional) |
 
 ## Live automática na Início
 
-Quando o canal está ao vivo no YouTube, a Início mostra a live no topo: começa sozinha e sem som, com o selo **AO VIVO**, o botão **Ligar o som** e o link **Assistir no YouTube** embaixo do player. Sem live, o topo fica só com a barra de navegação (sem player e sem nenhum pedido extra no navegador).
+Quando o canal está ao vivo no YouTube, a Início mostra a live no topo ("Tá no ar!"): começa sozinha e sem som, com o selo **AO VIVO**, um botão pequeno de som (só ícone) sobre o vídeo e o botão **Assistir agora** (abre a live no YouTube em nova aba). Sem live (inclusive sem chave, com falha ou na dúvida), o topo toca o **vídeo mais recente do canal**, como antes: vem do RSS público do canal (cache de 10 min); se o RSS falhar, o mais recente do banco ou o vídeo de reserva.
 
-- A checagem roda **só no servidor** (`lib/live.ts`), com duas chamadas de 1 unidade de cota cada: `playlistItems.list` (uploads do canal) e `videos.list` (`liveBroadcastContent`). Nunca usa `search.list`. O resultado fica em cache por 60 s. A chave nunca vai para o navegador.
-- Se a API falhar, demorar mais de 2,5 s ou a cota acabar, a Início aparece normal, sem live e sem erro.
-- `GET /api/live` devolve o mesmo status em JSON (`{ "live": false }` ou `{ "live": true, "videoId", "titulo", "inicio" }`).
+- A checagem roda **só no servidor** (`lib/live.ts`). O resultado fica em **um cache de 60 s compartilhado** entre a Início e `/api/live` (uma leitura por janela, não uma por rota). A chave nunca vai para o navegador.
+- **Sem `YOUTUBE_API_KEY`:** lê `https://www.youtube.com/channel/<canal>/live` com User-Agent de navegador comum, sem seguir redirect, timeout de 2,5 s. Só é live se o `<link rel="canonical">` aponta para `watch?v=<id>` **e** a página traz `"isLive":true`. Live agendada (`"isUpcoming":true`, `upcomingEventData`), `LIVE_STREAM_OFFLINE`, consentimento/bloqueio (redirect, `consent.youtube.com`, captcha, "unusual traffic") = sem live. O player usa `embed/live_stream?channel=<canal>`. A página não é oficial: se o YouTube mudar, a Início só deixa de mostrar a live.
+- **Com `YOUTUBE_API_KEY` (precedência):** duas chamadas de 1 unidade de cota cada, `playlistItems.list` (uploads) e `videos.list` (`liveBroadcastContent`). Nunca usa `search.list`.
+- Qualquer falha (cota, rede, demora, resposta estranha) = Início sem live, sem erro.
+- `GET /api/live` devolve o mesmo status em JSON (`{ "live": false }` ou `{ "live": true, "videoId", "titulo", "inicio", "fonte", "canal" }`).
 
 **Testar o estado "ao vivo" localmente (prints):**
 
 ```bash
-# simulação, sem API: use o ID de um vídeo que esteja AO VIVO agora (senão o player mostra "Vídeo indisponível")
+# simulação (só prévia/teste; ignorada com VERCEL_ENV=production): use o ID de um vídeo AO VIVO agora
 LIVE_MOCK_VIDEO_ID=<id_de_11_caracteres> npm run dev
-# detecção real contra um canal de teste que esteja ao vivo
+# detecção real, sem chave, contra um canal de teste que esteja ao vivo
+YOUTUBE_CHANNEL_ID=<UC...do_canal_de_teste> npm run dev
+# detecção real pela API (opcional)
 YOUTUBE_API_KEY=<sua_chave> YOUTUBE_CHANNEL_ID=<UC...do_canal_de_teste> npm run dev
 ```
 
