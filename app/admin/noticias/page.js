@@ -10,7 +10,7 @@ export default function AdminNoticiasPage() {
     const [showForm, setShowForm] = useState(false);
     const [editNoticia, setEditNoticia] = useState(null);
     const [form, setForm] = useState({
-        titulo: '', resumo: '', conteudo: '', categoria: 'geral', autor: 'TV Complexo'
+        titulo: '', resumo: '', conteudo: '', categoria: 'geral', autor: 'TV Complexo das Favelas'
     });
 
     const fetchNoticias = async () => {
@@ -46,7 +46,7 @@ export default function AdminNoticiasPage() {
         }
         setShowForm(false);
         setEditNoticia(null);
-        setForm({ titulo: '', resumo: '', conteudo: '', categoria: 'geral', autor: 'TV Complexo' });
+        setForm({ titulo: '', resumo: '', conteudo: '', categoria: 'geral', autor: 'TV Complexo das Favelas' });
         fetchNoticias();
     };
 
@@ -79,7 +79,7 @@ export default function AdminNoticiasPage() {
                         </h1>
                     </div>
                     <div style={{ display: 'flex', gap: '0.75rem' }}>
-                        <button className="btn btn-primary btn-sm" onClick={() => { setShowForm(!showForm); setEditNoticia(null); setForm({ titulo: '', resumo: '', conteudo: '', categoria: 'geral', autor: 'TV Complexo' }); }}>
+                        <button className="btn btn-primary btn-sm" onClick={() => { setShowForm(!showForm); setEditNoticia(null); setForm({ titulo: '', resumo: '', conteudo: '', categoria: 'geral', autor: 'TV Complexo das Favelas' }); }}>
                             {showForm ? '✕ Fechar' : '+ Nova Notícia'}
                         </button>
                         <Link href="/admin" className="btn btn-secondary btn-sm">← Voltar</Link>

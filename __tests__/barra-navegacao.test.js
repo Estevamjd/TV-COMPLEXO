@@ -13,7 +13,7 @@ const { NAV_ITENS } = await import('@/lib/navegacao');
 
 /** Trecho da barra do topo: da placa do logo até o botão "Enviar denúncia". */
 function barra(html) {
-    const ini = html.lastIndexOf('<div', html.indexOf('aria-label="TV Complexo, início"'));
+    const ini = html.lastIndexOf('<div', html.indexOf('aria-label="TV Complexo das Favelas, início"'));
     const fim = html.indexOf('Enviar denúncia</a>', ini) + 'Enviar denúncia</a>'.length;
     expect(ini).toBeGreaterThanOrEqual(0);
     expect(fim).toBeGreaterThan(ini + 'Enviar denúncia</a>'.length);
@@ -31,7 +31,7 @@ function composicao(trecho) {
 }
 
 const esperado = [
-    { href: '/', texto: '' }, // placa do logo
+    { href: '/', texto: 'das Favelas' }, // placa do logo + fita "das Favelas"
     ...NAV_ITENS.filter(i => !i.cta).map(i => ({ href: i.href, texto: i.label })),
     { href: '/denuncias/enviar', texto: 'Enviar denúncia' },
 ];

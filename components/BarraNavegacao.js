@@ -7,15 +7,19 @@ import s from '@/components/home-urbano/urbano.module.css';
 
 /**
  * Barra de navegação do topo, a mesma na Início (CanalTopo) e nas páginas internas (Header):
- * placa do logo, links e o botão destacado "Enviar denúncia" (só no computador;
+ * placa do logo com a fita "das Favelas", links e o botão destacado "Enviar denúncia" (só no computador;
  * no celular ele está na barra de baixo).
  */
 export default function BarraNavegacao() {
     const pathname = usePathname() ?? '';
     return (
         <div className={s.barra}>
-            <Link href="/" className={s.logoPlate} aria-label="TV Complexo, início">
-                <Image src="/logo-header-cropped.png" alt="TV Complexo" width={292} height={59} priority />
+            {/* direção A (empilhado): o logo não muda; "das Favelas" entra como fita embaixo dele */}
+            <Link href="/" className={s.marca} aria-label="TV Complexo das Favelas, início">
+                <span className={s.logoPlate}>
+                    <Image src="/logo-header-cropped.png" alt="TV Complexo das Favelas" width={292} height={59} priority />
+                </span>
+                <span className={s.marcaFaixa} aria-hidden="true" data-nome>das Favelas</span>
             </Link>
             <NavPrincipal className={s.nav} />
             <Link href="/denuncias/enviar" className={`${s.btn} site-header-cta`}

@@ -315,7 +315,7 @@ export default function CanalTopo({ agoraInicial, demoLive = false, destaque = n
 
     async function compartilhar() {
         const url = window.location.origin + '/';
-        const dados = { title: 'TV Complexo ao vivo', text: live?.titulo ?? 'TV Complexo', url };
+        const dados = { title: 'TV Complexo das Favelas ao vivo', text: live?.titulo ?? 'TV Complexo das Favelas', url };
         try {
             if (navigator.share) { await navigator.share(dados); return; }
             await navigator.clipboard.writeText(url);
@@ -330,8 +330,8 @@ export default function CanalTopo({ agoraInicial, demoLive = false, destaque = n
     const linkExterno = live ? `${CANAL_URL}/live` : CANAL_URL;
     const tituloAtual = live ? live.titulo
         : avulso ? avulso.titulo
-        : semCanal ? 'Canal da TV Complexo'
-        : atual?.titulo ?? 'Canal 24h da TV Complexo';
+        : semCanal ? 'Canal da TV Complexo das Favelas'
+        : atual?.titulo ?? 'Canal 24h da TV Complexo das Favelas';
     const rotuloPlay = live ? 'Assistir ao vivo' : avulso || !semCanal ? 'Assistir agora' : 'Assistir no YouTube';
     const posterId = live ? live.videoId : avulso ? avulso.youtubeId : atual?.youtubeId;
 
@@ -394,6 +394,7 @@ export default function CanalTopo({ agoraInicial, demoLive = false, destaque = n
                                         <a href={linkExterno} target="_blank" rel="noopener noreferrer" className={`${s.posterBtn} ${s.posterLogo}`}
                                             aria-label={`${live ? 'Assistir ao vivo' : 'Assistir'} no YouTube do @tvcomplexofc (abre em nova aba)`}>
                                             <Image src="/logo-header-cropped.png" alt="" width={292} height={59} />
+                                            <span className={s.posterFaixa} aria-hidden="true">das Favelas</span>
                                             <span className={s.playDiamante} aria-hidden="true"><IconePlay /></span>
                                         </a>
                                     )}

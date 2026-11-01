@@ -16,7 +16,7 @@ import { jsonLdOrganizacao, serializarJsonLd } from '@/lib/json-ld';
 export const dynamic = 'force-dynamic';
 
 export const metadata = metadataDaPagina({
-    titulo: 'TV Complexo — A Real da Favela | Canal 24h do Complexo do Alemão',
+    titulo: 'TV Complexo das Favelas — A Real da Favela | Canal 24h do Complexo do Alemão',
     descricao: 'TV comunitária do Complexo do Alemão (RJ): canal 24h, vídeos, notícias e denúncias feitas por quem vive nas favelas do Rio de Janeiro.',
     caminho: '/',
 });

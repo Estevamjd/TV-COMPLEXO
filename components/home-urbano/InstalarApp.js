@@ -1,10 +1,12 @@
 'use client';
 import { useEffect, useState } from 'react';
 import s from './urbano.module.css';
+import { SITE_NOME_LINHAS } from '@/lib/site';
 
 /**
  * "Instalar app": no Android/Chrome usa o aviso nativo (beforeinstallprompt);
  * onde ele não existe (iPhone, Firefox) abre o passo a passo.
+ * Antes do botão, o nome do app como fica instalado, empilhado (direção A).
  */
 export default function InstalarApp() {
     const [aviso, setAviso] = useState(null);
@@ -31,6 +33,10 @@ export default function InstalarApp() {
 
     return (
         <>
+            <p className={s.appNome} data-nome>
+                <span className={s.appNomeLinha}>{SITE_NOME_LINHAS[0]}</span>{' '}
+                <span className={s.appNomeFaixa}>{SITE_NOME_LINHAS[1]}</span>
+            </p>
             <button type="button" className={s.btn} onClick={instalar}
                 aria-expanded={aviso ? undefined : aberto} aria-controls={aviso ? undefined : 'instalar-passos'}>
                 <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true"><path d="M12 3v12m-5-5l5 5 5-5M5 21h14" /></svg>

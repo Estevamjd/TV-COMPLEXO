@@ -7,6 +7,8 @@ import { SITE_URL, urlAbsoluta, metadataDaPagina, resumir } from '@/lib/site';
 import { serializarJsonLd, jsonLdOrganizacao, jsonLdVideo } from '@/lib/json-ld';
 import robots from '@/app/robots';
 import sitemap, * as sitemapModulo from '@/app/sitemap';
+import manifest from '@/app/manifest';
+import { SITE_NOME, SITE_NOME_LINHAS } from '@/lib/site';
 
 describe('SITE_URL', () => {
     it('é o domínio público fixo, https e sem barra final', () => {
@@ -33,12 +35,16 @@ describe('SITE_URL', () => {
 
 describe('metadataDaPagina', () => {
     it('canonical, og:url e og:image apontam para SITE_URL', () => {
-        const m = metadataDaPagina({ titulo: 'Vídeos | TV Complexo', descricao: 'd', caminho: '/videos' });
-        expect(m.title).toBe('Vídeos | TV Complexo');
+        const m = metadataDaPagina({ titulo: 'Vídeos | TV Complexo das Favelas', descricao: 'd', caminho: '/videos' });
+        expect(m.title).toBe('Vídeos | TV Complexo das Favelas');
         expect(m.alternates.canonical).toBe(`${SITE_URL}/videos`);
         expect(m.openGraph.url).toBe(`${SITE_URL}/videos`);
-        expect(m.openGraph.images[0].url).toBe(`${SITE_URL}/og-tv-complexo.jpg`);
-        expect(m.openGraph.siteName).toBe('TV Complexo');
+        expect(m.openGraph.images[0].url).toBe(`${SITE_URL}/og-tv-complexo-das-favelas.jpg`);
+        expect(m.openGraph.siteName).toBe('TV Complexo das Favelas');
+        expect(m.twitter).toEqual({
+            card: 'summary_large_image', title: 'Vídeos | TV Complexo das Favelas', description: 'd',
+            images: [`${SITE_URL}/og-tv-complexo-das-favelas.jpg`],
+        });
         expect(m.openGraph.locale).toBe('pt_BR');
     });
 
@@ -160,5 +166,22 @@ describe('JSON-LD', () => {
         expect(v).not.toHaveProperty('thumbnailUrl');
         expect(v).not.toHaveProperty('embedUrl');
         expect(v.uploadDate).toBe('2026-10-21T12:00:00.000Z');
+    });
+});
+
+describe('nome "TV Complexo das Favelas"', () => {
+    it('é o nome do site, do schema.org e do manifest (short_name curto só para o ícone)', () => {
+        expect(SITE_NOME).toBe('TV Complexo das Favelas');
+        expect(jsonLdOrganizacao().name).toBe('TV Complexo das Favelas');
+        const m = manifest();
+        expect(m.name).toBe('TV Complexo das Favelas');
+        expect(m.short_name.length).toBeLessThanOrEqual(12);
+        expect(SITE_NOME.startsWith(m.short_name)).toBe(true);
+    });
+
+    it('o nome empilhado (direção A) quebra antes de "das Favelas" e não perde palavra', () => {
+        expect(SITE_NOME_LINHAS).toHaveLength(2);
+        expect(SITE_NOME_LINHAS[1]).toBe('das Favelas');
+        expect(SITE_NOME_LINHAS.join(' ')).toBe(SITE_NOME);
     });
 });

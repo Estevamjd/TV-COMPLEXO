@@ -125,7 +125,7 @@ export default function SocialFeed() {
                                         fontSize: '0.85rem',
                                         margin: 0,
                                     }}>
-                                        TV Complexo
+                                        TV Complexo das Favelas
                                     </p>
                                 </div>
                                 <p style={{

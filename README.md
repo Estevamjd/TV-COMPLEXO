@@ -1,4 +1,4 @@
-# TV Complexo
+# TV Complexo das Favelas
 
 **A Real da Favela — Plataforma de Mídia Comunitária**
 
@@ -10,11 +10,11 @@ A voz que ecoa da favela. Vídeos, denúncias e notícias direto das comunidades
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon-blue?logo=postgresql)](https://neon.tech)
 
-![Home do TV Complexo](docs/screenshots/home.png)
+![Home do TV Complexo das Favelas](docs/screenshots/home.png)
 
 ## O problema
 
-Moradores das comunidades têm pouco espaço para mostrar o que acontece no território e cobrar soluções para problemas do dia a dia (falta de luz, lixo, saneamento, risco de deslizamento). O TV Complexo junta, num só lugar, os vídeos do canal, notícias locais e um mapa de denúncias geolocalizadas, com um painel para a equipe moderar o conteúdo.
+Moradores das comunidades têm pouco espaço para mostrar o que acontece no território e cobrar soluções para problemas do dia a dia (falta de luz, lixo, saneamento, risco de deslizamento). O TV Complexo das Favelas junta, num só lugar, os vídeos do canal, notícias locais e um mapa de denúncias geolocalizadas, com um painel para a equipe moderar o conteúdo.
 
 ## Telas
 

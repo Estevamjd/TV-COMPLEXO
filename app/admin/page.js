@@ -33,7 +33,7 @@ export default async function AdminDashboard() {
                         }}>
                             Painel <span className="text-red">Admin</span>
                         </h1>
-                        <p style={{ color: 'var(--color-gray-light)' }}>Gerencie todo o conteúdo da TV Complexo</p>
+                        <p style={{ color: 'var(--color-gray-light)' }}>Gerencie todo o conteúdo da TV Complexo das Favelas</p>
                     </div>
                     <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
                         <Link href="/" className="btn btn-secondary btn-sm">Ver Site</Link>

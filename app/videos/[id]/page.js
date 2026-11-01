@@ -12,10 +12,10 @@ export async function generateMetadata({ params }) {
     const { id } = await params;
     const { rows } = await db.query(`SELECT ${COLUNAS_VIDEOS} FROM videos WHERE id = $1`, [id]);
     const video = rows[0];
-    if (!video) return { title: 'Vídeo não encontrado | TV Complexo' };
+    if (!video) return { title: 'Vídeo não encontrado | TV Complexo das Favelas' };
     return metadataDaPagina({
-        titulo: `${video.titulo} | TV Complexo`,
-        descricao: resumir(video.descricao) || `Assista "${video.titulo}" na TV Complexo, a TV comunitária das favelas do Rio de Janeiro.`,
+        titulo: `${video.titulo} | TV Complexo das Favelas`,
+        descricao: resumir(video.descricao) || `Assista "${video.titulo}" na TV Complexo das Favelas, a TV comunitária das favelas do Rio de Janeiro.`,
         caminho: `/videos/${video.id}`,
         imagem: video.thumbnail && /^https:\/\//.test(video.thumbnail) ? video.thumbnail : undefined,
         tipo: 'video.other',

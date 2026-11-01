@@ -10,8 +10,12 @@ export default function Footer() {
     return (
         <footer id="rodape" className={s.rodape}>
             <div className={`${s.wrap} ${s.rodapeInner}`}>
-                <Link href="/" className={s.logoPlate} aria-label="TV Complexo, início">
-                    <Image src="/logo-header-cropped.png" alt="TV Complexo" width={292} height={59} />
+                {/* direção A, versão escura: logo e, embaixo, "das Favelas" em amarelo */}
+                <Link href="/" className={`${s.marca} ${s.marcaEscura}`} aria-label="TV Complexo das Favelas, início">
+                    <span className={s.logoPlate}>
+                        <Image src="/logo-header-cropped.png" alt="TV Complexo das Favelas" width={292} height={59} />
+                    </span>
+                    <span className={s.marcaFaixa} aria-hidden="true" data-nome>das Favelas</span>
                 </Link>
                 <nav aria-label="Rodapé">
                     <ul className={s.rodapeLinks}>

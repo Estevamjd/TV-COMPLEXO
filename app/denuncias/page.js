@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { metadataDaPagina } from '@/lib/site';
 
 export const metadata = metadataDaPagina({
-    titulo: 'Denúncias da comunidade e mapa de problemas | TV Complexo',
+    titulo: 'Denúncias da comunidade e mapa de problemas | TV Complexo das Favelas',
     descricao: 'Mapa e lista de problemas denunciados por moradores das favelas do Rio: falta de luz, lixo, saneamento, risco de deslizamento e mais.',
     caminho: '/denuncias',
 });

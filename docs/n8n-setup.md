@@ -1,8 +1,8 @@
-# Configuração do n8n para TV Complexo
+# Configuração do n8n para TV Complexo das Favelas
 
 ## Visão Geral
 
-A TV Complexo utiliza o n8n como plataforma de automação para:
+A TV Complexo das Favelas utiliza o n8n como plataforma de automação para:
 
 1. **Importação automática de vídeos** do Instagram e Facebook
 2. **Notificações de denúncias** via email e Telegram
@@ -21,7 +21,7 @@ A TV Complexo utiliza o n8n como plataforma de automação para:
 ## Fluxo 1 — Importação Automática de Vídeos
 
 ### Objetivo
-Quando um novo vídeo for publicado no Instagram ou Facebook da TV Complexo, o n8n detecta e envia automaticamente para o site.
+Quando um novo vídeo for publicado no Instagram ou Facebook da TV Complexo das Favelas, o n8n detecta e envia automaticamente para o site.
 
 ### Configuração
 
@@ -36,7 +36,7 @@ Quando um novo vídeo for publicado no Instagram ou Facebook da TV Complexo, o n
 
 ```json
 {
-  "titulo": "{{ $json.caption || 'Novo vídeo da TV Complexo' }}",
+  "titulo": "{{ $json.caption || 'Novo vídeo da TV Complexo das Favelas' }}",
   "descricao": "{{ $json.caption }}",
   "url_video": "{{ $json.permalink || $json.media_url }}",
   "thumbnail": "{{ $json.thumbnail_url || '' }}",
@@ -114,7 +114,7 @@ try {
 - Corpo:
 
 ```
-Nova denúncia recebida na TV Complexo!
+Nova denúncia recebida na TV Complexo das Favelas!
 
 Tipo: {{ $json.tipo }}
 Comunidade: {{ $json.comunidade }}

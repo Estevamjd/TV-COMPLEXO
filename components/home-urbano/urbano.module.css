@@ -1,4 +1,4 @@
-/* TV Complexo · Home · direção Urbano claro (tokens de .mission/design/tokens.css) */
+/* TV Complexo das Favelas · Home · direção Urbano claro (tokens de .mission/design/tokens.css) */
 
 .root {
     --paper: #FAF7F0; --ink: #111111; --white: #FFFFFF; --muted: #55524A;
@@ -88,7 +88,36 @@
 }
 .logoPlate img { height: 20px; width: auto; }
 /* placa preta no topo: anel de tinta com faixa amarela entre ele e a placa (>= 13:1 dos dois lados) */
-.topo .logoPlate:focus-visible { box-shadow: 0 0 0 4px var(--yellow); }
+.topo .marca:focus-visible { box-shadow: 0 0 0 4px var(--yellow); }
+
+/* ===== Marca "TV Complexo das Favelas" (direção A, empilhado) =====
+   O logo PNG (que já traz a primeira linha do nome) não muda: "das Favelas" entra como fita embaixo dele,
+   recuada até o "TV" (recuo = respiro da placa + altura do logo, que é o tamanho do ícone).
+   Clara (topo/cabeçalho amarelos): fita rosa, tinta sobre #FF3D8B = 5,66:1; no ao vivo o topo
+   fica rosa e a fita vira amarela (13,38:1). Escura (rodapé): texto amarelo sobre tinta, 13,38:1. */
+.marca {
+    --faixa-bg: var(--pink); --faixa-fg: var(--ink); --marca-recuo: 29px;
+    display: inline-flex; flex-direction: column; align-items: flex-start; flex: none;
+    text-decoration: none; line-height: 1;
+}
+.marca .logoPlate { position: relative; z-index: 1; }
+.marcaFaixa {
+    display: inline-block; margin: -3px 0 0 var(--marca-recuo); padding: 3px 8px 2px;
+    background: var(--faixa-bg); color: var(--faixa-fg);
+    font-family: var(--font-anton), Impact, sans-serif; font-weight: 400; text-transform: uppercase;
+    font-size: clamp(17px, calc(13px + .9vw), 22px); line-height: 1.05; letter-spacing: 1px;
+    white-space: nowrap; transform: rotate(-2deg);
+}
+.topo[data-state="live"] .marca { --faixa-bg: var(--yellow); }
+.marcaEscura {
+    --faixa-bg: transparent; --faixa-fg: var(--yellow);
+    --marca-logo: clamp(30px, calc(22px + 1.1vw), 38px); --marca-recuo: calc(var(--marca-logo) + 9px);
+}
+.marcaEscura .logoPlate img { height: var(--marca-logo); }
+.marcaEscura .marcaFaixa {
+    margin-top: 2px; padding: 0; transform: none; letter-spacing: .5px;
+    font-size: clamp(30px, calc(23px + 1vw), 40px);
+}
 .nav { display: none; }
 .nav ul { display: flex; gap: 28px; }
 .nav a {
@@ -135,6 +164,14 @@
 /* sem vídeo para tocar aqui: placa preta com o logo, abre o YouTube */
 .posterLogo { background: var(--ink); }
 .posterBtn.posterLogo img { position: absolute; left: 16px; top: 16px; width: 38%; height: auto; object-fit: contain; }
+/* "das Favelas" embaixo do logo, na proporção da tela (cqi = 1% da largura do player) */
+.playerTela { container-type: inline-size; }
+.posterFaixa {
+    position: absolute; left: calc(16px + 7.6cqi); top: calc(14px + 7.7cqi);
+    padding: .08em .3em .04em; background: var(--pink); color: var(--ink);
+    font-family: var(--font-anton), Impact, sans-serif; text-transform: uppercase;
+    font-size: 5.6cqi; line-height: 1.05; letter-spacing: .04em; white-space: nowrap; transform: rotate(-2deg);
+}
 .progresso { position: absolute; left: 0; bottom: 0; height: 6px; background: var(--yellow); transition: width 1s linear; }
 
 .tape {
@@ -293,12 +330,23 @@
 .app { background: var(--paper); border: var(--border); transform: rotate(.6deg); }
 .passos { flex-basis: 100%; margin-top: 8px !important; padding-left: 0; display: grid; gap: 8px; }
 .passos[hidden] { display: none; }
+/* nome do app instalado, empilhado como no topo da direção A ("das Favelas" no bloco rosa) */
+.appNome {
+    flex-basis: 100%; margin: 0 0 6px; font-family: var(--font-anton), Impact, sans-serif;
+    font-weight: 400; text-transform: uppercase; line-height: .95; letter-spacing: .3px;
+}
+.appNomeLinha { display: block; font-size: clamp(26px, calc(18px + 1.8vw), 44px); }
+.appNomeFaixa {
+    display: inline-block; max-width: 100%; margin: 6px 0 0 -4px; padding: 2px 10px 4px;
+    background: var(--pink); color: var(--ink); transform: rotate(-1.5deg);
+    font-size: clamp(44px, calc(28px + 3.6vw), 80px);
+}
 .passos li { border-left: 4px solid var(--pink); padding-left: 10px; }
 
 /* rodapé */
 .rodape { background: var(--ink); color: #E8E3D6; padding: 28px 0 32px; }
 .rodapeInner { display: grid; gap: 20px; }
-.rodape .logoPlate { justify-self: start; outline-offset: 3px; }
+.rodape .marca { justify-self: start; outline-offset: 3px; }
 .rodape :focus-visible { outline-color: var(--yellow); }
 .rodapeLinks { display: flex; flex-wrap: wrap; gap: 4px 20px; }
 .rodapeLinks a, .rodapeLinha a { display: inline-flex; align-items: center; min-height: 44px; padding: 10px 0; }
@@ -317,6 +365,8 @@
 @media (min-width: 1024px) {
     .logoPlate { padding: 9px 13px; }
     .logoPlate img { height: 28px; }
+    .marca { --marca-recuo: 41px; }
+    .marcaEscura { --marca-recuo: calc(var(--marca-logo) + 13px); }
     .barra { padding: 22px 0; }
     .nav { display: block; }
     .soCel { display: none; }
