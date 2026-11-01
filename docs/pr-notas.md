@@ -12,7 +12,7 @@ Skill usada: UI UX Pro Max. A direção de design é a **A (Empilhado)**, nas ve
 - `lib/mascara.js`: a exceção de nome próprio passou a ser "TV Complexo das Favelas", para o nome do canal não ser mascarado como se fosse nome de pessoa nas denúncias.
 
 ### Open Graph / Twitter
-- Nova imagem `public/og-tv-complexo-das-favelas.jpg`, em **1200×630 de verdade**. A antiga tinha 640×640, mas a meta tag declarava 1200×630, e ela só mostrava "TV COMPLEXO". A nova segue a direção A clara: logo na placa, "TV COMPLEXO" em Anton e "DAS FAVELAS" no bloco rosa, com a foto `bg-favela.png` (vista noturna, sem nenhuma pessoa identificável). O arquivo antigo continua em `public/` para não quebrar prévias que já estão em cache.
+- Nova imagem `public/og-tv-complexo-das-favelas.jpg`, em **1200×630 de verdade**. A antiga tinha 640×640, mas a meta tag declarava 1200×630, e ela só mostrava "TV COMPLEXO". A nova segue a direção A clara: logo na placa, "TV COMPLEXO" em Anton e "DAS FAVELAS" no bloco rosa, com a foto `bg-favela.png` (vista noturna, sem nenhuma pessoa identificável). O arquivo antigo (`public/og-tv-complexo.jpg`) foi removido no commit 080b9d5, porque não era referenciado em lugar nenhum.
 - Card do Twitter/X (`summary_large_image`) adicionado no layout e em `metadataDaPagina`, espelhando o OG.
 - `/noticias/[id]` passou a usar a imagem OG padrão e o `siteName`.
 
