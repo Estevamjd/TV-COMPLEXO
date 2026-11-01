@@ -127,16 +127,23 @@ describe('detecção da live COM YOUTUBE_API_KEY (API tem precedência)', () => 
         expect(await statusDaLive()).toMatchObject({ live: true, videoId: ID_LIVE });
     });
 
-    it('LIVE_MOCK_VIDEO_ID simula live sem chamar o YouTube (prévia/teste), mas é ignorada com VERCEL_ENV=production', async () => {
+    it('LIVE_MOCK_VIDEO_ID com VERCEL_ENV=preview: simula live sem chamar o YouTube', async () => {
         vi.stubEnv('LIVE_MOCK_VIDEO_ID', 'jfKfPfyJRdk');
-        for (const ambiente of ['', 'preview', 'development']) {
-            vi.stubEnv('VERCEL_ENV', ambiente);
-            expect(await statusDaLive()).toEqual({
-                live: true, videoId: 'jfKfPfyJRdk', titulo: 'Live de teste (simulação)', inicio: null, fonte: 'simulada', canal: CANAL,
-            });
-        }
+        vi.stubEnv('VERCEL_ENV', 'preview');
+        expect(await statusDaLive()).toEqual({
+            live: true, videoId: 'jfKfPfyJRdk', titulo: 'Live de teste (simulação)', inicio: null, fonte: 'simulada', canal: CANAL,
+        });
         expect(fetchMock).not.toHaveBeenCalled();
-        vi.stubEnv('VERCEL_ENV', 'production');
+    });
+
+    it.each([
+        ['production', 'production'],
+        ['development', 'development'],
+        ['VERCEL_ENV não definido', undefined],
+    ])('LIVE_MOCK_VIDEO_ID ignorada com %s: vale a detecção de verdade', async (_nome, ambiente) => {
+        vi.stubEnv('LIVE_MOCK_VIDEO_ID', 'jfKfPfyJRdk');
+        vi.stubEnv('VERCEL_ENV', ambiente);
+        if (ambiente === undefined) expect(process.env.VERCEL_ENV).toBeUndefined();
         respostas({ items: [] });
         expect(await statusDaLive()).toEqual({ live: false });
         expect(fetchMock).toHaveBeenCalledTimes(1); // detecção de verdade, não a simulação
@@ -327,6 +334,7 @@ describe('GET /api/live', () => {
 
     it('live simulada não é cacheada', async () => {
         vi.stubEnv('LIVE_MOCK_VIDEO_ID', 'jfKfPfyJRdk');
+        vi.stubEnv('VERCEL_ENV', 'preview');
         const r = await GET();
         expect(r.headers.get('Cache-Control')).toBe('no-store');
     });

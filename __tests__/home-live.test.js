@@ -27,7 +27,7 @@ describe('Início: live do YouTube', () => {
 
         const iframe = topo.match(/<iframe[^>]*>/)[0];
         const url = new URL(iframe.match(/src="([^"]+)"/)[1].replaceAll('&amp;', '&'));
-        expect(url.origin + url.pathname).toBe('https://www.youtube-nocookie.com/embed/liveAgora01');
+        expect(url.origin + url.pathname).toBe('https://www.youtube.com/embed/liveAgora01');
         expect(Object.fromEntries(url.searchParams)).toMatchObject({ autoplay: '1', mute: '1', playsinline: '1', fs: '1' });
         expect(url.searchParams.get('loop')).toBeNull();
         expect(iframe).toMatch(/allowFullScreen=""/);
@@ -58,14 +58,17 @@ describe('Início: live do YouTube', () => {
         expect(html).toContain('Abrir o mapa');
     });
 
-    it('COM live detectada sem chave (página /live): player = embed live_stream do canal; "Assistir agora" = watch?v= detectado', async () => {
+    it('COM live detectada sem chave (página /live): player = embed/<videoId> detectado (sem live_stream); "Assistir agora" = watch?v= detectado', async () => {
         live.status = { live: true, videoId: 'liveAgora01', titulo: 'Live', inicio: null, fonte: 'pagina', canal: 'UC63_rDkhmAv1bMm55PsyzOw' };
         const topo = topoDe(await renderizar());
         const url = new URL(topo.match(/<iframe[^>]*src="([^"]+)"/)[1].replaceAll('&amp;', '&'));
-        expect(url.origin + url.pathname).toBe('https://www.youtube.com/embed/live_stream');
-        expect(Object.fromEntries(url.searchParams)).toMatchObject({
-            channel: 'UC63_rDkhmAv1bMm55PsyzOw', autoplay: '1', mute: '1', fs: '1', enablejsapi: '1',
+        expect(url.origin + url.pathname).toBe('https://www.youtube.com/embed/liveAgora01');
+        expect(Object.fromEntries(url.searchParams)).toEqual({
+            autoplay: '1', mute: '1', playsinline: '1', rel: '0', enablejsapi: '1', fs: '1',
         });
+        expect(topo).not.toMatch(/live_stream|channel=/);
+        expect(topo).toMatch(/<iframe[^>]*allowFullScreen=""/);
+        expect(topo).toMatch(/<button[^>]*aria-label="Ligar o som"/);
         expect(topo).toMatch(/<a[^>]*href="https:\/\/www.youtube.com\/watch\?v=liveAgora01"[^>]*target="_blank"[^>]*>.*Assistir agora/);
     });
 

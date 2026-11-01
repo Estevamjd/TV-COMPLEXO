@@ -22,7 +22,8 @@ const { default: CanalTopo, urlEmbed, urlEmbedDaLive } = await import('@/compone
 const DESTAQUE = { youtubeId: 'abcDEF12345', titulo: 'Vídeo mais recente do canal' };
 const LIVE = { live: true, videoId: 'liveVideo01', titulo: 'Ao vivo do Alemão', inicio: null, fonte: 'api', canal: 'UC63_rDkhmAv1bMm55PsyzOw' };
 const LIVE_PAGINA = { ...LIVE, fonte: 'pagina' };
-const EMBED_CANAL = 'https://www.youtube.com/embed/live_stream';
+const LIVE_SIMULADA = { ...LIVE, fonte: 'simulada' };
+const YOUTUBE = 'https://www.youtube.com';
 const NOCOOKIE = 'https://www.youtube-nocookie.com';
 
 afterEach(() => { hooks.estados = []; hooks.cursor = 0; hooks.hidratado = true; });
@@ -63,24 +64,22 @@ describe('urlEmbed', () => {
 });
 
 describe('urlEmbedDaLive', () => {
-    it('live sem chave (página /live): embed oficial live_stream do canal, autoplay mudo, fs=1 e jsapi', () => {
-        const url = urlEmbedDaLive(LIVE_PAGINA);
-        expect(url.startsWith(`${EMBED_CANAL}?`)).toBe(true);
-        expect(parametros(url)).toEqual({
-            autoplay: '1', mute: '1', playsinline: '1', rel: '0', enablejsapi: '1', fs: '1', channel: 'UC63_rDkhmAv1bMm55PsyzOw',
-        });
-    });
-
-    it('live da API ou simulada: embed do vídeo', () => {
-        expect(urlEmbedDaLive(LIVE)).toBe(urlEmbed(LIVE.videoId));
-        expect(urlEmbedDaLive({ ...LIVE, fonte: 'simulada' })).toBe(urlEmbed(LIVE.videoId));
-    });
+    it.each([['API', LIVE], ['página /live, sem chave', LIVE_PAGINA], ['simulada', LIVE_SIMULADA]])(
+        'live (%s): https://www.youtube.com/embed/<videoId> detectado, autoplay mudo, fs=1 e jsapi, sem loop',
+        (_nome, live) => {
+            const url = urlEmbedDaLive(live);
+            expect(url.startsWith(`${YOUTUBE}/embed/${live.videoId}?`)).toBe(true);
+            expect(parametros(url)).toEqual({ autoplay: '1', mute: '1', playsinline: '1', rel: '0', enablejsapi: '1', fs: '1' });
+            expect(url).not.toMatch(/live_stream|channel=/);
+        },
+    );
 });
 
 describe.each([
     ['sem live (vídeo mais recente)', { live: null, destaque: DESTAQUE }, DESTAQUE.youtubeId, urlEmbed(DESTAQUE.youtubeId, { loop: true }), NOCOOKIE],
-    ['com live (API)', { live: LIVE, destaque: DESTAQUE }, LIVE.videoId, urlEmbed(LIVE.videoId), NOCOOKIE],
-    ['com live (sem chave, página /live)', { live: LIVE_PAGINA, destaque: DESTAQUE }, LIVE.videoId, urlEmbedDaLive(LIVE_PAGINA), 'https://www.youtube.com'],
+    ['com live (API)', { live: LIVE, destaque: DESTAQUE }, LIVE.videoId, `${YOUTUBE}/embed/${LIVE.videoId}?autoplay=1&mute=1&playsinline=1&rel=0&enablejsapi=1&fs=1`, YOUTUBE],
+    ['com live (sem chave, página /live)', { live: LIVE_PAGINA, destaque: DESTAQUE }, LIVE.videoId, urlEmbedDaLive(LIVE_PAGINA), YOUTUBE],
+    ['com live (simulada)', { live: LIVE_SIMULADA, destaque: DESTAQUE }, LIVE.videoId, urlEmbedDaLive(LIVE_SIMULADA), YOUTUBE],
 ])('player do topo %s', (_nome, props, id, srcEsperado, origem) => {
     it('toca sozinho e mudo o vídeo certo, com tela cheia (allowFullScreen, allow="fullscreen", fs=1)', () => {
         const iframe = achar(renderizar(props), el => el.type === 'iframe');
@@ -88,6 +87,7 @@ describe.each([
         expect(parametros(iframe.props.src)).toMatchObject({ autoplay: '1', mute: '1', fs: '1' });
         expect(iframe.props.allowFullScreen).toBe(true);
         expect(iframe.props.allow.split(/;\s*/)).toContain('fullscreen');
+        expect(iframe.props.src).not.toMatch(/live_stream|channel=/);
     });
 
     it('botão de som pequeno, só ícone, dentro da tela do player; liga e desliga por postMessage sem trocar o src', () => {
@@ -151,6 +151,7 @@ describe('sem live, antes da hidratação (HTML do servidor)', () => {
     it('a live não espera a hidratação: o iframe já vem no HTML do servidor', () => {
         hooks.hidratado = false;
         const html = renderToStaticMarkup(renderizar({ live: LIVE, destaque: DESTAQUE }));
-        expect(html).toContain(`${NOCOOKIE}/embed/${LIVE.videoId}?`);
+        expect(html).toContain(`${YOUTUBE}/embed/${LIVE.videoId}?`);
+        expect(html).not.toContain('live_stream');
     });
 });

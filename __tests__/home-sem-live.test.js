@@ -76,12 +76,12 @@ describe('Início sem live (sem chave): topo com o vídeo mais recente do RSS', 
         esperaVideoMaisRecente(await topo());
     });
 
-    it('página ao vivo (fixture): a Início vira live, com o embed live_stream do canal', async () => {
+    it('página ao vivo (fixture): a Início vira live, com o embed/<videoId> detectado (sem live_stream)', async () => {
         youtube({ pagina: () => new Response(fixture('youtube-live-no-ar.html')) });
         const t = await topo();
         expect(t).toContain('data-state="live"');
-        expect(t).toContain('https://www.youtube.com/embed/live_stream?');
-        expect(t).toContain('channel=UC63_rDkhmAv1bMm55PsyzOw');
+        expect(t).toContain('https://www.youtube.com/embed/liveAgora01?');
+        expect(t).not.toMatch(/live_stream|channel=/);
         expect(t).toContain('href="https://www.youtube.com/watch?v=liveAgora01"');
     });
 });

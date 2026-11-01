@@ -31,18 +31,13 @@ export function urlEmbed(id, { loop = false } = {}) {
 }
 
 /**
- * Live detectada sem chave (página /live): o player é o embed oficial da transmissão do canal,
- * embed/live_stream?channel=<UC…>, com os mesmos parâmetros (autoplay mudo, fs=1, jsapi).
+ * Embed da live: sempre o vídeo detectado, https://www.youtube.com/embed/<videoId>, venha a live
+ * da API, da página /live ou da simulação. Mesmos parâmetros do vídeo avulso (autoplay mudo,
+ * jsapi para o botão de som, fs=1), sem loop. Nunca embed/live_stream?channel=: o player e o
+ * "Assistir agora" mostram o mesmo vídeo.
  */
-export function urlEmbedLiveDoCanal(canal) {
-    const q = parametrosEmbed();
-    q.set('channel', canal);
-    return `${ORIGEM_YOUTUBE}/embed/live_stream?${q}`;
-}
-
-/** Embed da live: por canal quando veio da página /live; pelo vídeo quando veio da API ou da simulação. */
 export function urlEmbedDaLive(live) {
-    return live.fonte === 'pagina' && live.canal ? urlEmbedLiveDoCanal(live.canal) : urlEmbed(live.videoId);
+    return `${ORIGEM_YOUTUBE}/embed/${live.videoId}?${parametrosEmbed()}`;
 }
 
 /** Link no YouTube do vídeo exato que está tocando aqui (live ou vídeo em destaque). */
@@ -87,7 +82,7 @@ function IconeSom({ ligado }) {
  *   vídeo mais recente do canal (destaque) ou, sem ele, o vídeo de reserva. O HTML do
  *   servidor traz o pôster; depois da hidratação o player toca sozinho, mudo e em loop.
  * - com live: "Tá no ar!", player da live já no HTML do servidor em autoplay mudo e selo AO VIVO.
- *   Live detectada sem chave (página /live): embed/live_stream do canal; com chave: embed do vídeo.
+ *   O player da live é https://www.youtube.com/embed/<videoId> do vídeo detectado.
  * Nos dois: botão de som (só ícone) sobre o vídeo, "Assistir agora" abre o vídeo exato no
  * YouTube em nova aba, e o player tem tela cheia.
  */

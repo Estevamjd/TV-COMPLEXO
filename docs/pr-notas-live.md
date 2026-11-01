@@ -90,14 +90,14 @@ Segui `design/OPCOES.md` (opção 2), `design/contraste.md` e os prints `2-adesi
 - Distância entre a sombra e o título "Tá no ar!": 22,5 px no celular e 47,7 px no 1440.
 - Esses prints são só de conferência e não entraram no repo.
 
-## Simulação para prints (só dev/teste)
+## Simulação para prints (só prévia/teste)
 
 ```bash
-LIVE_MOCK_VIDEO_ID=<id de 11 caracteres de um vídeo que esteja AO VIVO agora> npm run dev
+VERCEL_ENV=preview LIVE_MOCK_VIDEO_ID=<id de 11 caracteres de um vídeo que esteja AO VIVO agora> npm run dev
 ```
 
 - Simula a live sem chamar a API. O título fica "Live de teste (simulação)" e `/api/live` responde `no-store`.
-- **Fica desligada** sem a variável, com um ID inválido e sempre que `VERCEL_ENV=production`. Não configure essa variável na Vercel.
+- **Só liga com `VERCEL_ENV=preview`** (rodada R2). Fica desligada sem a variável, com um ID inválido e com `VERCEL_ENV` igual a `production`, `development` ou não definido. Por isso, localmente é preciso passar `VERCEL_ENV=preview` junto, como no comando acima. Na Vercel, se for usar, configure só no ambiente Preview, nunca em Production.
 - Se o ID não for de uma live no ar, o player do YouTube mostra "Vídeo indisponível". Isso aconteceu nos meus prints de conferência, porque usei um ID antigo.
 - Para testar a detecção **de verdade** num canal de teste ao vivo, sem chave: `YOUTUBE_CHANNEL_ID=UC…(canal ao vivo) npm run dev`. Pela API (opcional): acrescente `YOUTUBE_API_KEY=…`. Canal real fora do ar = Início com o vídeo mais recente.
 
@@ -133,7 +133,7 @@ Base: o `stack-decision.md` revisado (sem chave por enquanto; detecção pela p�
 
 ### B) `?demo=live` continua removido; `LIVE_MOCK_VIDEO_ID` só para prévia/teste
 - Não há leitura de `searchParams` na Início. Teste: `/?demo=live` renderiza igual ao normal e não tem "demo" no HTML.
-- `LIVE_MOCK_VIDEO_ID` é **ignorada quando `VERCEL_ENV=production`**, com ou sem chave (testado nos dois caminhos). Com `VERCEL_ENV` vazio (local), `preview` ou `development`, simula a live. Documentado no README, no `.env.example` e no topo de `lib/live.ts`. **Não configure essa variável na Vercel.**
+- **Atualizado na rodada R2:** `LIVE_MOCK_VIDEO_ID` **só vale com `VERCEL_ENV=preview`**. É ignorada em `production`, em `development` e quando `VERCEL_ENV` não está definido (antes, só `production` bloqueava). Testado nos 4 casos. Documentado no README, no `.env.example` e no topo de `lib/live.ts`. **Nunca configure essa variável em Production.**
 
 ### C) Som: botão pequeno, só ícone, dentro do player
 - `.somPlayer`: 44×44 px (48 no computador), canto de cima à esquerda do vídeo, longe da barra de controles e do botão de tela cheia do YouTube, que ficam embaixo.
@@ -147,11 +147,12 @@ Base: o `stack-decision.md` revisado (sem chave por enquanto; detecção pela p�
 - Os dois `.tape` dos cantos do player saíram do JSX. A classe `.tape` continua no CSS porque é usada nos pôsteres da fileira de vídeos (`app/page.js`). O adesivo do topo continua.
 
 ### F) Tela cheia
-- `allowFullScreen` e `allow="…; fullscreen"` no iframe, e `fs=1` em todos os embeds (vídeo, live da API e `live_stream`).
+- `allowFullScreen` e `allow="…; fullscreen"` no iframe, e `fs=1` em todos os embeds (vídeo avulso e live).
 
-### G) Live sem chave: `embed/live_stream`
-- Quando a live vem da página `/live`, o player é `https://www.youtube.com/embed/live_stream?channel=UC63_rDkhmAv1bMm55PsyzOw` com `autoplay=1&mute=1&playsinline=1&rel=0&enablejsapi=1&fs=1`. "Assistir agora" aponta para o `watch?v=` detectado.
-- Com chave (API) ou simulação, o player continua sendo `youtube-nocookie.com/embed/<id>`.
+### G) Player da live: `embed/<videoId>` (substituído na rodada R2)
+- ~~Quando a live vem da página `/live`, o player é `embed/live_stream?channel=…`.~~ Saiu na rodada R2.
+- Agora toda live (API, página `/live` ou simulação) usa `https://www.youtube.com/embed/<videoId>` com o `videoId` detectado e `autoplay=1&mute=1&playsinline=1&rel=0&enablejsapi=1&fs=1`. `embed/live_stream?channel=` não é mais usado. "Assistir agora" aponta para o `watch?v=` do mesmo vídeo.
+- O vídeo avulso (sem live) continua em `youtube-nocookie.com/embed/<id>` com loop.
 - O status da live ganhou `fonte` (`api`, `pagina` ou `simulada`) e `canal`, também em `/api/live`.
 
 ### H) Detecção sem chave pela página `/live`
@@ -182,13 +183,13 @@ Base: o `stack-decision.md` revisado (sem chave por enquanto; detecção pela p�
 - `lib/video-reserva.ts` (restaurado): mais recente do banco + reserva, quando o RSS falha.
 - `app/page.js`: busca o RSS junto com a live e o banco; `destaque = RSS ?? banco ?? reserva`.
 - `app/api/live/route.ts`: `no-store` só para a simulada (agora por `fonte`).
-- `components/home-urbano/CanalTopo.js`: topo sem live da base, som só ícone dentro do player, "Assistir agora", sem fitas, tela cheia, `embed/live_stream` para live sem chave.
+- `components/home-urbano/CanalTopo.js`: topo sem live da base, som só ícone dentro do player, "Assistir agora", sem fitas, tela cheia, `embed/<videoId>` para a live (R2).
 - `components/home-urbano/urbano.module.css`: `.somPlayer`, pôster, `--live-ink`, fundo opaco do carimbo.
 - `README.md`, `.env.example`: variáveis e o caminho sem chave.
 - Testes: `live.test.ts` (reescrito em parte: página `/live`, precedência da API, mock em produção, R15-2), `rss-canal.test.ts`, `home-sem-live.test.js`, `canal-topo-player.test.js`, `video-reserva.test.js` (novos), `home-live.test.js` e `home-sem-dados.test.js` (atualizados). Fixtures sintéticas em `__tests__/fixtures/`.
 
 ### Verificação da rodada
-- `npm test`: **20 arquivos, 898 testes passando.** Cobre: sem live, sem chave, falha da API e falha/timeout/redirect da página = vídeo mais recente; página ao vivo (fixture) = live com `live_stream`; agendada, offline e consentimento = sem live; os dois sinais precisam concordar; precedência da API com chave; mock ignorado em produção; `?demo=live` sem efeito; C a F; cache único (R15-2); RSS e cair no banco/reserva.
+- `npm test`: **20 arquivos, 906 testes passando.** Cobre: sem live, sem chave, falha da API e falha/timeout/redirect da página = vídeo mais recente; página ao vivo (fixture) = live (na R2: com `embed/<videoId>`); agendada, offline e consentimento = sem live; os dois sinais precisam concordar; precedência da API com chave; mock ignorado em produção (na R2: só vale em `preview`); `?demo=live` sem efeito; C a F; cache único (R15-2); RSS e cair no banco/reserva.
 - `npm run build` (com `env -i`): passa. `tsc --noEmit`: passa.
 - `npm run lint`: **5 erros e 8 avisos, os mesmos da base**, nenhum nos arquivos desta rodada.
 - **Não rodei:** prints, axe e Lighthouse desta rodada (ficam para o QA, inclusive conferir o R15-1 no navegador em 390 px); live real; chave real.
@@ -197,7 +198,19 @@ Base: o `stack-decision.md` revisado (sem chave por enquanto; detecção pela p�
 - **A página `/live` não é oficial.** Se o YouTube mudar o HTML, o efeito é a Início deixar de mostrar a live (falha segura), nunca mostrar live falsa. O YouTube também pode passar a responder com consentimento ou bloqueio para IPs da Vercel; nesse caso, idem.
 - **Falso negativo possível:** se a página de uma live no ar trouxer `upcomingEventData` de outro vídeo (ex.: lista lateral), a live não é detectada. Foi aceito pela regra "qualquer dúvida = sem live".
 - **RSS:** uma live agendada ou um Short podem ser a primeira entrada do feed, e aí o topo sem live mostra esse item. Uma live agendada no player aparece como "aguardando". O RSS não diz o tipo do vídeo; se incomodar, dá para pular entradas com o mesmo ID de uma live agendada.
-- **`live_stream` × vídeo detectado:** o player toca a transmissão atual do canal e o "Assistir agora" aponta para o `watch?v=` lido na página. Se o canal trocar de transmissão dentro da janela de 60 s, os dois podem divergir por até um minuto.
+- ~~**`live_stream` × vídeo detectado:** player e "Assistir agora" podiam divergir.~~ Resolvido na R2: os dois usam o mesmo `videoId`. Risco que fica: se a live acabar e outra começar dentro da janela de 60 s do cache, o player mostra a tela de fim da anterior até o próximo carregamento.
+
+## Rodada R2
+
+### R2-2) Live com `videoId`: player em `https://www.youtube.com/embed/<videoId>`
+- `urlEmbedDaLive(live)` em `components/home-urbano/CanalTopo.js` agora devolve sempre `https://www.youtube.com/embed/<videoId>?autoplay=1&mute=1&playsinline=1&rel=0&enablejsapi=1&fs=1`, para API, página `/live` e simulação. `urlEmbedLiveDoCanal` (`live_stream?channel=`) saiu.
+- Mantidos: início mudo (`mute=1`), botão de som só com ícone e `aria-label` "Ligar o som"/"Desligar o som" (postMessage na origem `https://www.youtube.com`), `allowFullScreen` + `allow="…; fullscreen"` + `fs=1`, e "Assistir agora" no `watch?v=` do mesmo vídeo.
+- Testes: `canal-topo-player.test.js` (URL exata nas 3 fontes, sem `live_stream`/`channel=`; player, som, tela cheia e "Assistir agora" com live da API, da página e simulada), `home-live.test.js` e `home-sem-live.test.js` (HTML da Início com live sem chave: `embed/liveAgora01`, sem `live_stream` nem `channel=`).
+
+### R2-1) `LIVE_MOCK_VIDEO_ID` só em `VERCEL_ENV=preview`
+- `lib/live.ts`: a simulação só liga com `VERCEL_ENV === 'preview'`. Ignorada em `production`, `development` e sem `VERCEL_ENV`.
+- Testes em `live.test.ts`: os 4 casos (preview simula sem chamar o YouTube; production, development e indefinido fazem a detecção de verdade), mais o caso sem chave em produção e o `no-store` de `/api/live` (agora com `preview`).
+- README e `.env.example` atualizados.
 
 ## Cortes sugeridos (NÃO aplicados; dependem do OK do Estevam via Chief/Partner)
 
