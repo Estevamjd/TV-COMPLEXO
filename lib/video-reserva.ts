@@ -1,8 +1,8 @@
 /**
- * Vídeo de reserva do topo da Início: toca (mudo, em loop) quando não há live,
- * nem canal 24h com vídeo real (lib/canal24h.json), nem vídeo do YouTube como
- * o mais recente do banco. Vídeo público do @tvcomplexofc (autor confirmado via oEmbed).
- * Fica fora do canal24h.json de propósito: não entra no relógio nem na grade.
+ * Topo da Início sem live: toca (mudo, em loop) o vídeo mais recente do canal pelo RSS
+ * (lib/rss-canal.ts). Se o RSS falhar, o vídeo mais recente do banco, se ele for
+ * do YouTube. Sem isso (banco vazio, sem DATABASE_URL, mais recente do Instagram), toca o
+ * vídeo de reserva: vídeo público do @tvcomplexofc (autor confirmado via oEmbed).
  */
 import { idYoutubeDaUrl } from './video-utils';
 

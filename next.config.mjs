@@ -17,6 +17,8 @@ const nextConfig = {
     return [
       // O mapa fica em /denuncias; /mapa é o endereço curto (antes dava 404).
       { source: '/mapa', destination: '/denuncias', permanent: true },
+      // Canal 24h removido (missão live-e-topo): endereços antigos/óbvios voltam para a Início, sem 404.
+      ...['/canal24h', '/canal-24h', '/24h'].map(source => ({ source, destination: '/', permanent: true })),
     ];
   },
   async headers() {

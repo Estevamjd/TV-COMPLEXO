@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { VIDEO_RESERVA, VIDEO_RESERVA_ID, destaqueDoTopo, idYoutubeDoVideo } from '@/lib/video-reserva';
 import { idYoutubeDaUrl } from '@/lib/video-utils';
-import { PLAYLIST } from '@/lib/canal24h';
 
 describe('idYoutubeDaUrl', () => {
     it.each([
@@ -54,10 +53,8 @@ describe('destaqueDoTopo', () => {
 });
 
 describe('VIDEO_RESERVA', () => {
-    it('é o vídeo público do @tvcomplexofc e fica fora da playlist/grade do canal 24h', () => {
+    it('é o vídeo público do @tvcomplexofc', () => {
         expect(VIDEO_RESERVA_ID).toBe('hTBno4SXUgI');
         expect(VIDEO_RESERVA.youtubeId).toBe(VIDEO_RESERVA_ID);
-        expect(PLAYLIST.some(v => v.youtubeId === VIDEO_RESERVA_ID)).toBe(false);
-        expect(PLAYLIST.every(v => v.placeholder)).toBe(true);
     });
 });
