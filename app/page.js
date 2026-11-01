@@ -2,7 +2,7 @@ import Link from 'next/link';
 import db from '@/lib/db';
 import { COLUNAS_NOTICIAS, COLUNAS_VIDEOS } from '@/lib/colunas-publicas';
 import { DIAS, programasDoDia } from '@/lib/grade';
-import { destaqueDoTopo } from '@/lib/video-reserva';
+import { statusDaLive } from '@/lib/live';
 import CanalTopo from '@/components/home-urbano/CanalTopo';
 import Fileira from '@/components/home-urbano/Fileira';
 import GradeSemana from '@/components/home-urbano/GradeSemana';
@@ -16,8 +16,8 @@ import { jsonLdOrganizacao, serializarJsonLd } from '@/lib/json-ld';
 export const dynamic = 'force-dynamic';
 
 export const metadata = metadataDaPagina({
-    titulo: 'TV Complexo das Favelas — A Real da Favela | Canal 24h do Complexo do Alemão',
-    descricao: 'TV comunitária do Complexo do Alemão (RJ): canal 24h, vídeos, notícias e denúncias feitas por quem vive nas favelas do Rio de Janeiro.',
+    titulo: 'TV Complexo das Favelas — A Real da Favela | TV comunitária do Complexo do Alemão',
+    descricao: 'TV comunitária do Complexo do Alemão (RJ): lives, vídeos, notícias e denúncias feitas por quem vive nas favelas do Rio de Janeiro.',
     caminho: '/',
 });
 
@@ -35,7 +35,7 @@ async function lerDoBanco(sql) {
     }
 }
 
-/** Hora do pedido (página dinâmica): ponto de partida do relógio do canal 24h. */
+/** Hora do pedido (página dinâmica): ponto de partida da grade ("hoje" e "agora"). */
 function relogio() {
     return Date.now();
 }
@@ -46,22 +46,19 @@ function thumbDoVideo(v) {
     return null;
 }
 
-export default async function HomePage({ searchParams }) {
-    const params = await searchParams;
-    const demoLive = params?.demo === 'live';
+export default async function HomePage() {
     const agora = relogio();
 
-    const [videosDb, noticias] = await Promise.all([
+    // Live do YouTube (só servidor, cache de 60 s, nunca lança erro): sem live, o topo fica sem player.
+    const [videosDb, noticias, live] = await Promise.all([
         lerDoBanco(`SELECT ${COLUNAS_VIDEOS} FROM videos ORDER BY created_at DESC LIMIT 8`),
         lerDoBanco(`SELECT ${COLUNAS_NOTICIAS} FROM noticias WHERE publicada = 1 ORDER BY created_at DESC LIMIT 3`),
+        statusDaLive(),
     ]);
 
     // Mesma fonte de /videos (tabela videos). Sem vídeo (ou sem banco), a seção some:
     // nada de vídeo de exemplo na Início.
     const videos = videosDb.map(v => ({ chave: v.id, titulo: v.titulo, href: `/videos/${v.id}`, thumb: thumbDoVideo(v) }));
-    // Vídeo mais recente do banco: entra no topo (enquanto a playlist do canal 24h não tem vídeo real)
-    // só se for do YouTube; senão (Instagram, sem banco) o topo cai no vídeo de reserva.
-    const destaque = destaqueDoTopo(videosDb);
     // Grade sem nenhum programa cadastrado: a seção some (nada de "em breve" em todos os dias).
     const temGrade = DIAS.some(d => programasDoDia(d.chave).length > 0);
 
@@ -70,7 +67,7 @@ export default async function HomePage({ searchParams }) {
             <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializarJsonLd(jsonLdOrganizacao()) }} />
             <a href="#conteudo" className={s.pular}>Pular para o conteúdo</a>
 
-            <CanalTopo agoraInicial={agora} demoLive={demoLive} destaque={destaque} temGrade={temGrade} />
+            <CanalTopo live={live.live ? live : null} />
 
             <div id="conteudo">
                 {/* REELS DO INSTAGRAM (lista fixa em lib/instagramReels.js; não depende do banco) */}

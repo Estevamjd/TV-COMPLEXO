@@ -62,4 +62,18 @@ describe('barra do topo igual na Início e nas páginas internas', () => {
         caminho = '/denuncias/enviar';
         expect(atuais(barra(renderToStaticMarkup(createElement(Header))))).toEqual(['/denuncias/enviar']);
     });
+
+    it('topo opção 2 (Adesivo): logo e "das Favelas" numa peça só, com o nome completo', async () => {
+        caminho = '/';
+        const home = barra(renderToStaticMarkup(await HomePage({ searchParams: Promise.resolve({}) })));
+        caminho = '/videos';
+        const interna = barra(renderToStaticMarkup(createElement(Header)));
+        for (const trecho of [home, interna]) {
+            const marca = trecho.match(/<a[^>]*aria-label="TV Complexo das Favelas, início"[^>]*>([\s\S]*?)<\/a>/);
+            expect(marca[0]).toMatch(/class="[^"]*(^|_)adesivo(_|\s|")/);
+            expect(marca[1]).toContain('src="/_next/image?url=%2Flogo-header-cropped.png'); // logo não muda
+            expect(marca[1]).toContain('alt="TV Complexo das Favelas"');
+            expect(marca[1].replace(/<[^>]+>/g, '')).toBe('das Favelas'); // nunca abreviado
+        }
+    });
 });

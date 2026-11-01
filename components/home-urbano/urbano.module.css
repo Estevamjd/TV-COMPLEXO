@@ -74,7 +74,7 @@
 .btnSom[aria-pressed="true"]:hover { box-shadow: 7px 7px 0 var(--ink); }
 .botoes { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; }
 
-/* ===== Topo (24h / ao vivo) ===== */
+/* ===== Topo (barra; ao vivo quando há live no YouTube) ===== */
 .topo {
     --hero-bg: var(--yellow); --stamp-color: var(--blue);
     background: var(--hero-bg); position: relative; padding-bottom: 30px;
@@ -118,6 +118,34 @@
     margin-top: 2px; padding: 0; transform: none; letter-spacing: .5px;
     font-size: clamp(30px, calc(23px + 1vw), 40px);
 }
+/* ===== Topo opção 2, "Adesivo" (barra do topo da Início e das páginas internas) =====
+   Logo e "das Favelas" viram uma peça só: parte de cima preta com o logo (sem mudança) e faixa rosa
+   embaixo, com borda e sombra iguais às do player e inclinação de -2°. Faixa: tinta sobre #FF3D8B = 5,66:1.
+   Ao vivo o topo fica rosa: faixa amarela (13,38:1) e sombra de tinta, como a moldura do player.
+   --adesivo-borda: tinta no claro (some no preto); num tema escuro vira creme (#F4EFE4). */
+.adesivo {
+    --adesivo-borda: var(--ink); --adesivo-sombra: 5px; --adesivo-cor-sombra: var(--pink);
+    --adesivo-logo: 24px; --adesivo-nome: 20px;
+    align-items: stretch; background: var(--ink); border: 3px solid var(--adesivo-borda);
+    box-shadow: var(--adesivo-sombra) var(--adesivo-sombra) 0 var(--adesivo-cor-sombra);
+    transform: rotate(-2deg); transition: transform .12s, box-shadow .12s;
+}
+.adesivo:hover {
+    transform: rotate(-2deg) translate(-2px, -2px);
+    box-shadow: calc(var(--adesivo-sombra) + 2px) calc(var(--adesivo-sombra) + 2px) 0 var(--adesivo-cor-sombra);
+}
+.adesivo .logoPlate { background: none; transform: none; padding: 7px 10px 4px; }
+.adesivo .logoPlate img { height: var(--adesivo-logo); }
+.adesivo .marcaFaixa {
+    margin: 0; padding: 3px 10px; transform: none; text-align: center;
+    font-size: var(--adesivo-nome); line-height: 1.05;
+}
+/* foco: anel de tinta afastado da sombra rosa (tinta sobre amarelo 13,38:1, sobre rosa 5,66:1) */
+.topo .adesivo:focus-visible, .adesivo:focus-visible {
+    outline: 4px solid var(--ink); outline-offset: 6px;
+    box-shadow: var(--adesivo-sombra) var(--adesivo-sombra) 0 var(--adesivo-cor-sombra);
+}
+.topo[data-state="live"] .adesivo { --adesivo-cor-sombra: var(--ink); }
 .nav { display: none; }
 .nav ul { display: flex; gap: 28px; }
 .nav a {
@@ -130,10 +158,10 @@
 
 .heroGrid {
     display: grid; grid-template-columns: minmax(0, 1fr);
-    grid-template-areas: "grito" "player" "info";
+    grid-template-areas: "grito" "player" "acoes" "info";
 }
 .grito {
-    grid-area: grito; margin: 4px 0 0;
+    grid-area: grito; margin: 16px 0 0; /* respiro para o acento de "TÁ" não encostar na sombra do adesivo */
     font-family: var(--f-display); font-weight: 400; text-transform: uppercase;
     font-size: clamp(68px, 18vw, 180px); line-height: .92; letter-spacing: .3px;
 }
@@ -142,45 +170,19 @@
 .playerMoldura {
     position: relative; transform: rotate(-1.5deg);
     background: var(--ink); padding: 8px; box-shadow: 6px 6px 0 var(--pink);
-    animation: entrar .4s ease-out;
 }
 .topo[data-state="live"] .playerMoldura { box-shadow: 6px 6px 0 var(--ink); }
-@keyframes entrar { from { opacity: 0; } }
 .playerTela { position: relative; aspect-ratio: 16 / 9; background: #222; overflow: hidden; }
 .playerTela iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
-.posterBtn {
-    position: absolute; inset: 0; display: block; width: 100%; padding: 0; border: 0;
-    background: #222; cursor: pointer; color: var(--ink);
-}
-.posterBtn img { width: 100%; height: 100%; object-fit: cover; }
-.posterBtn:focus-visible { outline: 4px solid var(--yellow); outline-offset: -8px; box-shadow: inset 0 0 0 4px var(--ink); }
-.playDiamante {
-    position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
-    width: 64px; height: 64px; display: flex; align-items: center; justify-content: center;
-    background: var(--yellow); color: var(--ink); font-size: 24px;
-    clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); transition: transform .12s;
-}
-.posterBtn:hover .playDiamante { transform: translate(-50%, -50%) scale(1.08); }
-/* sem vídeo para tocar aqui: placa preta com o logo, abre o YouTube */
-.posterLogo { background: var(--ink); }
-.posterBtn.posterLogo img { position: absolute; left: 16px; top: 16px; width: 38%; height: auto; object-fit: contain; }
-/* "das Favelas" embaixo do logo, na proporção da tela (cqi = 1% da largura do player) */
-.playerTela { container-type: inline-size; }
-.posterFaixa {
-    position: absolute; left: calc(16px + 7.6cqi); top: calc(14px + 7.7cqi);
-    padding: .08em .3em .04em; background: var(--pink); color: var(--ink);
-    font-family: var(--font-anton), Impact, sans-serif; text-transform: uppercase;
-    font-size: 5.6cqi; line-height: 1.05; letter-spacing: .04em; white-space: nowrap; transform: rotate(-2deg);
-}
-.progresso { position: absolute; left: 0; bottom: 0; height: 6px; background: var(--yellow); transition: width 1s linear; }
 
 .tape {
     position: absolute; width: 86px; height: 26px; background: var(--tape-c);
     box-shadow: 0 1px 2px rgba(0, 0, 0, .15); pointer-events: none;
 }
 
+/* carimbo no canto de cima do player: embaixo dele ficam "Ligar o som" e "Assistir no YouTube" */
 .stamp {
-    position: absolute; right: 4px; bottom: -64px; z-index: 2;
+    position: absolute; right: -4px; top: -30px; z-index: 2; pointer-events: none;
     width: 108px; aspect-ratio: 1; border-radius: 50%; border: 4px solid currentColor;
     color: var(--stamp-color); background: rgba(250, 247, 240, .92);
     display: flex; align-items: center; justify-content: center; text-align: center;
@@ -190,29 +192,16 @@
 .topo[data-state="live"] .stamp { transform: rotate(14deg); animation: bate .25s cubic-bezier(.3, 1.6, .6, 1); }
 @keyframes bate { from { transform: rotate(14deg) scale(1.6); opacity: 0; } }
 
+/* ações da live, logo abaixo do player */
+.acoesLive { grid-area: acoes; margin-top: 22px; }
+.btnGrande { min-height: 56px; padding: 16px 24px; font-size: 18px; }
 .heroInfo { grid-area: info; padding-top: 24px; max-width: 640px; }
-.kicker {
-    font: 700 16px/1.4 var(--f-mono); letter-spacing: .6px; text-transform: uppercase; margin: 0;
-    padding-right: 112px; /* não passa por baixo do carimbo no celular */
-}
+.kicker { font: 700 16px/1.4 var(--f-mono); letter-spacing: .6px; text-transform: uppercase; margin: 0; }
 .badgeLive {
     display: inline-block; background: var(--live); color: var(--white);
     font: 700 16px/1 var(--f-mono); padding: 5px 8px; margin-right: 4px;
 }
 .heroTitulo { font: 26px/1.1 var(--f-heading); margin: 8px 0 0; }
-.heroSub { font-size: 16px; font-weight: 600; margin: 8px 0 0; }
-/* etiqueta "demonstração" enquanto a playlist do canal 24h é de exemplo */
-.demoTag {
-    width: fit-content; max-width: calc(100% - 112px); /* não passa por baixo do carimbo no celular */
-    margin: 0 0 10px; padding: 4px 8px; background: var(--ink); color: var(--yellow);
-    font: 700 16px/1.25 var(--f-mono); text-transform: uppercase; letter-spacing: .4px;
-    transform: rotate(-1deg);
-}
-.demoNota {
-    display: inline-block; margin: 16px 0 0; padding: 6px 10px; border: 2px dashed var(--ink);
-    max-width: calc(100% - 128px); /* mantém a borda fora do carimbo rotacionado no celular */
-    font: 700 16px/1.3 var(--f-mono);
-}
 
 /* faixa inclinada */
 .ticker {
@@ -281,9 +270,6 @@
     font: 700 16px/1.2 var(--f-mono); padding: 4px 8px; text-align: center;
     white-space: normal; text-wrap: balance; overflow-wrap: break-word;
 }
-/* no player: canto inferior esquerdo, com a borda direita antes do selo "canal 24h"
-   (108px a right: 4px; cobre ~104px da tela) e acima da barra de progresso */
-.posterBtn .phTag { top: auto; bottom: 14px; transform: none; left: 12px; right: 120px; margin-inline: 0; }
 
 /* notícias */
 .noticias { margin-top: 40px; background: var(--ink); color: var(--paper); padding: 36px 0 28px; }
@@ -367,6 +353,9 @@
     .logoPlate img { height: 28px; }
     .marca { --marca-recuo: 41px; }
     .marcaEscura { --marca-recuo: calc(var(--marca-logo) + 13px); }
+    .adesivo { --adesivo-sombra: 7px; --adesivo-logo: 32px; --adesivo-nome: 28px; }
+    .adesivo .logoPlate { padding: 9px 14px 6px; }
+    .adesivo .marcaFaixa { padding: 4px 14px; }
     .barra { padding: 22px 0; }
     .nav { display: block; }
     .soCel { display: none; }
@@ -375,22 +364,16 @@
     .topo { padding-bottom: 64px; }
     .heroGrid {
         grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); column-gap: 56px;
-        grid-template-areas: "grito player" "info player"; align-items: start;
+        grid-template-areas: "grito player" "info acoes"; align-items: start;
     }
-    .grito { font-size: clamp(110px, 11vw, 176px); margin-top: 20px; }
+    .grito { font-size: clamp(110px, 11vw, 176px); margin-top: 36px; }
     .playerArea { padding: 30px 0 0; }
     .playerMoldura { padding: 10px; box-shadow: 8px 8px 0 var(--pink); }
     .topo[data-state="live"] .playerMoldura { box-shadow: 8px 8px 0 var(--ink); }
-    .playDiamante { width: 88px; height: 88px; font-size: 32px; }
-    .stamp { width: 150px; right: -26px; bottom: -48px; font-size: 30px; }
+    .stamp { width: 150px; right: -26px; top: -4px; font-size: 30px; }
     .stamp small { font-size: 18px; }
-    .posterBtn .phTag { right: 136px; } /* selo maior: cobre ~114px da tela */
     .heroInfo { padding-top: 20px; }
-    .kicker { padding-right: 0; }
-    .demoTag { max-width: none; }
-    .demoNota { max-width: none; }
     .heroTitulo { font-size: 34px; }
-    .heroSub { font-size: 18px; }
 
     .ticker { font-size: 24px; padding: 12px 0; margin-top: -20px; }
 
@@ -422,5 +405,5 @@
 @media (prefers-reduced-motion: reduce) {
     .tickerControle { display: none; }
     .tickerTrack, .topo[data-state="live"] .stamp, .playerMoldura { animation: none; }
-    .btn, .btnOutline, .poster, .topo, .progresso, .playDiamante { transition: none; }
+    .btn, .btnOutline, .poster, .topo, .progresso, .playDiamante, .adesivo { transition: none; }
 }

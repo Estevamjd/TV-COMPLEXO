@@ -3,6 +3,9 @@ import { renderToStaticMarkup } from 'react-dom/server';
 
 // Sem banco: a Início não pode consultar nada nem mostrar texto de exemplo.
 delete process.env.DATABASE_URL;
+// Sem chave do YouTube e sem simulação: nenhuma live (e nenhuma chamada ao YouTube).
+delete process.env.YOUTUBE_API_KEY;
+delete process.env.LIVE_MOCK_VIDEO_ID;
 vi.mock('next/navigation', () => ({ usePathname: () => '/' }));
 vi.mock('@/lib/db', () => ({ default: { query: vi.fn(() => { throw new Error('não deveria consultar o banco'); }) } }));
 
@@ -11,7 +14,7 @@ const { default: db } = await import('@/lib/db');
 
 let html = '';
 beforeAll(async () => {
-    html = renderToStaticMarkup(await HomePage({ searchParams: Promise.resolve({}) }));
+    html = renderToStaticMarkup(await HomePage());
 });
 
 describe('Início sem dados (sem DATABASE_URL)', () => {
@@ -30,11 +33,12 @@ describe('Início sem dados (sem DATABASE_URL)', () => {
         expect(html).not.toMatch(padrao);
     });
 
-    it('topo usa o vídeo de reserva do canal (pôster no HTML do servidor, iframe só depois da hidratação)', () => {
+    it('sem live, o topo é só a barra: sem player, sem pôster, sem selo AO VIVO', () => {
         const topo = html.slice(html.indexOf('id="topo"'), html.indexOf('</section>', html.indexOf('id="topo"')));
-        expect(topo).toContain('https://i.ytimg.com/vi/hTBno4SXUgI/hqdefault.jpg');
+        expect(topo).toContain('id="topo-titulo"');
         expect(topo).not.toContain('<iframe');
-        expect(topo).not.toMatch(/detecção automática/i);
+        expect(topo).not.toContain('i.ytimg.com');
+        expect(html).not.toMatch(/AO VIVO|Ligar o som|Assistir no YouTube/);
     });
 
     it('esconde as seções sem conteúdo (vídeos, notícias, grade)', () => {

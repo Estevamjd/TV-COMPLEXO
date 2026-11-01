@@ -77,9 +77,29 @@ O site estará disponível em `http://localhost:3000`.
 | `ADMIN_USER` | Username do administrador |
 | `ADMIN_PASSWORD` | Senha do administrador |
 | `ADMIN_EMAIL` | Email do administrador |
-| `YOUTUBE_CHANNEL_ID` | ID do canal do YouTube para importação automática |
+| `YOUTUBE_CHANNEL_ID` | ID do canal do YouTube (importação automática e live). Sem ele, a live usa `UC63_rDkhmAv1bMm55PsyzOw` (@tvcomplexofc) |
+| `YOUTUBE_API_KEY` | Chave da YouTube Data API, **só servidor**, para detectar a live (opcional; sem ela a home nunca mostra live) |
+| `LIVE_YOUTUBE_AUTO` | `0` desliga a detecção da live (interruptor de emergência). Vazio = ligada quando há `YOUTUBE_API_KEY` |
+| `LIVE_MOCK_VIDEO_ID` | **Só teste local/prévia.** ID (11 caracteres) de um vídeo ao vivo para simular a live sem API. Ignorada com `VERCEL_ENV=production`. Nunca configurar em produção |
 | `CRON_SECRET` | Secret para proteger o endpoint do cron |
 | `WEBHOOK_SECRET` | Secret para webhooks de redes sociais (opcional) |
+
+## Live automática na Início
+
+Quando o canal está ao vivo no YouTube, a Início mostra a live no topo: começa sozinha e sem som, com o selo **AO VIVO**, o botão **Ligar o som** e o link **Assistir no YouTube** embaixo do player. Sem live, o topo fica só com a barra de navegação (sem player e sem nenhum pedido extra no navegador).
+
+- A checagem roda **só no servidor** (`lib/live.ts`), com duas chamadas de 1 unidade de cota cada: `playlistItems.list` (uploads do canal) e `videos.list` (`liveBroadcastContent`). Nunca usa `search.list`. O resultado fica em cache por 60 s. A chave nunca vai para o navegador.
+- Se a API falhar, demorar mais de 2,5 s ou a cota acabar, a Início aparece normal, sem live e sem erro.
+- `GET /api/live` devolve o mesmo status em JSON (`{ "live": false }` ou `{ "live": true, "videoId", "titulo", "inicio" }`).
+
+**Testar o estado "ao vivo" localmente (prints):**
+
+```bash
+# simulação, sem API: use o ID de um vídeo que esteja AO VIVO agora (senão o player mostra "Vídeo indisponível")
+LIVE_MOCK_VIDEO_ID=<id_de_11_caracteres> npm run dev
+# detecção real contra um canal de teste que esteja ao vivo
+YOUTUBE_API_KEY=<sua_chave> YOUTUBE_CHANNEL_ID=<UC...do_canal_de_teste> npm run dev
+```
 
 ## Estrutura do Projeto
 

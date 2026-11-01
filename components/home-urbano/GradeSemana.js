@@ -35,9 +35,9 @@ export default function GradeSemana({ agoraInicial }) {
                         style={{ '--giro': `${GIROS_DIA[i]}deg` }}
                         aria-current={ehHoje ? 'date' : undefined}>
                         <span className={s.diaNome}><abbr title={d.nome}>{d.rotulo}</abbr></span>
-                        {ehHoje && <span className={s.diaInfo}><span className={s.diaAgora}>Agora</span>{noAr ? noAr.titulo : 'canal 24h'}</span>}
+                        {noAr && <span className={s.diaInfo}><span className={s.diaAgora}>Agora</span>{noAr.titulo}</span>}
                         {progs.length === 0 ? (
-                            !ehHoje && <span className={s.diaInfo}>Em breve</span>
+                            <span className={s.diaInfo}>Em breve</span>
                         ) : (
                             <ul className={s.diaProgs}>
                                 {progs.map(p => (
