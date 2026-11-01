@@ -11,19 +11,27 @@ import manifest from '@/app/manifest';
 import { SITE_NOME, SITE_NOME_LINHAS } from '@/lib/site';
 
 describe('SITE_URL', () => {
-    it('é o domínio público fixo, https e sem barra final', () => {
+    it('sem NEXT_PUBLIC_SITE_URL: o endereço da Vercel, https e sem barra final', () => {
         expect(SITE_URL).toBe('https://tv-complexo.vercel.app');
         expect(SITE_URL).not.toMatch(/\/$/);
     });
 
-    it('não depende de VERCEL_URL nem de NEXT_PUBLIC_SITE_URL', async () => {
+    it('vem de NEXT_PUBLIC_SITE_URL (sem barra final) e nunca de VERCEL_URL', async () => {
         vi.stubEnv('VERCEL_URL', 'tv-complexo-abc123-preview.vercel.app');
-        vi.stubEnv('NEXT_PUBLIC_SITE_URL', 'https://outro.example');
+        vi.stubEnv('NEXT_PUBLIC_SITE_URL', 'https://dominio-exemplo.example/');
         vi.resetModules();
         const mod = await import('@/lib/site');
-        expect(mod.SITE_URL).toBe('https://tv-complexo.vercel.app');
+        expect(mod.SITE_URL).toBe('https://dominio-exemplo.example');
+        expect(mod.urlAbsoluta('/videos')).toBe('https://dominio-exemplo.example/videos');
         vi.unstubAllEnvs();
+        vi.resetModules();
     });
+
+    it.each(['', '   ', 'nao-e-url', 'ftp://dominio-exemplo.example', 'https://dominio-exemplo.example/?x=1', 'javascript:alert(1)'])(
+        'NEXT_PUBLIC_SITE_URL inválida (%j): volta para o padrão', async (valor) => {
+            const { siteUrlDoAmbiente, SITE_URL_PADRAO } = await import('@/lib/site');
+            expect(siteUrlDoAmbiente(valor)).toBe(SITE_URL_PADRAO);
+        });
 
     it('urlAbsoluta monta caminhos e preserva URL absoluta', () => {
         expect(urlAbsoluta('/')).toBe(SITE_URL);

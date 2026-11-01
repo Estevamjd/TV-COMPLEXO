@@ -1,10 +1,16 @@
 import { NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
 
+/*
+ * Middleware no runtime Edge (era proxy.js). No Next 16 o proxy.js roda sempre em Node, e o
+ * OpenNext (Cloudflare Workers) ainda não suporta middleware em Node: o build falha. O
+ * middleware.js roda em Edge por padrão, na Vercel e na Cloudflare. Só usa `jose`, que roda no Edge.
+ */
+
 const JWT_SECRET = process.env.JWT_SECRET;
 const secretKey = JWT_SECRET ? new TextEncoder().encode(JWT_SECRET) : null;
 
-export default async function proxy(request) {
+export default async function middleware(request) {
     const path = request.nextUrl.pathname;
 
     // Proteger as rotas do painel /admin (exceto o login)

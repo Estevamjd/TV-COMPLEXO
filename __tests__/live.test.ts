@@ -29,6 +29,7 @@ beforeEach(() => {
     vi.stubEnv('LIVE_YOUTUBE_AUTO', '');
     vi.stubEnv('LIVE_MOCK_VIDEO_ID', '');
     vi.stubEnv('VERCEL_ENV', '');
+    vi.stubEnv('APP_ENV', '');
     vi.stubGlobal('fetch', fetchMock);
     fetchMock.mockReset();
 });
@@ -136,6 +137,23 @@ describe('detecção da live COM YOUTUBE_API_KEY (API tem precedência)', () => 
         expect(fetchMock).not.toHaveBeenCalled();
     });
 
+    it('LIVE_MOCK_VIDEO_ID com APP_ENV=preview (Cloudflare, sem VERCEL_ENV): simula live', async () => {
+        vi.stubEnv('LIVE_MOCK_VIDEO_ID', 'jfKfPfyJRdk');
+        vi.stubEnv('APP_ENV', 'preview');
+        vi.stubEnv('VERCEL_ENV', undefined);
+        expect(await statusDaLive()).toMatchObject({ live: true, videoId: 'jfKfPfyJRdk', fonte: 'simulada' });
+        expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it('APP_ENV manda sobre VERCEL_ENV: APP_ENV=production com VERCEL_ENV=preview não simula', async () => {
+        vi.stubEnv('LIVE_MOCK_VIDEO_ID', 'jfKfPfyJRdk');
+        vi.stubEnv('APP_ENV', 'production');
+        vi.stubEnv('VERCEL_ENV', 'preview');
+        respostas({ items: [] });
+        expect(await statusDaLive()).toEqual({ live: false });
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+
     it.each([
         ['production', 'production'],
         ['development', 'development'],
@@ -143,6 +161,7 @@ describe('detecção da live COM YOUTUBE_API_KEY (API tem precedência)', () => 
     ])('LIVE_MOCK_VIDEO_ID ignorada com %s: vale a detecção de verdade', async (_nome, ambiente) => {
         vi.stubEnv('LIVE_MOCK_VIDEO_ID', 'jfKfPfyJRdk');
         vi.stubEnv('VERCEL_ENV', ambiente);
+        vi.stubEnv('APP_ENV', ambiente);
         if (ambiente === undefined) expect(process.env.VERCEL_ENV).toBeUndefined();
         respostas({ items: [] });
         expect(await statusDaLive()).toEqual({ live: false });

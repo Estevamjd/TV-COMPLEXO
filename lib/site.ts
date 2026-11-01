@@ -1,11 +1,26 @@
+export const SITE_URL_PADRAO = 'https://tv-complexo.vercel.app';
+
 /**
  * Endereço público único do site: canonical, sitemap, robots, og:url e og:image saem daqui.
  *
- * Fixo no código de propósito: VERCEL_URL aponta para a URL da prévia (protegida por login),
- * e era isso que ia para o Google e para o card do WhatsApp.
- * TODO: trocar para https://tvcomplexo.com.br quando o DNS apontar para a Vercel.
+ * Vem de NEXT_PUBLIC_SITE_URL (ex.: o domínio próprio na Cloudflare), definida no build.
+ * Sem ela, ou com valor inválido, fica o endereço da Vercel. Nunca usa VERCEL_URL: ela aponta
+ * para a URL da prévia (protegida por login), e era isso que ia para o Google e o WhatsApp.
  */
-export const SITE_URL = 'https://tv-complexo.vercel.app';
+export function siteUrlDoAmbiente(valor = process.env.NEXT_PUBLIC_SITE_URL): string {
+    const bruto = valor?.trim();
+    if (!bruto) return SITE_URL_PADRAO;
+    try {
+        const url = new URL(bruto);
+        if (url.protocol !== 'https:' && url.protocol !== 'http:') return SITE_URL_PADRAO;
+        if (url.search || url.hash || url.username || url.password) return SITE_URL_PADRAO;
+        return `${url.origin}${url.pathname}`.replace(/\/+$/, '');
+    } catch {
+        return SITE_URL_PADRAO;
+    }
+}
+
+export const SITE_URL = siteUrlDoAmbiente();
 
 export const SITE_NOME = 'TV Complexo das Favelas';
 /** O nome em duas linhas (direção A, empilhado): a quebra fica antes de "das Favelas". Nunca abreviar. */

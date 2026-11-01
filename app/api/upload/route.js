@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { put } from '@vercel/blob';
+import { salvarImagemPublica } from '@/lib/armazenamento';
 import { isAuthenticated } from '@/lib/auth';
 
 // Magic bytes para validação real do tipo de arquivo
@@ -83,14 +83,11 @@ export async function POST(request) {
 
         const safeName = sanitizeFilename(file.name);
 
-        // Upload para Vercel Blob
-        const blob = await put(`thumbnails/${Date.now()}-${safeName}`, new Blob([arrayBuffer], { type: detectedType }), {
-            access: 'public',
-            addRandomSuffix: true,
-        });
+        // Upload para o R2 (Cloudflare, binding UPLOADS) ou para o Vercel Blob
+        const url = await salvarImagemPublica(`thumbnails/${Date.now()}-${safeName}`, arrayBuffer, detectedType);
 
         return NextResponse.json({
-            url: blob.url,
+            url,
             name: safeName,
             type: detectedType,
             size: file.size,

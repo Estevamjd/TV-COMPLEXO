@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { SignJWT, jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
-import bcrypt from 'bcryptjs';
 import { auditLog } from '@/lib/audit';
+import { verificarSenha } from '@/lib/senha';
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
 const ADMIN_USER = process.env.ADMIN_USER;
@@ -17,11 +17,11 @@ const secretKey = new TextEncoder().encode(JWT_SECRET);
 
 /**
  * Verifica a senha do admin.
- * Suporta ADMIN_PASSWORD_HASH (bcrypt, preferido) ou ADMIN_PASSWORD (texto plano, legado).
+ * Suporta ADMIN_PASSWORD_HASH (PBKDF2 pbkdf2$…, preferido; ou bcrypt $2…) ou ADMIN_PASSWORD (texto plano, legado).
  */
 async function verifyPassword(password) {
     if (ADMIN_PASSWORD_HASH) {
-        return bcrypt.compare(password, ADMIN_PASSWORD_HASH);
+        return verificarSenha(password, ADMIN_PASSWORD_HASH);
     }
     // Fallback para texto plano (legado) — usar timing-safe comparison
     if (ADMIN_PASSWORD && ADMIN_PASSWORD.length === password.length) {
