@@ -64,7 +64,7 @@ describe('Início: live do YouTube', () => {
         const url = new URL(topo.match(/<iframe[^>]*src="([^"]+)"/)[1].replaceAll('&amp;', '&'));
         expect(url.origin + url.pathname).toBe('https://www.youtube.com/embed/liveAgora01');
         expect(Object.fromEntries(url.searchParams)).toEqual({
-            autoplay: '1', mute: '1', playsinline: '1', rel: '0', enablejsapi: '1', fs: '1',
+            autoplay: '1', mute: '1', playsinline: '1', rel: '0', enablejsapi: '1', fs: '1', cc_lang_pref: 'pt', hl: 'pt-BR',
         });
         expect(topo).not.toMatch(/live_stream|channel=/);
         expect(topo).toMatch(/<iframe[^>]*allowFullScreen=""/);

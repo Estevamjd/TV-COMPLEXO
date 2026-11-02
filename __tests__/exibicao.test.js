@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { suavizarPlaceholders } from '@/lib/exibicao';
+import { suavizarPlaceholders, tituloSemEmoji } from '@/lib/exibicao';
 import { mascararTextoPublico } from '@/lib/mascara';
 import ReportCard from '@/components/ReportCard';
 import HomeNews from '@/components/HomeNews';
@@ -54,6 +54,28 @@ describe('exibição pública', () => {
         const admin = await GET(new Request('http://localhost/api/denuncias'));
         expect((await admin.json())[0].descricao).toBe(original);
         expect(row.descricao).toBe(original);
+    });
+});
+
+describe('tituloSemEmoji', () => {
+    it.each([
+        ['🎀 OUTUBRO ROSA: SAÚDE DA MULHER!', 'OUTUBRO ROSA: SAÚDE DA MULHER!'],
+        ['🔴 AO VIVO | Feira no Alemão 🔥🔥', 'AO VIVO | Feira no Alemão'],
+        ['Copa da favela 🇧🇷 ⚽️ final', 'Copa da favela final'],
+        ['Mutirão 👍🏾 da Grota', 'Mutirão da Grota'],
+        ['Família 👨‍👩‍👧 reunida ❤️', 'Família reunida'],
+        ['Projeto Favela® ©2026 TV™', 'Projeto Favela® ©2026 TV™'],
+        ['Rua 1, nº 23 #partiu *novo*', 'Rua 1, nº 23 #partiu *novo*'],
+        ['Sem emoji: ação, saúde e ç', 'Sem emoji: ação, saúde e ç'],
+        ['  espaços   sobrando  ', 'espaços sobrando'],
+    ])('%s', (entrada, saida) => {
+        expect(tituloSemEmoji(entrada)).toBe(saida);
+    });
+
+    it('título só de emoji fica como está; vazio vira texto vazio', () => {
+        expect(tituloSemEmoji('🎀')).toBe('🎀');
+        expect(tituloSemEmoji(null)).toBe('');
+        expect(tituloSemEmoji(undefined)).toBe('');
     });
 });
 
