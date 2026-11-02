@@ -3,6 +3,7 @@ import { useRef, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import BarraNavegacao from '@/components/BarraNavegacao';
 import { VIDEO_RESERVA } from '@/lib/video-reserva';
+import { tituloSemEmoji } from '@/lib/exibicao';
 import s from './urbano.module.css';
 
 const ORIGEM_PLAYER = 'https://www.youtube-nocookie.com';
@@ -10,8 +11,13 @@ const ORIGEM_YOUTUBE = 'https://www.youtube.com';
 // o player só aceita comandos depois de pronto: reenvia algumas vezes após o load do iframe
 const REENVIO_COMANDO_MS = [0, 600, 1500, 3000];
 
+// Legenda e interface do player em português. Sem isso o player escolhe a legenda pelo idioma do
+// navegador e, no autoplay mudo, mostrava legenda automática em inglês. cc_lang_pref só escolhe o
+// idioma; quem decide se a legenda aparece continua sendo a pessoa (sem cc_load_policy=1).
 function parametrosEmbed() {
-    return new URLSearchParams({ autoplay: '1', mute: '1', playsinline: '1', rel: '0', enablejsapi: '1', fs: '1' });
+    return new URLSearchParams({
+        autoplay: '1', mute: '1', playsinline: '1', rel: '0', enablejsapi: '1', fs: '1', cc_lang_pref: 'pt', hl: 'pt-BR',
+    });
 }
 
 /**
@@ -98,7 +104,8 @@ export default function CanalTopo({ live = null, destaque = null }) {
 
     const avulso = live ? null : destaque ?? VIDEO_RESERVA;
     const videoId = live ? live.videoId : avulso.youtubeId;
-    const titulo = live ? live.titulo : avulso.titulo;
+    // título do YouTube sem emoji, só na tela
+    const titulo = tituloSemEmoji(live ? live.titulo : avulso.titulo);
     // live: iframe já no HTML do servidor; vídeo avulso: pôster no servidor, iframe depois da hidratação
     const iframeSrc = live ? urlEmbedDaLive(live) : hidratado ? urlEmbed(videoId, { loop: true }) : null;
 
@@ -125,7 +132,7 @@ export default function CanalTopo({ live = null, destaque = null }) {
 
     async function compartilhar() {
         const url = window.location.origin + '/';
-        const dados = { title: 'TV Complexo das Favelas ao vivo', text: live?.titulo ?? 'TV Complexo das Favelas', url };
+        const dados = { title: 'TV Complexo das Favelas ao vivo', text: live ? titulo : 'TV Complexo das Favelas', url };
         try {
             if (navigator.share) { await navigator.share(dados); return; }
             await navigator.clipboard.writeText(url);
@@ -198,7 +205,7 @@ export default function CanalTopo({ live = null, destaque = null }) {
                                     <p className={s.kicker}>
                                         <span className={s.badgeLive}>AO VIVO</span>{live.inicio ? ` desde ${horaBrasilia(live.inicio)}` : ' agora'}
                                     </p>
-                                    <h2 className={s.heroTitulo}>{live.titulo}</h2>
+                                    <h2 className={s.heroTitulo}>{titulo}</h2>
                                     <div className={s.botoes}>
                                         <button type="button" className={s.btnOutline} onClick={compartilhar}>
                                             {copiado ? 'Link copiado' : 'Compartilhar'}
@@ -209,7 +216,7 @@ export default function CanalTopo({ live = null, destaque = null }) {
                         ) : (
                             <div className={s.heroInfo}>
                                 <p className={s.kicker}>{avulso.reserva ? 'Vídeo em destaque' : 'Vídeo mais recente'}</p>
-                                <h2 className={s.heroTitulo}>{avulso.titulo}</h2>
+                                <h2 className={s.heroTitulo}>{titulo}</h2>
                                 <p className={s.heroSub}>Do canal @tvcomplexofc no YouTube.</p>
                                 <div className={s.botoes}>
                                     {assistirAgora}

@@ -51,7 +51,8 @@ describe('urlEmbed', () => {
         const url = urlEmbed(DESTAQUE.youtubeId, { loop: true });
         expect(url.startsWith(`${NOCOOKIE}/embed/${DESTAQUE.youtubeId}?`)).toBe(true);
         expect(parametros(url)).toEqual({
-            autoplay: '1', mute: '1', playsinline: '1', rel: '0', enablejsapi: '1', fs: '1', loop: '1', playlist: DESTAQUE.youtubeId,
+            autoplay: '1', mute: '1', playsinline: '1', rel: '0', enablejsapi: '1', fs: '1', cc_lang_pref: 'pt', hl: 'pt-BR',
+            loop: '1', playlist: DESTAQUE.youtubeId,
         });
     });
 
@@ -63,13 +64,27 @@ describe('urlEmbed', () => {
     });
 });
 
+describe('legenda do player', () => {
+    it.each([['vídeo em destaque', urlEmbed(DESTAQUE.youtubeId, { loop: true })], ['live', urlEmbedDaLive(LIVE)]])(
+        '%s: legenda e interface em português, sem forçar a legenda a aparecer',
+        (_nome, url) => {
+            const p = parametros(url);
+            expect(p.cc_lang_pref).toBe('pt');
+            expect(p.hl).toBe('pt-BR');
+            expect(p.cc_load_policy).toBeUndefined();
+        },
+    );
+});
+
 describe('urlEmbedDaLive', () => {
     it.each([['API', LIVE], ['página /live, sem chave', LIVE_PAGINA], ['simulada', LIVE_SIMULADA]])(
         'live (%s): https://www.youtube.com/embed/<videoId> detectado, autoplay mudo, fs=1 e jsapi, sem loop',
         (_nome, live) => {
             const url = urlEmbedDaLive(live);
             expect(url.startsWith(`${YOUTUBE}/embed/${live.videoId}?`)).toBe(true);
-            expect(parametros(url)).toEqual({ autoplay: '1', mute: '1', playsinline: '1', rel: '0', enablejsapi: '1', fs: '1' });
+            expect(parametros(url)).toEqual({
+                autoplay: '1', mute: '1', playsinline: '1', rel: '0', enablejsapi: '1', fs: '1', cc_lang_pref: 'pt', hl: 'pt-BR',
+            });
             expect(url).not.toMatch(/live_stream|channel=/);
         },
     );
@@ -77,7 +92,7 @@ describe('urlEmbedDaLive', () => {
 
 describe.each([
     ['sem live (vídeo mais recente)', { live: null, destaque: DESTAQUE }, DESTAQUE.youtubeId, urlEmbed(DESTAQUE.youtubeId, { loop: true }), NOCOOKIE],
-    ['com live (API)', { live: LIVE, destaque: DESTAQUE }, LIVE.videoId, `${YOUTUBE}/embed/${LIVE.videoId}?autoplay=1&mute=1&playsinline=1&rel=0&enablejsapi=1&fs=1`, YOUTUBE],
+    ['com live (API)', { live: LIVE, destaque: DESTAQUE }, LIVE.videoId, `${YOUTUBE}/embed/${LIVE.videoId}?autoplay=1&mute=1&playsinline=1&rel=0&enablejsapi=1&fs=1&cc_lang_pref=pt&hl=pt-BR`, YOUTUBE],
     ['com live (sem chave, página /live)', { live: LIVE_PAGINA, destaque: DESTAQUE }, LIVE.videoId, urlEmbedDaLive(LIVE_PAGINA), YOUTUBE],
     ['com live (simulada)', { live: LIVE_SIMULADA, destaque: DESTAQUE }, LIVE.videoId, urlEmbedDaLive(LIVE_SIMULADA), YOUTUBE],
 ])('player do topo %s', (_nome, props, id, srcEsperado, origem) => {
@@ -153,5 +168,22 @@ describe('sem live, antes da hidratação (HTML do servidor)', () => {
         const html = renderToStaticMarkup(renderizar({ live: LIVE, destaque: DESTAQUE }));
         expect(html).toContain(`${YOUTUBE}/embed/${LIVE.videoId}?`);
         expect(html).not.toContain('live_stream');
+    });
+});
+
+describe('título do YouTube sem emoji, só na tela', () => {
+    const COM_EMOJI = '🎀 OUTUBRO ROSA: INFORMAÇÃO, PREVENÇÃO E CUIDADO COM A SAÚDE DA MULHER!';
+    const SEM_EMOJI = 'OUTUBRO ROSA: INFORMAÇÃO, PREVENÇÃO E CUIDADO COM A SAÚDE DA MULHER!';
+
+    it.each([
+        ['sem live', { live: null, destaque: { ...DESTAQUE, titulo: COM_EMOJI } }],
+        ['com live', { live: { ...LIVE, titulo: COM_EMOJI }, destaque: DESTAQUE }],
+    ])('%s: título grande e título do player sem emoji; os dados não mudam', (_nome, props) => {
+        const arvore = renderizar(props);
+        const html = renderToStaticMarkup(arvore);
+        expect(html).toContain(`>${SEM_EMOJI}</h2>`);
+        expect(html).not.toContain('🎀');
+        expect(achar(arvore, el => el.type === 'iframe').props.title).toMatch(new RegExp(`: ${SEM_EMOJI}$`));
+        expect((props.live ?? props.destaque).titulo).toBe(COM_EMOJI);
     });
 });
