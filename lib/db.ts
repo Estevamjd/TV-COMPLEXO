@@ -1,24 +1,29 @@
-import pg from 'pg';
+import type { Pool } from 'pg';
 import { neon } from '@neondatabase/serverless';
 import { rodandoNoWorker } from './runtime';
-const { Pool } = pg;
 
 /*
  * Node/Vercel: um Pool do `pg`, reaproveitado entre requisições (como sempre foi).
  * Cloudflare Worker: o I/O fica preso à requisição, então um Pool global não pode ser reaproveitado.
  * Lá cada consulta usa um cliente novo do @neondatabase/serverless (HTTP, sem conexão aberta).
+ *
+ * O `pg` é importado só no caminho Node (import dinâmico). Com import estático, o Turbopack marca o
+ * módulo como externo (`pg-<hash>`) e todo arquivo que importa este aqui passa a carregar esse externo
+ * ao iniciar; no Worker o OpenNext não resolve esse nome e a rota dá 500 ("No such module").
+ * No build da Cloudflare o next.config.mjs ainda troca o `pg` por lib/pg-indisponivel.js.
  */
 
-let pool: pg.Pool | null = null;
+let pool: Promise<Pool> | null = null;
 
-function poolNode(): pg.Pool {
-    pool ??= new Pool({
+function poolNode(): Promise<Pool> {
+    pool ??= import('pg').then(({ default: pg }) => new pg.Pool({
         connectionString: process.env.DATABASE_URL,
         ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: true } : false,
         max: 5,
         idleTimeoutMillis: 30000,
         connectionTimeoutMillis: 10000,
-    });
+    }));
+    pool.catch(() => { pool = null; });
     return pool;
 }
 
@@ -41,8 +46,8 @@ const query = async <T = Record<string, unknown>>(
 ): Promise<QueryResult<T>> => {
     try {
         if (rodandoNoWorker()) return await queryNoWorker<T>(text, params);
-        const res = await poolNode().query(text, params);
-        return res as QueryResult<T>;
+        const res = await (await poolNode()).query(text, params);
+        return res as unknown as QueryResult<T>;
     } catch (err) {
         console.error('DB query error:', (err as Error).message);
         throw err;
@@ -50,10 +55,6 @@ const query = async <T = Record<string, unknown>>(
 };
 
 const db = {
-    /** Pool do `pg` (só Node/Vercel; criado no primeiro uso). */
-    get pool() {
-        return poolNode();
-    },
     query,
 };
 

@@ -15,6 +15,9 @@ const CSP_R2 = R2 ? ` ${R2.origin}` : '';
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // No Worker o banco usa só o @neondatabase/serverless. O `pg` (externo no Node) viraria um módulo
+  // `pg-<hash>` que o OpenNext não resolve; aqui ele é trocado por um stub e sai do bundle.
+  ...(BUILD_CLOUDFLARE ? { turbopack: { resolveAlias: { pg: './lib/pg-indisponivel.js' } } } : {}),
   images: {
     // A otimização de imagens da Vercel não existe no Worker: lá o next/image serve o arquivo original.
     ...(BUILD_CLOUDFLARE ? { unoptimized: true } : {}),
