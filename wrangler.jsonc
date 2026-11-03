@@ -1,0 +1,40 @@
+// Cloudflare Workers (OpenNext). A Vercel não lê este arquivo.
+// Segredos (DATABASE_URL, JWT_SECRET, ADMIN_PASSWORD_HASH, CRON_SECRET...) ficam no painel da
+// Cloudflare como Secret, ou no .dev.vars local (fora do git). Nunca aqui.
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "tv-complexo",
+	// Worker do OpenNext (.open-next/worker.js) mais o handler `scheduled` do cron.
+	"main": "cloudflare/worker.js",
+	"compatibility_date": "2026-10-01",
+	"compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+	"assets": {
+		"directory": ".open-next/assets",
+		"binding": "ASSETS"
+	},
+	"services": [
+		{
+			// Usado pelo OpenNext para chamar o próprio Worker (cache/revalidação).
+			"binding": "WORKER_SELF_REFERENCE",
+			"service": "tv-complexo"
+		}
+	],
+	"r2_buckets": [
+		{
+			// Uploads de imagens do painel (/api/upload). A URL pública vem de R2_PUBLIC_URL.
+			"binding": "UPLOADS",
+			"bucket_name": "tv-complexo-uploads"
+		}
+	],
+	"vars": {
+		// Liga os caminhos do Worker (Neon serverless, R2, CF-Connecting-IP). Ver lib/runtime.ts.
+		"CLOUDFLARE_WORKER": "1"
+	},
+	"triggers": {
+		// Mesmo horário do vercel.json: 08:00 UTC (05:00 em Brasília).
+		"crons": ["0 8 * * *"]
+	},
+	"observability": {
+		"enabled": true
+	}
+}

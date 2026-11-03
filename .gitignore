@@ -40,6 +40,12 @@ yarn-error.log*
 # vercel
 .vercel
 
+# cloudflare (OpenNext / wrangler)
+.open-next
+.wrangler
+.dev.vars
+.dev.vars.*
+
 # claude code
 .claude/
 

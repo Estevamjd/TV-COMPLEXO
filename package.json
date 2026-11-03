@@ -8,9 +8,13 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "cf:build": "opennextjs-cloudflare build",
+    "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.2.0",
     "@vercel/blob": "^2.3.2",
     "bcryptjs": "^3.0.3",
     "dotenv": "^17.3.1",
@@ -28,6 +32,7 @@
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.12",
+    "@opennextjs/cloudflare": "~1.18.1",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^25.5.0",
     "@types/pg": "^8.20.0",
@@ -35,9 +40,11 @@
     "@types/sanitize-html": "^2.16.1",
     "@types/uuid": "^10.0.0",
     "@vitejs/plugin-react": "^6.0.1",
+    "esbuild": "^0.27.7",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "typescript": "^6.0.2",
-    "vitest": "^4.1.2"
+    "vitest": "^4.1.2",
+    "wrangler": "^4.156.0"
   }
 }

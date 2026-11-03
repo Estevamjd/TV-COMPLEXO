@@ -59,6 +59,7 @@ beforeEach(() => {
     vi.stubEnv('LIVE_YOUTUBE_AUTO', '');
     vi.stubEnv('LIVE_MOCK_VIDEO_ID', '');
     vi.stubEnv('VERCEL_ENV', '');
+    vi.stubEnv('APP_ENV', '');
 });
 afterEach(() => { vi.unstubAllEnvs(); vi.unstubAllGlobals(); });
 

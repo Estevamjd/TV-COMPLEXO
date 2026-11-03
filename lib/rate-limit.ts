@@ -1,5 +1,7 @@
+import { rodandoNoWorker } from './runtime';
+
 /**
- * Rate limiter para Vercel Serverless.
+ * Rate limiter em memória (por instância), na Vercel Serverless e no Cloudflare Worker.
  */
 
 interface RateLimitResult {
@@ -36,7 +38,10 @@ export function rateLimit(request: RequestLike, options: RateLimitOptions = {}):
         namespace = 'default',
     } = options;
 
-    const ip = request.headers.get('x-real-ip')
+    // CF-Connecting-IP primeiro, mas só no Worker: lá a Cloudflare sempre sobrescreve esse cabeçalho.
+    // Na Vercel ele chega do cliente sem filtro e serviria para trocar de "IP" a cada tentativa.
+    const ip = (rodandoNoWorker() ? request.headers.get('cf-connecting-ip')?.trim() : null)
+        || request.headers.get('x-real-ip')
         || request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
         || 'unknown';
 

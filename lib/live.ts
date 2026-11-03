@@ -26,8 +26,11 @@
  *  - YOUTUBE_CHANNEL_ID: canal (padrão UC63_rDkhmAv1bMm55PsyzOw, @tvcomplexofc).
  *  - LIVE_YOUTUBE_AUTO='0': desliga a detecção (interruptor de emergência). Vazio = ligada.
  *  - LIVE_MOCK_VIDEO_ID: SÓ PARA PRÉVIA/TESTE. Simula live com esse vídeo, sem chamar o YouTube.
- *    Só vale com VERCEL_ENV=preview; ignorada em production, development e sem VERCEL_ENV.
+ *    Só vale com APP_ENV=preview (ou, sem APP_ENV, VERCEL_ENV=preview, que a Vercel define sozinha).
+ *    Ignorada em production, development e sem nenhuma das duas. APP_ENV, se definida, manda.
  */
+
+import { ambienteDoDeploy } from './runtime';
 
 export const CANAL_PADRAO = 'UC63_rDkhmAv1bMm55PsyzOw';
 export const CACHE_MS = 60_000;
@@ -72,10 +75,10 @@ export function canalConfigurado(): string {
     return canal && ID_CANAL.test(canal) ? canal : CANAL_PADRAO;
 }
 
-/** Live simulada (LIVE_MOCK_VIDEO_ID), só em deploy de prévia da Vercel (VERCEL_ENV=preview). */
+/** Live simulada (LIVE_MOCK_VIDEO_ID), só em deploy de prévia (APP_ENV ou VERCEL_ENV = preview). */
 function liveSimulada(): LiveStatus | null {
     const id = process.env.LIVE_MOCK_VIDEO_ID?.trim();
-    if (!id || process.env.VERCEL_ENV !== 'preview' || !ID_VIDEO.test(id)) return null;
+    if (!id || ambienteDoDeploy() !== 'preview' || !ID_VIDEO.test(id)) return null;
     return { live: true, videoId: id, titulo: 'Live de teste (simulação)', inicio: null, fonte: 'simulada', canal: canalConfigurado() };
 }
 
